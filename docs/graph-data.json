@@ -461,6 +461,94 @@
       "created_at": "2026-06-08T16:02:16.022469-04:00",
       "updated_at": "2026-06-08T16:02:16.022469-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
+    },
+    {
+      "id": 43,
+      "change_id": "3d169f35-a335-4c98-88ae-a9730d305bbf",
+      "node_type": "observation",
+      "title": "[review] f32-wrap discipline has no enforcement yet",
+      "description": "Oversight finding (M2 risk). scalar.ts ships f = STRICT_F32 ? Math.fround : identity, but the plan's promised lint/codegen rule that forces every arithmetic step in the integrator to be f()-wrapped does NOT exist. f32-exact reproduction depends on a human remembering to wrap every op. When the golden master diverges at tick N, locating which of ~200 unwrapped ops caused it is extremely costly. Recommendation: build the enforcement (eslint rule or a typed Scalar wrapper that makes unwrapped arithmetic a type error) BEFORE porting ParticleSystem, not after.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:07:21.948947-04:00",
+      "updated_at": "2026-06-08T16:07:21.948947-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":80,\"files\":[\"soldat-ts/packages/sim/src/scalar.ts\"]}"
+    },
+    {
+      "id": 44,
+      "change_id": "bd16b138-2c34-4015-9a71-fabb119cf965",
+      "node_type": "observation",
+      "title": "[review] Pascal Single fidelity may over-promise bit-exactness",
+      "description": "Oversight finding (M2 risk). Math.fround(a+b) does not generally equal Pascal Single semantics: Pascal rounds to Single at each store to a Single var; JS keeps the full f64 intermediate within an expression. Matching requires wrapping precisely where FPC materializes a Single temp, which depends on FPC expression evaluation. Plan says 'start epsilon=0'; scalar.ts already carries EPSILON=1e-4. Treat epsilon=0 as aspirational per-function, expect a small per-function/per-window epsilon, and have the golden master REPORT first-divergence function rather than assert global bit-equality.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:07:34.145454-04:00",
+      "updated_at": "2026-06-08T16:07:34.145454-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":75}"
+    },
+    {
+      "id": 45,
+      "change_id": "a064a993-c588-4fab-8eff-61763bc90c64",
+      "node_type": "observation",
+      "title": "[review] Golden master depends on building+instrumenting original Pascal",
+      "description": "Oversight finding (M2 blocker risk, not in risk register). The {$IFDEF GOLDENMASTER} trace dump needs a working FPC/Lazarus build of OpenSoldat. If that toolchain is not stood up, M2 stalls regardless of TS quality. Verify 'can we build and instrument the original at all?' on day one, BEFORE writing TS physics.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:07:34.312219-04:00",
+      "updated_at": "2026-06-08T16:07:34.312219-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":85}"
+    },
+    {
+      "id": 46,
+      "change_id": "ae6cec2e-e1c2-4d50-b919-eb1b6470fd36",
+      "node_type": "observation",
+      "title": "[review] M0 acceptance says 'CI passes' but no CI exists for soldat-ts",
+      "description": "Oversight finding (M0). The only GH workflows present are decision-graph/pages deploys. M0 is not done until typecheck+test+lint run green in CI. Land CI inside M0 rather than slipping it to 'later'.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:07:34.477328-04:00",
+      "updated_at": "2026-06-08T16:07:34.477328-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":90}"
+    },
+    {
+      "id": 47,
+      "change_id": "9401d35b-dd37-4fb6-bd64-de38a4d74d80",
+      "node_type": "observation",
+      "title": "[review] Sequencing temptation: M1 render is numbered before M2 golden master",
+      "description": "Oversight finding (sequencing). The project thesis is 'retire the riskiest unknown first', yet M1 (map rendering) is low-risk, visually rewarding, and a classic schedule sink, and is numbered before M2. The 'first two weeks' list does interleave M2 work (tasks 6-8) which is good, but watch that map-render polish does not crowd out the golden-master spike.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:07:34.655689-04:00",
+      "updated_at": "2026-06-08T16:07:34.655689-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":70}"
+    },
+    {
+      "id": 48,
+      "change_id": "025f5bfc-d306-4f39-9fc0-6d3504db0bc7",
+      "node_type": "outcome",
+      "title": "M1 progress: .PMS→mesh + PixiJS renderer",
+      "description": "buildMapMesh (MapGraphics.pas vertex fill port, pure, 7 tests) + MapRenderer (pixi v8 Application/Mesh, pan/zoom) + Vite app rendering a synthetic map. Real .PMS load stubbed. Renderer/app typecheck-verified; live browser render not yet smoke-tested. Commit a168d12.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:17:45.369089-04:00",
+      "updated_at": "2026-06-08T16:17:45.369089-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":84,\"files\":[\"soldat-ts/packages/client/src/render/mapMesh.ts\",\"soldat-ts/packages/client/src/render/renderer.ts\"]}"
+    },
+    {
+      "id": 49,
+      "change_id": "c4fe58b4-24b2-4d76-b2a4-cae0158c154a",
+      "node_type": "outcome",
+      "title": "M2 progress: golden-master harness + Sprites movement",
+      "description": "Golden-master harness (ScenarioRunner/GoldenTrace/compareTraces) validates free-fall closed form over 600 ticks + internal determinism + perturbation detection, green in f64 AND STRICT_F32. Sprites.pas movement core ported (control->forces, SURFACECOEF friction, on-ground latch, MAX_VELOCITY clamp, tick order); minimal floor collision (full PolyMap deferred to M3). Pascal instrumentation patch under tools/golden-master (capture needs fpc). 104 tests total. Commit 044b821.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:17:45.664801-04:00",
+      "updated_at": "2026-06-08T16:17:45.664801-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":86,\"files\":[\"soldat-ts/packages/sim/src/golden/runner.ts\",\"soldat-ts/packages/sim/src/entities/sprite.ts\"]}"
+    },
+    {
+      "id": 50,
+      "change_id": "c6614a0d-a0d4-43c9-a4c3-3b301832abe2",
+      "node_type": "observation",
+      "title": "Env constraints: no fpc, no upstream push",
+      "description": "No FreePascal here, so Pascal-side golden-master TRACE CAPTURE deferred to an fpc-equipped run; TS integrator currently validated vs closed-form + self-determinism only. No upstream push access; work on fork notactuallytreyanastasio/soldat PR #1. Live browser render (M1) not yet smoke-tested.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:17:45.961872-04:00",
+      "updated_at": "2026-06-08T16:17:45.961872-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":82}"
     }
   ],
   "edges": [
@@ -1211,6 +1299,105 @@
       "weight": 1.0,
       "rationale": "Must be resolved by the M2 golden-master cross-check",
       "created_at": "2026-06-08T16:02:16.388761-04:00"
+    },
+    {
+      "id": 69,
+      "from_node_id": 33,
+      "to_node_id": 43,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "3d169f35-a335-4c98-88ae-a9730d305bbf",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review: M2 f32-wrap enforcement gap",
+      "created_at": "2026-06-08T16:07:39.986593-04:00"
+    },
+    {
+      "id": 70,
+      "from_node_id": 33,
+      "to_node_id": 44,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "bd16b138-2c34-4015-9a71-fabb119cf965",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review: M2 fidelity epsilon caveat",
+      "created_at": "2026-06-08T16:07:40.204245-04:00"
+    },
+    {
+      "id": 71,
+      "from_node_id": 33,
+      "to_node_id": 45,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "a064a993-c588-4fab-8eff-61763bc90c64",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review: M2 Pascal-build dependency",
+      "created_at": "2026-06-08T16:07:40.398122-04:00"
+    },
+    {
+      "id": 72,
+      "from_node_id": 31,
+      "to_node_id": 46,
+      "from_change_id": "cb719334-6a60-4a3f-b1e0-f70ad865d690",
+      "to_change_id": "ae6cec2e-e1c2-4d50-b919-eb1b6470fd36",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review: M0 CI not yet present",
+      "created_at": "2026-06-08T16:07:40.598536-04:00"
+    },
+    {
+      "id": 73,
+      "from_node_id": 30,
+      "to_node_id": 47,
+      "from_change_id": "d743cdad-609d-4bb4-9dbf-99869a2e64a3",
+      "to_change_id": "9401d35b-dd37-4fb6-bd64-de38a4d74d80",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review: milestone sequencing risk",
+      "created_at": "2026-06-08T16:07:40.799199-04:00"
+    },
+    {
+      "id": 74,
+      "from_node_id": 32,
+      "to_node_id": 48,
+      "from_change_id": "786b933e-87ee-4ec7-a6ee-75bf85a074a7",
+      "to_change_id": "025f5bfc-d306-4f39-9fc0-6d3504db0bc7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M1 map-mesh + renderer delivered",
+      "created_at": "2026-06-08T16:17:45.517737-04:00"
+    },
+    {
+      "id": 75,
+      "from_node_id": 33,
+      "to_node_id": 49,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "c4fe58b4-24b2-4d76-b2a4-cae0158c154a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M2 harness + movement delivered",
+      "created_at": "2026-06-08T16:17:45.811933-04:00"
+    },
+    {
+      "id": 76,
+      "from_node_id": 48,
+      "to_node_id": 50,
+      "from_change_id": "025f5bfc-d306-4f39-9fc0-6d3504db0bc7",
+      "to_change_id": "c6614a0d-a0d4-43c9-a4c3-3b301832abe2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M1 verification gap",
+      "created_at": "2026-06-08T16:17:46.109387-04:00"
+    },
+    {
+      "id": 77,
+      "from_node_id": 49,
+      "to_node_id": 50,
+      "from_change_id": "c4fe58b4-24b2-4d76-b2a4-cae0158c154a",
+      "to_change_id": "c6614a0d-a0d4-43c9-a4c3-3b301832abe2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M2 cross-check pending fpc",
+      "created_at": "2026-06-08T16:17:46.254177-04:00"
     }
   ]
 }

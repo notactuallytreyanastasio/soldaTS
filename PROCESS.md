@@ -11,18 +11,18 @@
 
 ## Where we are right now
 
-**Phase:** M0 ✅ complete → next: M1 (PixiJS map render) + M2 (golden-master harness).
-**Branch:** `rewrite/ts-port`.
+**Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
+**Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **90 Vitest tests pass in both f64 and STRICT_F32**.
+**Verification:** `tsc --build` clean; **104 Vitest tests pass in both f64 and STRICT_F32**.
 
 ### Milestone board
 | # | Milestone | Status |
 |---|-----------|--------|
 | M0 | Bootstrap (monorepo, tooling, shared foundations) | ✅ done |
-| M1 | Map loads & renders (.PMS loader + PixiJS) | 🟡 loader+CRC32 ported; render pending |
-| M2 | Physics core + golden master ⭐ | 🟡 integrator ported + fidelity tests; harness pending |
-| M3 | Moves like Soldat (SP, no net) | ⬜ |
+| M1 | Map loads & renders (.PMS loader + PixiJS) | 🟢 mesh+renderer+app done; live browser smoke-test + real .PMS load pending |
+| M2 | Physics core + golden master ⭐ | 🟢 harness + movement done (vs closed-form); fpc trace cross-check pending |
+| M3 | Moves like Soldat (SP, no net) | 🟡 needs full PolyMap collision + jump/anim |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -51,6 +51,16 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont.)
+- **M1 + M2 landed in parallel** (5-track workflow). Forked to `notactuallytreyanastasio/soldat`,
+  opened **PR #1**. New: `@soldat/client` map mesh + PixiJS renderer + Vite app (M1);
+  `@soldat/sim/golden` harness (ScenarioRunner/compareTraces, free-fall vs closed form over
+  600 ticks, determinism, perturbation) + `Sprites.pas` movement port + minimal floor collision (M2);
+  `tools/golden-master/` Pascal instrumentation patch + format docs. **104 tests green (f64 + STRICT_F32).**
+  Commits a168d12 (M1), 044b821 (M2). Graph: outcomes 48/49, env-constraints 50.
+- **Env gaps (graph 50):** no `fpc` here → Pascal trace capture deferred; no upstream push → fork PR;
+  M1 live browser render not yet smoke-tested.
 
 ### 2026-06-08
 - **M0 COMPLETE.** Foundational port workflow (6 agents) landed; wired the `index.ts`
