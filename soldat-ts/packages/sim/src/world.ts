@@ -53,6 +53,8 @@ export interface World {
   bulletParts: ParticleSystem | null;
   // PORT: shared/Game.pas:38 — SparkParts: ParticleSystem.
   sparkParts: ParticleSystem | null;
+  // PORT: shared/Game.pas — ThingParts: ParticleSystem (flag/kit skeletons).
+  thingParts: ParticleSystem | null;
 
   // --- Deterministic randomness (replaces Pascal global Random) ---
   // The sim must never call Math.random; all randomness flows through here.
@@ -228,6 +230,7 @@ export function createWorld(): World {
     spriteParts: null,
     bulletParts: null,
     sparkParts: null,
+    thingParts: null,
     rng: new Rng(),
   };
 }
