@@ -45,3 +45,6 @@ Release
 *.swo
 *.swp
 *.swu
+
+# Deciduous database (local)
+.deciduous/
