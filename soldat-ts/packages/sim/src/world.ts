@@ -21,6 +21,7 @@ import { MAX_SPRITES, MAX_BULLETS, MAX_SPARKS, MAX_THINGS } from './constants';
 import type { Sprite, Bullet, Spark, Thing } from './entities/types';
 import type { ParticleSystem } from './physics/particles';
 import type { PolyMap } from './map/polymap';
+import { Rng } from './rng';
 import { vec2 } from './math/vec2';
 
 export interface World {
@@ -52,6 +53,10 @@ export interface World {
   bulletParts: ParticleSystem | null;
   // PORT: shared/Game.pas:38 — SparkParts: ParticleSystem.
   sparkParts: ParticleSystem | null;
+
+  // --- Deterministic randomness (replaces Pascal global Random) ---
+  // The sim must never call Math.random; all randomness flows through here.
+  rng: Rng;
 }
 
 // --- Sentinel/empty record factories ---------------------------------------
@@ -223,5 +228,6 @@ export function createWorld(): World {
     spriteParts: null,
     bulletParts: null,
     sparkParts: null,
+    rng: new Rng(),
   };
 }
