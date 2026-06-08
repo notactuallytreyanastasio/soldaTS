@@ -1,13 +1,18 @@
-// Browser entry point: mount the pixi app, build a small synthetic PMS map,
-// render it, and wire drag-to-pan / wheel-zoom.
+// Browser entry point: mount the pixi app, load a real .PMS map (falling back
+// to a synthetic one when no asset is available), render it, and wire
+// drag-to-pan / wheel-zoom.
 //
-// No .PMS asset files are bundled in M1, so we hand-build a tiny PmsMap below.
-// The (commented) real path would load bytes and call loadPms from @soldat/assets.
+// Real maps: drop Soldat .PMS files into packages/client/public/maps/ — the dev
+// server serves them at /maps/<name>.pms. Choose one with the ?map= query param
+// (e.g. ?map=ctf_Ash → /maps/ctf_Ash.pms). These files are NOT committed; supply
+// your own per the asset-licensing decision (see public/maps/README.md).
+// When the fetch fails (offline / no asset present) we fall back to the
+// hand-built synthetic scene below so dev still works.
 
 import { PolyType, type MapPolygon, type MapVertex, type PmsMap } from '@soldat/assets';
-// Real asset loading would use: import { loadPms } from '@soldat/assets';
 import { buildMapMesh } from '../render/mapMesh';
 import { MapRenderer } from '../render/renderer';
+import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 
 // ---------------------------------------------------------------------------
 // Synthetic map
@@ -122,11 +127,24 @@ async function main(): Promise<void> {
   const renderer = new MapRenderer({ container: mount });
   await renderer.init();
 
-  // --- Real .PMS loading would plug in here -----------------------------
-  // const bytes = await fetch('/maps/ctf_Ash.pms').then((r) => r.arrayBuffer());
-  // const map = loadPms(new Uint8Array(bytes));
+  // --- Real .PMS loading, with synthetic fallback -----------------------
+  // Try to fetch a real map from /maps/ (URL chosen via ?map=); on any failure
+  // (offline, missing asset, parse error) fall back to the synthetic scene.
+  const mapUrl = pickMapUrl();
+  let map: PmsMap;
+  try {
+    map = await fetchAndLoadMap(mapUrl);
+    // eslint-disable-next-line no-console
+    console.info(`loaded map '${map.mapName}' from ${mapUrl}`);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `could not load '${mapUrl}', using synthetic map instead:`,
+      err instanceof Error ? err.message : err,
+    );
+    map = buildSyntheticMap();
+  }
   // ----------------------------------------------------------------------
-  const map = buildSyntheticMap();
   const mesh = buildMapMesh(map);
   renderer.setMap(mesh);
 
