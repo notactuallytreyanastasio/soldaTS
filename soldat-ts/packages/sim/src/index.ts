@@ -2,6 +2,7 @@
 // Platform-pure: no DOM, no Node APIs. Runs identically in browser, worker,
 // and server. See ../../../docs/PORT-PLAN.md.
 export * from './scalar';
+export * from './rng';
 export * from './constants';
 export * from './math/vec2';
 export * from './math/calc';
@@ -12,6 +13,10 @@ export * from './map/polymap';
 export * from './map/buildPolyMap';
 export * from './world';
 export * from './physics/particles';
+export * from './weapons/guns';
+export * from './entities/bullet';
+export * from './entities/spark';
+export * from './combat/damage';
 // Golden-master harness (determinism validation; see tools/golden-master/).
 export * from './golden/trace';
 export * from './golden/runner';
