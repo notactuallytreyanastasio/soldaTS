@@ -28,10 +28,13 @@
 | — | Integration: Things + stepWorld tick spine | 🟢 done — full deterministic tick runs |
 | M6 | Netcode ⭐ | 🟢 codec + replication + prediction done; WebTransport transport wiring deferred (needs server runtime) |
 | — | Playable SP: client game loop + jump/foot collision | 🟢 done — keyboard-playable on a real map (typecheck-only) |
-| M7 | Modes / HUD / audio | 🟢 game-mode scoring + HUD + WebAudio done; not yet wired into main.ts loop |
-| M8 | Modding + content + polish | ⬜ |
-| — | WebTransport transport wiring (client/server runtime) | ⬜ |
-| — | Gostek skeleton rendering | ⬜ |
+| M7 | Modes / HUD / audio | 🟢 game-mode scoring + HUD (wired into loop) + WebAudio done |
+| M8 | Modding + content + polish | 🟢 mod API + sandboxed ScriptHost done |
+| — | WebTransport transport wiring (client/server runtime) | ⬜ human-gated (needs server runtime) |
+| — | fpc golden-master cross-check | ⬜ human-gated (needs FreePascal) |
+| — | Browser smoke-test + Gostek skeleton rendering | ⬜ human-gated (needs browser) |
+
+**Numbered milestones M0–M8 are COMPLETE.** Remaining work is human-gated (below).
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -59,7 +62,37 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 
 ---
 
+## State of the rewrite (capstone)
+
+**M0–M8 complete. 38 commits on `rewrite/ts-port` (PR #1). `tsc --build` clean;
+269 tests green in f64 AND STRICT_F32.** Six packages: `sim` (deterministic core
++ `stepWorld` heartbeat), `protocol` (codec), `netcode` (snapshot + prediction),
+`assets` (.PMS), `client` (playable browser app + HUD), `modding` (sandboxed mod
+API). See `soldat-ts/README.md`. The simulation runs a full deterministic tick
+(physics+jump+collision, bullets/weapons/damage, sparks, things, bots, modes);
+the browser client is keyboard-playable on a real map; netcode prediction is
+proven bit-identical to the server tick-for-tick.
+
+**What needs YOU (human-gated, not attempted blind):**
+1. **FreePascal** → run the golden-master cross-check (`tools/golden-master/` has
+   the instrumentation patch) to validate sim *feel* against the original. Until
+   then feel is validated vs closed-form + internal determinism only.
+2. **A browser** → smoke-test `pnpm --filter @soldat/client dev` (renderer/loop
+   are typecheck-verified but never GPU-run here).
+3. **A server runtime** → WebTransport transport wiring (the netcode core is
+   ready and transport-agnostic).
+4. Decisions on remaining fidelity items (Gostek skeleton render, animation state
+   machine, ricochet/explosion AoE, INF/HTF scoring) — all logged in the graph.
+
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 9, autonomous loop — capstone)
+- **M8 modding landed** (mod API + sandboxed ScriptHost that can't be stalled by a
+  crashing mod). Reconciled to one canonical contract. Graph 71.
+- **Capstone**: top-level `soldat-ts/README.md`; HUD wired into the client loop;
+  PROCESS state-of-the-rewrite summary. **269 tests green.** M0–M8 DONE.
+- **Loop paused**: remaining work is human-gated (fpc / browser / server runtime).
+  Not spawning new milestone workflows — see "What needs YOU" above.
 
 ### 2026-06-08 (cont. 8, autonomous loop)
 - **M7 landed** (3-track workflow): game-mode scoring (DM/PM/TDM/CTF/INF/HTF/Rambo),

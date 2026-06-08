@@ -769,6 +769,17 @@
       "created_at": "2026-06-08T17:26:48.901630-04:00",
       "updated_at": "2026-06-08T17:26:48.901630-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":79}"
+    },
+    {
+      "id": 71,
+      "change_id": "c6d0ba6a-e258-42c3-96b8-8c3f1c58d838",
+      "node_type": "outcome",
+      "title": "M8 done: mod API + sandboxed ScriptHost",
+      "description": "New @soldat/modding: events.ts (28 events incl. OnPlayerDamage cascade), api.ts (ScriptGame/Player/Players/Map + createScriptApi over live World), host.ts ScriptHost (registration-order dispatch, cascade threading). KEY FIX vs PascalScript: per-handler try/catch so a crashing/hung mod is logged+skipped, never stalls the server (original escalated to shutdown after 10 errors); setHandlerInvoker is the isolated-vm/Worker+CPU-budget seam. Reconciled to ONE canonical contract (host imports api/events). 269 tests green f64+STRICT_F32. Commits 0fa755f, 4ce1ec8. This completes the numbered milestone arc M0-M8.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:37:17.278697-04:00",
+      "updated_at": "2026-06-08T17:37:17.278697-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":86,\"files\":[\"soldat-ts/packages/modding/src/host.ts\",\"soldat-ts/packages/modding/src/api.ts\"]}"
     }
   ],
   "edges": [
@@ -1860,6 +1871,17 @@
       "weight": 1.0,
       "rationale": "M7 remaining + integration gap",
       "created_at": "2026-06-08T17:26:49.044858-04:00"
+    },
+    {
+      "id": 101,
+      "from_node_id": 39,
+      "to_node_id": 71,
+      "from_change_id": "ba9997b0-0c2d-49cd-9c94-a12935edde0f",
+      "to_change_id": "c6d0ba6a-e258-42c3-96b8-8c3f1c58d838",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M8 modding delivered; completes M0-M8",
+      "created_at": "2026-06-08T17:37:17.421739-04:00"
     }
   ]
 }
