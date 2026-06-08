@@ -25,6 +25,8 @@ import { buildMapMesh } from '../render/mapMesh';
 import { MapRenderer } from '../render/renderer';
 import { EntityRenderer } from '../render/entityRender';
 import { InputController } from '../input/input';
+import { Hud, type HudState } from '../ui/hud';
+import { START_HEALTH } from '../ui/helpers';
 import { Game } from './game';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 
@@ -196,6 +198,16 @@ async function main(): Promise<void> {
   const entityRenderer = new EntityRenderer();
   renderer.world.addChild(entityRenderer.container);
 
+  // --- HUD --------------------------------------------------------------
+  // The HUD lives on the app stage (screen-fixed), NOT renderer.world, so it
+  // does not pan/zoom with the camera.
+  const hud = new Hud();
+  const stage = renderer.app?.stage;
+  if (stage !== undefined) {
+    stage.addChild(hud);
+    hud.resize(renderer.app?.canvas.width ?? 0, renderer.app?.canvas.height ?? 0);
+  }
+
   // --- Input -----------------------------------------------------------
   const canvas = renderer.app?.canvas;
   if (canvas === undefined) {
@@ -270,6 +282,20 @@ async function main(): Promise<void> {
 
     // 5. Camera follows the player.
     centerCameraOnPlayer();
+
+    // 6. HUD reflects the local player's live state (screen-fixed).
+    const hudState: HudState = {
+      health: player.health,
+      maxHealth: START_HEALTH,
+      jet: player.jetsCountReal,
+      maxJet: 100,
+      ammo: 0,
+      weaponName: '',
+      scores: { alpha: 0, bravo: 0, playerKills: 0, leading: false, gap: 0 },
+      killFeed: [],
+      fps: dt > 0 ? 1 / dt : 0,
+    };
+    hud.update(hudState);
 
     if (app !== undefined) {
       requestAnimationFrame(frame);
