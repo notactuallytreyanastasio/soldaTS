@@ -1,17 +1,31 @@
-// Browser entry point: mount the pixi app, load a real .PMS map (falling back
-// to a synthetic one when no asset is available), render it, and wire
-// drag-to-pan / wheel-zoom.
+// Browser entry point for the playable single-player client.
+//
+// Builds the map renderer + a Game (the sim world + local player), loads a real
+// .PMS map (synthetic fallback), then runs an animation-frame loop:
+//
+//   each frame:
+//     1. read keyboard/mouse → sim Control
+//     2. set player sprite.control
+//     3. game.tick(dt)              — runs the fixed-60Hz sim as needed
+//     4. entityRenderer.render()    — draw entities interpolated by framePercent
+//     5. camera follows the player
+//
+// PORT: ClientGame.pas main loop (input → UpdateFrame → render). The map mesh
+// render + the camera (MapRenderer) are reused from the Track-C glue.
 //
 // Real maps: drop Soldat .PMS files into packages/client/public/maps/ — the dev
 // server serves them at /maps/<name>.pms. Choose one with the ?map= query param
 // (e.g. ?map=ctf_Ash → /maps/ctf_Ash.pms). These files are NOT committed; supply
-// your own per the asset-licensing decision (see public/maps/README.md).
-// When the fetch fails (offline / no asset present) we fall back to the
-// hand-built synthetic scene below so dev still works.
+// your own per the asset-licensing decision (see public/maps/README.md). When
+// the fetch fails (offline / no asset present) we fall back to the hand-built
+// synthetic scene below so dev still works.
 
 import { PolyType, type MapPolygon, type MapVertex, type PmsMap } from '@soldat/assets';
 import { buildMapMesh } from '../render/mapMesh';
 import { MapRenderer } from '../render/renderer';
+import { EntityRenderer } from '../render/entityRender';
+import { InputController } from '../input/input';
+import { Game } from './game';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 
 // ---------------------------------------------------------------------------
@@ -115,6 +129,23 @@ function buildSyntheticMap(): PmsMap {
 }
 
 // ---------------------------------------------------------------------------
+// Spawn selection
+// ---------------------------------------------------------------------------
+
+/**
+ * Pick a spawn position from the map: first active spawnpoint if present,
+ * otherwise a point above the synthetic ground so the player falls onto it.
+ */
+function pickSpawn(map: PmsMap): { x: number; y: number } {
+  const sp = map.spawnpoints.find((s) => s.active) ?? map.spawnpoints[0];
+  if (sp !== undefined) {
+    return { x: sp.x, y: sp.y };
+  }
+  // Synthetic-map fallback: a bit above the ground quad at y≈240.
+  return { x: 0, y: 0 };
+}
+
+// ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
 
@@ -145,55 +176,106 @@ async function main(): Promise<void> {
     map = buildSyntheticMap();
   }
   // ----------------------------------------------------------------------
+
+  // Draw the static map geometry.
   const mesh = buildMapMesh(map);
   renderer.setMap(mesh);
 
-  // Centre the camera on the canvas.
-  const app = renderer.app;
-  if (app !== undefined) {
-    renderer.panBy(app.renderer.width / 2, app.renderer.height / 2);
-  }
+  // --- Game: sim world + local player ----------------------------------
+  // Spawn the player at the map's first spawnpoint. A fixed seed keeps the run
+  // deterministic across reloads (handy while developing).
+  const spawn = pickSpawn(map);
+  const game = new Game({ seed: 1, spawn });
+  // Attach the sim collision map so the player collides with the floor instead
+  // of free-falling. buildPolyMap consumes the structural subset of PmsMap.
+  game.loadMap(map);
 
-  // --- Input: drag-to-pan -----------------------------------------------
+  // --- Entity renderer: lives inside the camera/world container --------
+  // Adding to renderer.world means entity graphics share the map's pan/zoom
+  // transform, so world coordinates line up with the map mesh.
+  const entityRenderer = new EntityRenderer();
+  renderer.world.addChild(entityRenderer.container);
+
+  // --- Input -----------------------------------------------------------
   const canvas = renderer.app?.canvas;
-  if (canvas !== undefined) {
-    let dragging = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    canvas.addEventListener('pointerdown', (e: PointerEvent) => {
-      dragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
-      canvas.setPointerCapture(e.pointerId);
-    });
-    canvas.addEventListener('pointermove', (e: PointerEvent) => {
-      if (!dragging) return;
-      renderer.panBy(e.clientX - lastX, e.clientY - lastY);
-      lastX = e.clientX;
-      lastY = e.clientY;
-    });
-    const endDrag = (e: PointerEvent): void => {
-      dragging = false;
-      if (canvas.hasPointerCapture(e.pointerId)) {
-        canvas.releasePointerCapture(e.pointerId);
-      }
-    };
-    canvas.addEventListener('pointerup', endDrag);
-    canvas.addEventListener('pointercancel', endDrag);
-
-    // --- Input: wheel-zoom centred on the cursor ------------------------
-    canvas.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const rect = canvas.getBoundingClientRect();
-        const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-        renderer.zoomAt(factor, e.clientX - rect.left, e.clientY - rect.top);
-      },
-      { passive: false },
-    );
+  if (canvas === undefined) {
+    throw new Error('renderer canvas missing after init()');
   }
+  const input = new InputController(canvas);
+
+  const player = game.world.sprites[game.playerIndex];
+  if (player === undefined) {
+    throw new Error('player sprite missing');
+  }
+
+  // --- Camera follow ----------------------------------------------------
+  // Centre the world container on the player every frame. With the world
+  // container transform = camera, the screen position of a world point (wx, wy)
+  // is (wx*zoom + cam.x, wy*zoom + cam.y); to centre the player we solve for
+  // cam.x/cam.y given the canvas centre.
+  function centerCameraOnPlayer(): void {
+    const app = renderer.app;
+    if (app === undefined) return;
+    const parts = game.world.spriteParts;
+    if (parts === null) return;
+    const px = parts.posX[game.playerIndex] ?? 0;
+    const py = parts.posY[game.playerIndex] ?? 0;
+    const zoom = renderer.camera.zoom;
+    renderer.camera.x = app.renderer.width / 2 - px * zoom;
+    renderer.camera.y = app.renderer.height / 2 - py * zoom;
+    // applyCamera is private; panBy(0,0) flushes the camera onto the container.
+    renderer.panBy(0, 0);
+  }
+  centerCameraOnPlayer();
+
+  // --- Wheel-zoom centred on the cursor (kept from the map viewer) ------
+  canvas.addEventListener(
+    'wheel',
+    (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      renderer.zoomAt(factor, e.clientX - rect.left, e.clientY - rect.top);
+    },
+    { passive: false },
+  );
+
+  // --- Main loop --------------------------------------------------------
+  // Drive the sim + render off the display refresh. dt is real seconds; the
+  // Game's accumulator turns it into fixed 60 Hz sim ticks (decoupled render).
+  let last = performance.now();
+  const frame = (now: number): void => {
+    const dt = (now - last) / 1000;
+    last = now;
+
+    // 1. Read input. Mouse aim is relative to the player's SCREEN position, so
+    //    compute where the player currently draws on the canvas.
+    const app = renderer.app;
+    const zoom = renderer.camera.zoom;
+    const parts = game.world.spriteParts;
+    const px = parts !== null ? (parts.posX[game.playerIndex] ?? 0) : 0;
+    const py = parts !== null ? (parts.posY[game.playerIndex] ?? 0) : 0;
+    const playerScreenX = px * zoom + renderer.camera.x;
+    const playerScreenY = py * zoom + renderer.camera.y;
+    const control = input.readControl(playerScreenX, playerScreenY);
+
+    // 2. Apply control to the player sprite (the sim reads it during stepWorld).
+    player.control = control;
+
+    // 3. Advance the simulation by real elapsed time (fixed-step internally).
+    game.tick(dt);
+
+    // 4. Render entities, interpolated between ticks by the leftover fraction.
+    entityRenderer.render(game.world, game.framePercent);
+
+    // 5. Camera follows the player.
+    centerCameraOnPlayer();
+
+    if (app !== undefined) {
+      requestAnimationFrame(frame);
+    }
+  };
+  requestAnimationFrame(frame);
 }
 
 void main();
