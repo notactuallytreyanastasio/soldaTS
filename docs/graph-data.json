@@ -549,6 +549,50 @@
       "created_at": "2026-06-08T16:17:45.961872-04:00",
       "updated_at": "2026-06-08T16:17:45.961872-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":82}"
+    },
+    {
+      "id": 51,
+      "change_id": "ad64d8fa-5813-440b-9b46-3da9540ab20c",
+      "node_type": "observation",
+      "title": "[review] M0 marked done but no TS CI gate exists (updates #46)",
+      "description": "Delta review #2. CI status of finding 46 is NOT resolved. .github/workflows/soldat.yml is the ORIGINAL OpenSoldat FreePascal pipeline (cmake/make on Linux/Win/macOS); it runs no pnpm/tsc/vitest job for soldat-ts. PROCESS.md marks M0 done on the basis of '104 tests pass locally' + 'tsc --build clean', but M0's stated acceptance is 'CI passes'. Gap: nothing in CI gates the TS port, and STRICT_F32=1 vitest is never run on a runner. Recommend a small soldat-ts job (pnpm i, tsc --build, vitest run, STRICT_F32=1 vitest run) before treating M0 as truly closed.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:23:02.106795-04:00",
+      "updated_at": "2026-06-08T16:23:02.106795-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":88,\"files\":[\".github/workflows/soldat.yml\",\"PROCESS.md\"]}"
+    },
+    {
+      "id": 52,
+      "change_id": "d90a76ca-0381-41da-a31e-381193026e28",
+      "node_type": "observation",
+      "title": "[review] Opportunity: legacy CI already provisions fpc — run the deferred Pascal golden trace in CI",
+      "description": "Delta review #2, constructive. Node 50 deferred the Pascal-side golden-master TRACE CAPTURE because no fpc is available locally. But soldat.yml installs fpc on the ubuntu and macos runners already. The instrument-serverloop.patch + trace-format.md are written and ready. So the fidelity cross-check that finding 45 flagged could be AUTOMATED in CI: apply the patch, build instrumented soldat, capture a fixed-seed bot trace, run it as a golden fixture against @soldat/sim under STRICT_F32. That converts M2's 'fpc trace cross-check pending' from a manual someday-task into a CI gate, and is the cleanest way to actually retire finding 45.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:23:02.250801-04:00",
+      "updated_at": "2026-06-08T16:23:02.250801-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":82}"
+    },
+    {
+      "id": 53,
+      "change_id": "f73ca265-9352-4c4d-9db6-2aca173589a4",
+      "node_type": "outcome",
+      "title": "M3 progress: PolyMap collision + real .PMS in client",
+      "description": "PolyMap sector collision system ported (PointInPoly, sector grid, ClosestPerpendicular, collideCircle, POLY_TYPE_* helpers) + buildPolyMap from .PMS. Faithful collision-resolution primitive resolveParticleMapCollision (Sprites.pas:2718-2751: perp pushout clamped to |v|, bouncy reflect) integrated into sprite movement via collideSpriteAgainstMap. Client now loads real .PMS with synthetic fallback. 115 tests green f64+STRICT_F32. Commits 34f74bd, d562684.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:28:17.725080-04:00",
+      "updated_at": "2026-06-08T16:28:17.725080-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":82,\"files\":[\"soldat-ts/packages/sim/src/map/polymap.ts\",\"soldat-ts/packages/sim/src/entities/sprite.ts\"]}"
+    },
+    {
+      "id": 54,
+      "change_id": "52b8e292-04ac-486b-bb42-8b88fc06a39f",
+      "node_type": "observation",
+      "title": "M3 remaining: multi-point foot collision + Area gating",
+      "description": "collideSpriteAgainstMap currently queries the COM particle as a stand-in. Faithful Soldat CheckMapCollision tests multiple skeleton FOOT points and applies Area/animation gating (Sprites.pas:2731-2772) to decide whether to resolve and to snap-to-rest (Pos:=OldPos; Forces.Y-=GRAV). Porting the multi-point loop + animation/LegsAnimation state is the next M3 step before standing/walking on real geometry feels correct. Also still pending: jump/jetpack impulses and the golden-master fpc cross-check.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:28:18.008326-04:00",
+      "updated_at": "2026-06-08T16:28:18.008326-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
     }
   ],
   "edges": [
@@ -1398,6 +1442,50 @@
       "weight": 1.0,
       "rationale": "M2 cross-check pending fpc",
       "created_at": "2026-06-08T16:17:46.254177-04:00"
+    },
+    {
+      "id": 78,
+      "from_node_id": 31,
+      "to_node_id": 51,
+      "from_change_id": "cb719334-6a60-4a3f-b1e0-f70ad865d690",
+      "to_change_id": "ad64d8fa-5813-440b-9b46-3da9540ab20c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #2: M0 CI gate still missing",
+      "created_at": "2026-06-08T16:23:02.389037-04:00"
+    },
+    {
+      "id": 79,
+      "from_node_id": 33,
+      "to_node_id": 52,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "d90a76ca-0381-41da-a31e-381193026e28",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #2: automate M2 Pascal fidelity gate via existing fpc CI",
+      "created_at": "2026-06-08T16:23:02.529381-04:00"
+    },
+    {
+      "id": 80,
+      "from_node_id": 34,
+      "to_node_id": 53,
+      "from_change_id": "e6adec1b-e11f-4f62-988f-844b577f7ac8",
+      "to_change_id": "f73ca265-9352-4c4d-9db6-2aca173589a4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M3 collision system + client map loading delivered",
+      "created_at": "2026-06-08T16:28:17.865289-04:00"
+    },
+    {
+      "id": 81,
+      "from_node_id": 53,
+      "to_node_id": 54,
+      "from_change_id": "f73ca265-9352-4c4d-9db6-2aca173589a4",
+      "to_change_id": "52b8e292-04ac-486b-bb42-8b88fc06a39f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Known fidelity gap to close in M3 cont.",
+      "created_at": "2026-06-08T16:28:18.150524-04:00"
     }
   ]
 }

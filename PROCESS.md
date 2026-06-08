@@ -14,15 +14,15 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **104 Vitest tests pass in both f64 and STRICT_F32**.
+**Verification:** `tsc --build` clean; **115 Vitest tests pass in both f64 and STRICT_F32**.
 
 ### Milestone board
 | # | Milestone | Status |
 |---|-----------|--------|
 | M0 | Bootstrap (monorepo, tooling, shared foundations) | ✅ done |
-| M1 | Map loads & renders (.PMS loader + PixiJS) | 🟢 mesh+renderer+app done; live browser smoke-test + real .PMS load pending |
+| M1 | Map loads & renders (.PMS loader + PixiJS) | 🟢 mesh+renderer+app+real .PMS load done; live browser smoke-test pending |
 | M2 | Physics core + golden master ⭐ | 🟢 harness + movement done (vs closed-form); fpc trace cross-check pending |
-| M3 | Moves like Soldat (SP, no net) | 🟡 needs full PolyMap collision + jump/anim |
+| M3 | Moves like Soldat (SP, no net) | 🟡 PolyMap collision + resolution primitive done; multi-point foot collision + Area/anim + jump pending |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -51,6 +51,16 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 2)
+- **M3 collision landed** (2-track workflow + orchestrator integration). `@soldat/sim/map`:
+  full `PolyMap` (PointInPoly, sector grid, ClosestPerpendicular, collideCircle, POLY_TYPE_*)
+  + `buildPolyMap` from `.PMS`. `sprite.ts` gains the faithful pushout primitive
+  `resolveParticleMapCollision` (Sprites.pas:2718-2751) + `collideSpriteAgainstMap`. Client now
+  loads real `.PMS` with synthetic fallback. **115 tests green (f64 + STRICT_F32).** Commits
+  34f74bd, d562684. Graph: outcome 53, remaining-work 54.
+- **M3 remaining (graph 54):** multi-point foot collision + Area/animation gating (COM is a
+  stand-in), jump/jetpack impulses, then the fpc golden-master cross-check.
 
 ### 2026-06-08 (cont.)
 - **M1 + M2 landed in parallel** (5-track workflow). Forked to `notactuallytreyanastasio/soldat`,
