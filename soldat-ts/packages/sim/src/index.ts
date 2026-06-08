@@ -8,6 +8,7 @@ export * from './math/vec2';
 export * from './math/calc';
 export * from './entities/types';
 export * from './entities/sprite';
+export * from './entities/thing';
 export * from './map/collision';
 export * from './map/polymap';
 export * from './map/buildPolyMap';
@@ -19,6 +20,8 @@ export * from './entities/spark';
 export * from './combat/damage';
 export * from './ai/waypoints';
 export * from './ai/bot';
+export * from './setup';
+export * from './step';
 // Golden-master harness (determinism validation; see tools/golden-master/).
 export * from './golden/trace';
 export * from './golden/runner';
