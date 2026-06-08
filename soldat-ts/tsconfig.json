@@ -5,6 +5,7 @@
     { "path": "./packages/protocol" },
     { "path": "./packages/assets" },
     { "path": "./packages/client" },
-    { "path": "./packages/netcode" }
+    { "path": "./packages/netcode" },
+    { "path": "./packages/modding" }
   ]
 }
