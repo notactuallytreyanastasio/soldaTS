@@ -593,6 +593,50 @@
       "created_at": "2026-06-08T16:28:18.008326-04:00",
       "updated_at": "2026-06-08T16:28:18.008326-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
+    },
+    {
+      "id": 55,
+      "change_id": "0db77b44-e33a-428c-bae1-1c429e7d32cd",
+      "node_type": "observation",
+      "title": "[review] RNG is not Pascal-bit-compatible — caps golden-master scope for combat/bots",
+      "description": "Delta review #3. New file rng.ts is mulberry32 and (per its own docstring) NOT bit-compatible with FreePascal Random. Two layers of divergence from Pascal: (1) the underlying stream differs (FPC 3.x Random is a Mersenne Twister MT19937), and (2) nextInt uses floor(next()*n) whereas FPC Random(L) uses a multiply-shift: longint((qword(genrand)*qword(L)) shr 32). Consequence: any golden-master scenario touching bullet spread, spark jitter, bot decisions, or the wire bullet seed CANNOT reproduce a Pascal trace until both the MT19937 stream and the Random(n) mapping are ported exactly. Mitigation today is correct (golden scenarios are RNG-free free-fall), but M4 combat fidelity is ungateable until this lands. Recommend porting FPC MT19937 + multiply-shift mapping before/with the first RNG-dependent golden scenario.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:42:25.193832-04:00",
+      "updated_at": "2026-06-08T16:42:25.193832-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":85,\"files\":[\"soldat-ts/packages/sim/src/rng.ts\"]}"
+    },
+    {
+      "id": 56,
+      "change_id": "8aa9d10f-9272-4000-a7ee-14b21eb90787",
+      "node_type": "observation",
+      "title": "[review] M3/M4 are accumulating on an unproven M2 fpc-fidelity gate (blast-radius risk)",
+      "description": "Delta review #3. M3 (PolyMap collision) landed and M4 (bullets/weapons/sparks/damage) has begun, yet the M2 golden-master Pascal cross-check is still pending (no fpc trace captured; current validation is closed-form free-fall only — finding 45). Building combat on top of an integrator whose Soldat-fidelity is unverified means a later fpc-trace divergence would have an M2+M3+M4 blast radius rather than M2. Mitigant: ports carry verbatim PORT: file:line comments so re-validation is mechanical, and combat is largely additive. Recommendation: prioritize wiring the already-written instrument-serverloop.patch through the fpc-provisioned CI (finding 52) NOW, before M4 grows further, so the feel core is locked before more code depends on it.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:42:25.511474-04:00",
+      "updated_at": "2026-06-08T16:42:25.511474-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":78}"
+    },
+    {
+      "id": 57,
+      "change_id": "0b95e351-9369-4efb-a0d7-eab91d91c554",
+      "node_type": "outcome",
+      "title": "M4 done: weapons + bullets + damage + sparks + deterministic RNG",
+      "description": "Ported Weapons.pas stat tables (normal+realistic, 23 weapons, COLT idx/num quirk, bonus inheritance), Bullets.pas ballistics+map/sprite collision+timeout, combat damage (head/chest/legs modifiers, vest, berserker), Sparks.pas. Added seeded World.rng (mulberry32) replacing a Math.random determinism break in sparks. 150 tests green f64+STRICT_F32. Commits 5ef6656, d4b3202, dd932d8.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:42:54.359461-04:00",
+      "updated_at": "2026-06-08T16:42:54.359461-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":85,\"files\":[\"soldat-ts/packages/sim/src/weapons/guns.ts\",\"soldat-ts/packages/sim/src/entities/bullet.ts\"]}"
+    },
+    {
+      "id": 58,
+      "change_id": "d3c5589a-10c1-489b-811e-24fc548ad04e",
+      "node_type": "observation",
+      "title": "M4 deferred: hitboxes, ricochet/explosion AoE, Pascal RNG sequence",
+      "description": "Bullet sprite collision uses a single COM circle (per-body-part hitboxes need the per-sprite Skeleton ParticleSystem, omitted from entities/types). Ricochet impulse, collider/thing collision, cluster spawning, and explosion AoE are stubbed (hitscan deactivates on hit, explosives defer detonation). DetAcc velocity sub-stepping approximated by a single leading-point query (refine for fast bullets). World.rng is deterministic but NOT yet bit-compatible with FreePascal Random — matching the Pascal sequence matters for golden-master fidelity of spread/sparks and the wire bullet seed.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:42:54.646989-04:00",
+      "updated_at": "2026-06-08T16:42:54.646989-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
     }
   ],
   "edges": [
@@ -1486,6 +1530,50 @@
       "weight": 1.0,
       "rationale": "Known fidelity gap to close in M3 cont.",
       "created_at": "2026-06-08T16:28:18.150524-04:00"
+    },
+    {
+      "id": 82,
+      "from_node_id": 35,
+      "to_node_id": 55,
+      "from_change_id": "333ff983-75d0-47a5-bd39-bde9c9e82b39",
+      "to_change_id": "0db77b44-e33a-428c-bae1-1c429e7d32cd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #3: RNG fidelity gates M4 combat golden scenarios",
+      "created_at": "2026-06-08T16:42:25.671603-04:00"
+    },
+    {
+      "id": 83,
+      "from_node_id": 33,
+      "to_node_id": 56,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "8aa9d10f-9272-4000-a7ee-14b21eb90787",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #3: combat accumulating ahead of unproven M2 gate",
+      "created_at": "2026-06-08T16:42:25.809699-04:00"
+    },
+    {
+      "id": 84,
+      "from_node_id": 35,
+      "to_node_id": 57,
+      "from_change_id": "333ff983-75d0-47a5-bd39-bde9c9e82b39",
+      "to_change_id": "0b95e351-9369-4efb-a0d7-eab91d91c554",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M4 combat delivered",
+      "created_at": "2026-06-08T16:42:54.501453-04:00"
+    },
+    {
+      "id": 85,
+      "from_node_id": 57,
+      "to_node_id": 58,
+      "from_change_id": "0b95e351-9369-4efb-a0d7-eab91d91c554",
+      "to_change_id": "d3c5589a-10c1-489b-811e-24fc548ad04e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Known M4 fidelity gaps",
+      "created_at": "2026-06-08T16:42:54.789160-04:00"
     }
   ]
 }

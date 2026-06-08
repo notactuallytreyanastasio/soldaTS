@@ -14,7 +14,7 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **115 Vitest tests pass in both f64 and STRICT_F32**.
+**Verification:** `tsc --build` clean; **150 Vitest tests pass in both f64 and STRICT_F32**.
 
 ### Milestone board
 | # | Milestone | Status |
@@ -23,6 +23,8 @@
 | M1 | Map loads & renders (.PMS loader + PixiJS) | 🟢 mesh+renderer+app+real .PMS load done; live browser smoke-test pending |
 | M2 | Physics core + golden master ⭐ | 🟢 harness + movement done (vs closed-form); fpc trace cross-check pending |
 | M3 | Moves like Soldat (SP, no net) | 🟡 PolyMap collision + resolution primitive done; multi-point foot collision + Area/anim + jump pending |
+| M4 | Combat (weapons/bullets/things) | 🟢 weapons tables + bullets/damage + sparks + deterministic RNG; hitboxes/ricochet/explosion-AoE pending |
+| M5 | Bots | 🔵 launching |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -51,6 +53,16 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 3, autonomous loop)
+- **M4 combat landed** (3-track workflow). Weapons stat tables (normal+realistic),
+  bullet ballistics/map+sprite collision/damage, sparks. Caught + fixed a determinism
+  break (Math.random in sparks) by adding a seeded `World.rng` (mulberry32). Fixed
+  barrel collisions (BulletStyle/timeouts → single source in weapons/guns).
+  **150 tests green (f64 + STRICT_F32).** Commits 5ef6656, d4b3202, dd932d8. Graph 57/58.
+- **M4 deferred (graph 58):** per-body-part hitboxes (need per-sprite Skeleton),
+  ricochet/explosion AoE/cluster spawning, Pascal-RNG-sequence fidelity.
+- → launching **M5 bots**.
 
 ### 2026-06-08 (cont. 2)
 - **M3 collision landed** (2-track workflow + orchestrator integration). `@soldat/sim/map`:
