@@ -637,6 +637,28 @@
       "created_at": "2026-06-08T16:42:54.646989-04:00",
       "updated_at": "2026-06-08T16:42:54.646989-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
+    },
+    {
+      "id": 59,
+      "change_id": "d564bb40-1a6a-46ca-be14-b4357405e4ae",
+      "node_type": "outcome",
+      "title": "M5 done: bot AI + waypoint navigation",
+      "description": "Waypoints.pas graph (nearestTo + BFS stepToward over .PMS connection ids) + AI.pas ControlBot brain (BotState, findTarget/coarse-LOS, distance-band combat with lead/drop aim, waypoint nav) emitting human-style Control so sprite.ts drives bots unchanged. 171 tests green f64+STRICT_F32. Commit pending push.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:50:00.891684-04:00",
+      "updated_at": "2026-06-08T16:50:00.891684-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":84,\"files\":[\"soldat-ts/packages/sim/src/ai/bot.ts\",\"soldat-ts/packages/sim/src/ai/waypoints.ts\"]}"
+    },
+    {
+      "id": 60,
+      "change_id": "b5774521-5067-492b-8d20-c5536b603ff6",
+      "node_type": "observation",
+      "title": "M5 deferred: RayCast LOS, weapon model, grenade/flag AI",
+      "description": "Bot uses coarse 16-sample segment LOS (PolyMap has no RayCast yet) and COM instead of the 12-pt skeleton eye/muzzle. Deferred: weapon model (per-gun speed/ammo/special cases), grenade/knife throwing, weapon switch/reload, flag/thing seeking (GoToThing), grenade dodge, camper/team logic, bot chat, per-gamemode PathNum + per-waypoint action bytes. bots_difficulty folded into BotState.accuracy.",
+      "status": "pending",
+      "created_at": "2026-06-08T16:50:01.174205-04:00",
+      "updated_at": "2026-06-08T16:50:01.174205-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":79}"
     }
   ],
   "edges": [
@@ -1574,6 +1596,28 @@
       "weight": 1.0,
       "rationale": "Known M4 fidelity gaps",
       "created_at": "2026-06-08T16:42:54.789160-04:00"
+    },
+    {
+      "id": 86,
+      "from_node_id": 36,
+      "to_node_id": 59,
+      "from_change_id": "b8c318c1-df65-4ef3-a65f-d12393a8f6bb",
+      "to_change_id": "d564bb40-1a6a-46ca-be14-b4357405e4ae",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M5 bots delivered",
+      "created_at": "2026-06-08T16:50:01.032935-04:00"
+    },
+    {
+      "id": 87,
+      "from_node_id": 59,
+      "to_node_id": 60,
+      "from_change_id": "d564bb40-1a6a-46ca-be14-b4357405e4ae",
+      "to_change_id": "b5774521-5067-492b-8d20-c5536b603ff6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Known M5 AI gaps",
+      "created_at": "2026-06-08T16:50:01.315193-04:00"
     }
   ]
 }

@@ -14,7 +14,7 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **150 Vitest tests pass in both f64 and STRICT_F32**.
+**Verification:** `tsc --build` clean; **171 Vitest tests pass in both f64 and STRICT_F32**.
 
 ### Milestone board
 | # | Milestone | Status |
@@ -23,8 +23,10 @@
 | M1 | Map loads & renders (.PMS loader + PixiJS) | 🟢 mesh+renderer+app+real .PMS load done; live browser smoke-test pending |
 | M2 | Physics core + golden master ⭐ | 🟢 harness + movement done (vs closed-form); fpc trace cross-check pending |
 | M3 | Moves like Soldat (SP, no net) | 🟡 PolyMap collision + resolution primitive done; multi-point foot collision + Area/anim + jump pending |
-| M4 | Combat (weapons/bullets/things) | 🟢 weapons tables + bullets/damage + sparks + deterministic RNG; hitboxes/ricochet/explosion-AoE pending |
-| M5 | Bots | 🔵 launching |
+| M4 | Combat (weapons/bullets/things) | 🟢 weapons+bullets/damage+sparks+RNG; Things.pas + hitboxes/ricochet/explosion-AoE pending |
+| M5 | Bots | 🟢 waypoints + AI brain done; RayCast LOS / weapon model / grenade+flag AI pending |
+| — | Integration: Things + stepWorld tick spine | 🔵 launching |
+| M6 | Netcode ⭐ | ⬜ |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -53,6 +55,13 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 4, autonomous loop)
+- **M5 bots landed** (2-track workflow). `@soldat/sim/ai`: waypoint graph + AI.pas
+  ControlBot brain, emitting human-style Control. **171 tests green.** Graph 59/60.
+- → launching **integration batch**: Things.pas (flags/kits) + `stepWorld` unified
+  per-tick spine (orchestrates particles→sprites→bullets→sparks→things→bots in
+  tick-pipeline order) — the missing piece that makes a full SP tick run.
 
 ### 2026-06-08 (cont. 3, autonomous loop)
 - **M4 combat landed** (3-track workflow). Weapons stat tables (normal+realistic),
