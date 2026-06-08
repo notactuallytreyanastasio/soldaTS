@@ -4,6 +4,7 @@
     { "path": "./packages/sim" },
     { "path": "./packages/protocol" },
     { "path": "./packages/assets" },
-    { "path": "./packages/client" }
+    { "path": "./packages/client" },
+    { "path": "./packages/netcode" }
   ]
 }

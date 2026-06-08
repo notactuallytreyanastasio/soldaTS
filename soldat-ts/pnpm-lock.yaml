@@ -43,6 +43,15 @@ importers:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@22.19.20)
 
+  packages/netcode:
+    dependencies:
+      '@soldat/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@soldat/sim':
+        specifier: workspace:*
+        version: link:../sim
+
   packages/protocol: {}
 
   packages/sim: {}
