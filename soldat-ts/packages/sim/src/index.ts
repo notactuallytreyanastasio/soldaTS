@@ -6,5 +6,12 @@ export * from './constants';
 export * from './math/vec2';
 export * from './math/calc';
 export * from './entities/types';
+export * from './entities/sprite';
+export * from './map/collision';
 export * from './world';
 export * from './physics/particles';
+// Golden-master harness (determinism validation; see tools/golden-master/).
+export * from './golden/trace';
+export * from './golden/runner';
+export * from './golden/compare';
+export * from './golden/scenarios';

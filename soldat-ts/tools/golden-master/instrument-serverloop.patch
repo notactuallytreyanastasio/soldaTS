@@ -1,0 +1,213 @@
+From: Track E (golden-master instrumentation) <noreply@anthropic.com>
+Subject: [SKETCH] Golden-master particle trace dump under {$IFDEF GOLDENMASTER}
+
+DOCUMENTED SKETCH ONLY — not yet compiled (fpc absent in this environment).
+
+This unified-diff adds a per-tick particle dump to the dedicated server, gated entirely
+behind {$IFDEF GOLDENMASTER} so release builds are byte-identical to today.
+
+Targets (line numbers are against the current tree):
+  * server/ServerLoop.pas:17-21   — add GoldenMaster unit to `uses`
+  * server/ServerLoop.pas:271-275 — add loop var `gmI` to UpdateFrame
+  * server/ServerLoop.pas:295-297 — dump SpriteParts state right AFTER the
+                                    `DoEulerTimeStepFor(j)` loop, before Sprite.Update
+  * server/Server.pas:1010        — replace `Randomize;` with a fixed seed
+
+It also references a NEW unit `server/GoldenMaster.pas` (the JSON trace writer). That
+unit is sketched at the end of this file as a here-doc rather than as part of the diff,
+because it is brand new; create it verbatim when building against fpc.
+
+Cvars used by the dump (register under {$IFDEF GOLDENMASTER}, see TODO in README):
+  gm_scenario   (string)  scenario id -> GoldenTrace.scenario
+  gm_maxticks   (int)     stop + flush after this many ticks
+  gm_tracefile  (string)  output path
+
+=== diff against server/ServerLoop.pas ===
+--- a/server/ServerLoop.pas
++++ b/server/ServerLoop.pas
+@@ -14,11 +14,14 @@
+   {$IFDEF ENABLE_FAE}
+   NetworkServerFae,
+   {$ENDIF}
+   Server, Game, TraceLog, Constants, LogFile, BanSystem,
+   sysutils, Sprites, Net, Things, Vector, ServerHelper,
+   classes, Demo, Weapons, Cvar, LobbyClient,
+   NetworkServerGame, NetworkServerSprite, NetworkServerThing,
+-  NetworkServerConnection, NetworkServerHeartbeat;
++  NetworkServerConnection, NetworkServerHeartbeat
++  {$IFDEF GOLDENMASTER}
++  , GoldenMaster
++  {$ENDIF};
+
+ procedure AppOnIdle;
+ var
+@@ -268,11 +271,14 @@
+ end;
+
+ procedure UpdateFrame;
+ var
+   i, j: Integer;
+   M: TVector2;
+   _x: LongInt;
++  {$IFDEF GOLDENMASTER}
++  gmI: Integer;
++  {$ENDIF}
+ begin
+   Trace('UpdateFrame');
+
+   M := Default(TVector2);
+@@ -292,6 +298,22 @@
+     for j := 1 to MAX_SPRITES do
+       if Sprite[j].Active then
+         if Sprite[j].IsNotSpectator() then
+           SpriteParts.DoEulerTimeStepFor(j);  // integrate sprite particles
+
++    {$IFDEF GOLDENMASTER}
++    // GOLDEN MASTER: capture per-active-particle state immediately after the Euler
++    // integration loop and BEFORE Sprite[j].Update, so the trace isolates
++    // ParticleSystem.Euler (shared/Parts.pas:106-124). Only active particles are
++    // emitted; index is 1-based and equals the sprite index for sprites
++    // (SpriteParts.CreatePart(...,i) at shared/mechanics/Sprites.pas:323).
++    GoldenBeginFrame(MainTickCounter, GOALTICKS);
++    for gmI := 1 to NUM_PARTICLES do
++      if SpriteParts.Active[gmI] then
++        GoldenWriteParticle(gmI,
++          SpriteParts.Pos[gmI].X,      SpriteParts.Pos[gmI].Y,
++          SpriteParts.Velocity[gmI].X, SpriteParts.Velocity[gmI].Y);
++    GoldenEndFrame;
++    if MainTickCounter >= GoldenMaxTicks then
++      GoldenFlushAndExit;  // writes JSON to gm_tracefile, then ExitCode + Halt
++    {$ENDIF}
++
+     for j := 1 to MAX_SPRITES do
+       if Sprite[j].Active then
+         Sprite[j].Update;  // update sprite
+
+=== diff against server/Server.pas (fixed RNG seed) ===
+--- a/server/Server.pas
++++ b/server/Server.pas
+@@ -1007,7 +1007,12 @@
+   //if (k > (MAX_SPRITES - 1)) then
+   //  Exit;
+
+-  Randomize;
++  {$IFDEF GOLDENMASTER}
++  // GOLDEN MASTER: deterministic RNG so Random()-driven spawns/jitter repeat exactly.
++  RandSeed := GoldenMasterSeed;  // default 1337, overridable via gm_seed cvar
++  {$ELSE}
++  Randomize;
++  {$ENDIF}
+
+   for i := 1 to MAX_SPRITES do
+   begin
+
+
+=== NEW FILE: server/GoldenMaster.pas (create verbatim) ===
+Not expressible as a diff (new file). The dump procedures referenced above live here.
+NUM_PARTICLES is pulled in via the Parts unit; values printed with 17 significant digits
+and a '.' decimal separator so a Single round-trips exactly (see trace-format.md).
+
+------------------------------------------------------------------------------------------
+unit GoldenMaster;
+
+interface
+
+procedure GoldenBeginFrame(Tick, TickRate: Integer);
+procedure GoldenWriteParticle(I: Integer; X, Y, VX, VY: Single);
+procedure GoldenEndFrame;
+procedure GoldenFlushAndExit;
+
+var
+  GoldenMaxTicks: Integer = 240;
+  GoldenMasterSeed: LongInt = 1337;
+  GoldenScenario: string = 'unnamed';
+  GoldenTraceFile: string = 'golden_trace.json';
+
+implementation
+
+uses
+  SysUtils, Classes;
+
+var
+  Buf: TStringList;          // accumulates JSON lines for all frames
+  FrameStarted: Boolean = False;
+  ParticlesInFrame: Integer = 0;
+  HeaderWritten: Boolean = False;
+  Fmt: TFormatSettings;
+
+// 17 significant digits, '.' separator => exact Single round-trip. JSON has no NaN/Inf,
+// so emit them as quoted strings for the comparator to flag (see trace-format.md).
+function F(const V: Single): string;
+begin
+  if IsNan(V) then
+    Result := '"NaN"'
+  else if IsInfinite(V) then
+    if V > 0 then Result := '"Infinity"' else Result := '"-Infinity"'
+  else
+    Result := Format('%.17g', [V], Fmt);
+end;
+
+procedure EnsureHeader(TickRate: Integer);
+begin
+  if HeaderWritten then Exit;
+  Fmt := DefaultFormatSettings;
+  Fmt.DecimalSeparator := '.';
+  Fmt.ThousandSeparator := #0;
+  Buf := TStringList.Create;
+  Buf.Add('{');
+  Buf.Add('  "tickRate": ' + IntToStr(TickRate) + ',');
+  // GoldenScenario must be plain ASCII for the scenarios we ship; escape if that changes.
+  Buf.Add('  "scenario": "' + GoldenScenario + '",');
+  Buf.Add('  "frames": [');
+  HeaderWritten := True;
+end;
+
+procedure GoldenBeginFrame(Tick, TickRate: Integer);
+begin
+  EnsureHeader(TickRate);
+  // separate previous frame object with a comma
+  if FrameStarted then
+    Buf[Buf.Count - 1] := Buf[Buf.Count - 1] + ',';
+  Buf.Add('    { "tick": ' + IntToStr(Tick) + ', "particles": [');
+  FrameStarted := True;
+  ParticlesInFrame := 0;
+end;
+
+procedure GoldenWriteParticle(I: Integer; X, Y, VX, VY: Single);
+var
+  Line: string;
+begin
+  Line := '      { "i": ' + IntToStr(I) +
+          ', "x": ' + F(X) + ', "y": ' + F(Y) +
+          ', "vx": ' + F(VX) + ', "vy": ' + F(VY) + ' }';
+  if ParticlesInFrame > 0 then
+    Buf[Buf.Count - 1] := Buf[Buf.Count - 1] + ',';
+  Buf.Add(Line);
+  Inc(ParticlesInFrame);
+end;
+
+procedure GoldenEndFrame;
+begin
+  Buf.Add('    ] }');
+end;
+
+procedure GoldenFlushAndExit;
+begin
+  Buf.Add('  ]');
+  Buf.Add('}');
+  Buf.SaveToFile(GoldenTraceFile);
+  Buf.Free;
+  Halt(0);
+end;
+
+end.
+------------------------------------------------------------------------------------------
+
+=== Cvar wiring sketch (location TBD — likely shared/Cvar.pas RegisterCvars) ===
+Set the GoldenMaster.pas globals from cvars during init, e.g.:
+  GoldenScenario   := gm_scenario.Value;
+  GoldenMaxTicks   := gm_maxticks.Value;
+  GoldenTraceFile  := gm_tracefile.Value;
+  GoldenMasterSeed := gm_seed.Value;        // if a seed cvar is added
+These are read once before the AppOnIdle loop begins. All gm_* cvars should themselves be
+declared under {$IFDEF GOLDENMASTER} so they do not exist in release builds.
