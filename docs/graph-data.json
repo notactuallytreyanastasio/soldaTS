@@ -659,6 +659,28 @@
       "created_at": "2026-06-08T16:50:01.174205-04:00",
       "updated_at": "2026-06-08T16:50:01.174205-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":79}"
+    },
+    {
+      "id": 61,
+      "change_id": "eda67c37-16cf-4412-9f23-3af3d6fc76eb",
+      "node_type": "outcome",
+      "title": "Integration done: Things + stepWorld tick spine",
+      "description": "Things.pas ported (createThing/updateThing, per-style physics over shared world.thingParts, flag/kit pickup, touchdown, parachute, timeout). stepWorld(world) runs one full 60Hz tick in UpdateFrame order (counters -> sprites integrate+collide -> bullets -> bulletParts -> sparks -> things); initSimWorld wires the 4 ParticleSystems. Two identically-seeded worlds produce bit-identical trajectories. 182 tests green f64+STRICT_F32. The sim now has a deterministic heartbeat. Commits 4d2fbe1, 5c49ec2.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:02:13.883953-04:00",
+      "updated_at": "2026-06-08T17:02:13.883953-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":87,\"files\":[\"soldat-ts/packages/sim/src/step.ts\",\"soldat-ts/packages/sim/src/entities/thing.ts\"]}"
+    },
+    {
+      "id": 62,
+      "change_id": "dee42fd1-550a-4378-b4f3-136f61b15854",
+      "node_type": "observation",
+      "title": "Spine deferred: ServerLoop maintenance + thing .po skeletons",
+      "description": "stepWorld is the entity-physics core only. Deferred to game-mode/network layers: bonus spawns, flag cleanup, mode scoring, vote/map timers, network send scheduling (the MainTickCounter mod-N sends). Things use a placeholder 4-particle skeleton (real .po geometry assets absent). Bot update is available but not yet called from stepWorld (needs per-bot BotState storage).",
+      "status": "pending",
+      "created_at": "2026-06-08T17:02:14.317417-04:00",
+      "updated_at": "2026-06-08T17:02:14.317417-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
     }
   ],
   "edges": [
@@ -1618,6 +1640,39 @@
       "weight": 1.0,
       "rationale": "Known M5 AI gaps",
       "created_at": "2026-06-08T16:50:01.315193-04:00"
+    },
+    {
+      "id": 88,
+      "from_node_id": 33,
+      "to_node_id": 61,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "eda67c37-16cf-4412-9f23-3af3d6fc76eb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "stepWorld realizes the tick-pipeline contract (M2 spec)",
+      "created_at": "2026-06-08T17:02:14.029219-04:00"
+    },
+    {
+      "id": 89,
+      "from_node_id": 35,
+      "to_node_id": 61,
+      "from_change_id": "333ff983-75d0-47a5-bd39-bde9c9e82b39",
+      "to_change_id": "eda67c37-16cf-4412-9f23-3af3d6fc76eb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Things completes the M4 entity set",
+      "created_at": "2026-06-08T17:02:14.172006-04:00"
+    },
+    {
+      "id": 90,
+      "from_node_id": 61,
+      "to_node_id": 62,
+      "from_change_id": "eda67c37-16cf-4412-9f23-3af3d6fc76eb",
+      "to_change_id": "dee42fd1-550a-4378-b4f3-136f61b15854",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Known spine gaps for M6/M7",
+      "created_at": "2026-06-08T17:02:14.463177-04:00"
     }
   ]
 }

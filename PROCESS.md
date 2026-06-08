@@ -14,7 +14,7 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **171 Vitest tests pass in both f64 and STRICT_F32**.
+**Verification:** `tsc --build` clean; **182 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`).
 
 ### Milestone board
 | # | Milestone | Status |
@@ -25,8 +25,8 @@
 | M3 | Moves like Soldat (SP, no net) | 🟡 PolyMap collision + resolution primitive done; multi-point foot collision + Area/anim + jump pending |
 | M4 | Combat (weapons/bullets/things) | 🟢 weapons+bullets/damage+sparks+RNG; Things.pas + hitboxes/ricochet/explosion-AoE pending |
 | M5 | Bots | 🟢 waypoints + AI brain done; RayCast LOS / weapon model / grenade+flag AI pending |
-| — | Integration: Things + stepWorld tick spine | 🔵 launching |
-| M6 | Netcode ⭐ | ⬜ |
+| — | Integration: Things + stepWorld tick spine | 🟢 done — full deterministic tick runs |
+| M6 | Netcode ⭐ | 🔵 launching (codec + prediction; WebTransport wiring deferred) |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -55,6 +55,15 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 5, autonomous loop)
+- **Integration landed**: Things.pas (flags/kits over shared `world.thingParts`) +
+  **`stepWorld`** — one full 60Hz tick in `UpdateFrame` order. Two identically-seeded
+  worlds produce bit-identical trajectories. **182 tests green.** The sim now has a
+  deterministic heartbeat. Commits 4d2fbe1, 5c49ec2. Graph 61/62.
+- → launching **M6 netcode**: protocol codec (serialize/deserialize) + client
+  prediction/reconciliation over `stepWorld`. WebTransport transport wiring deferred
+  (needs a server runtime to smoke-test) — building the headless-testable core first.
 
 ### 2026-06-08 (cont. 4, autonomous loop)
 - **M5 bots landed** (2-track workflow). `@soldat/sim/ai`: waypoint graph + AI.pas
