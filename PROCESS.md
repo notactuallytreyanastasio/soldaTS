@@ -14,7 +14,7 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **182 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`).
+**Verification:** `tsc --build` clean; **210 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`); netcode prediction is proven bit-identical to the server tick-for-tick.
 
 ### Milestone board
 | # | Milestone | Status |
@@ -26,7 +26,9 @@
 | M4 | Combat (weapons/bullets/things) | 🟢 weapons+bullets/damage+sparks+RNG; Things.pas + hitboxes/ricochet/explosion-AoE pending |
 | M5 | Bots | 🟢 waypoints + AI brain done; RayCast LOS / weapon model / grenade+flag AI pending |
 | — | Integration: Things + stepWorld tick spine | 🟢 done — full deterministic tick runs |
-| M6 | Netcode ⭐ | 🔵 launching (codec + prediction; WebTransport wiring deferred) |
+| M6 | Netcode ⭐ | 🟢 codec + replication + prediction done; WebTransport transport wiring deferred (needs server runtime) |
+| — | Playable SP: client game loop + jump/foot collision | 🔵 launching |
+| M7 | Modes / HUD / audio | ⬜ |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -55,6 +57,17 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 6, autonomous loop)
+- **M6 netcode core landed** (3-track workflow). `@soldat/protocol` binary codec
+  (every message round-trips) + `@soldat/netcode` snapshot replication + `PredictionBuffer`.
+  Prediction proven bit-identical to server tick-for-tick + reconciles after divergence.
+  **210 tests green.** Commits 2da6819, a9b1176. Graph 64/65.
+- **M6 remaining (graph 65):** WebTransport transport wiring (needs server runtime);
+  reconcile snapshot apply to cover COM particle + onGround latches end-to-end.
+- → launching **Playable SP**: client game loop (stepWorld + entity render + input) +
+  M3 finish (jump/jetpack + multi-point foot collision) — a movable+jumping player on a
+  real map. Sim physics still pending the fpc golden-master cross-check for feel.
 
 ### 2026-06-08 (cont. 5, autonomous loop)
 - **Integration landed**: Things.pas (flags/kits over shared `world.thingParts`) +

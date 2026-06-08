@@ -681,6 +681,39 @@
       "created_at": "2026-06-08T17:02:14.317417-04:00",
       "updated_at": "2026-06-08T17:02:14.317417-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
+    },
+    {
+      "id": 63,
+      "change_id": "ba77223f-cc8b-4b11-8a25-2a819a8a8cb9",
+      "node_type": "observation",
+      "title": "[review] 6 milestones done, 0 fidelity gates fired — insert a reconciliation gate BEFORE M6 netcode",
+      "description": "Delta review #4. M4 (node 57) and M5 (node 59) now both 'done', making M0-M5 complete in one session. But a systemic deferral pattern spans every gameplay milestone: M3 foot collision (node 54), M4 bullet hitbox + ricochet/AoE + Pascal RNG (node 58), M5 bot LOS/weapon-model (node 60) all use COM-particle/single-circle/16-sample stand-ins, and the Pascal fidelity gate (fpc golden trace + MT19937 RNG sequence) remains deferred at every step. Net: six milestones marked done with ZERO golden-master fidelity gate having actually fired — 'done' currently means 'structurally complete with documented shortcuts', not 'faithful'. The shortcuts are individually reasonable and well-tracked (nodes 54/58/60), and step.ts faithfully ports the ServerLoop UpdateFrame tick order — so structure is sound. The risk is timing: M6 is netcode. Building the clean-break protocol, demo format, and client prediction against an unvalidated feel core risks baking divergence into the wire/demo contract, where it is far more expensive to unwind post-net. Recommendation: insert an explicit fidelity-reconciliation gate before M6 — capture one fpc golden trace via the already-written instrument-serverloop.patch through the fpc-provisioned CI (finding 52), port MT19937+multiply-shift RNG (finding 55), and require the golden master to actually pass once before netcode hardens the contract.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:02:31.253835-04:00",
+      "updated_at": "2026-06-08T17:02:31.253835-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":84}"
+    },
+    {
+      "id": 64,
+      "change_id": "a0913acc-e2aa-4c6c-b6c5-d846d8c2d68a",
+      "node_type": "outcome",
+      "title": "M6 progress: protocol codec + replication + client prediction",
+      "description": "Binary wire codec (versioned frame, varint/zigzag/f32/f64, every Message kind round-trips, typed DecodeError). New @soldat/netcode: captureSpriteSnapshot/applySpriteSnapshot + delta replication bridging World<->messages; PredictionBuffer (predict via stepWorld, reconcile by snapping to server state + re-applying unacked inputs). Prediction test proves lossless client prediction is bit-identical to server tick-for-tick and reconciles after forced divergence. 210 tests green f64+STRICT_F32. Commits 2da6819, a9b1176.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:08:18.428349-04:00",
+      "updated_at": "2026-06-08T17:08:18.428349-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":85,\"files\":[\"soldat-ts/packages/protocol/src/codec.ts\",\"soldat-ts/packages/netcode/src/prediction.ts\"]}"
+    },
+    {
+      "id": 65,
+      "change_id": "f743ec9f-48b5-4fc7-977a-e3cadee893eb",
+      "node_type": "observation",
+      "title": "M6 remaining: WebTransport transport + snapshot COM/onGround coverage",
+      "description": "Built headless: codec + replication + prediction. REMAINING for M6: the actual WebTransport client/server transport wiring (needs a server runtime to smoke-test, deferred). Also: prediction track flagged that snapshot apply must cover BOTH the Sprite record AND its COM particle (pos/vel/old/force) + onGround latches — Track B currently seeds the COM particle but the two tracks should be reconciled so reconcile() and applySpriteSnapshot agree on the full authoritative state. Snapshot weapon/cosmetic field mappings are best-effort until the Sprite record grows real TGun/secondary/grenade fields.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:08:18.711658-04:00",
+      "updated_at": "2026-06-08T17:08:18.711658-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":79}"
     }
   ],
   "edges": [
@@ -1673,6 +1706,39 @@
       "weight": 1.0,
       "rationale": "Known spine gaps for M6/M7",
       "created_at": "2026-06-08T17:02:14.463177-04:00"
+    },
+    {
+      "id": 92,
+      "from_node_id": 37,
+      "to_node_id": 63,
+      "from_change_id": "1a3006d8-8748-4eba-97a8-d7b2937dbb2d",
+      "to_change_id": "ba77223f-cc8b-4b11-8a25-2a819a8a8cb9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #4: gate sim fidelity before netcode hardens the wire/demo contract",
+      "created_at": "2026-06-08T17:02:38.887096-04:00"
+    },
+    {
+      "id": 93,
+      "from_node_id": 37,
+      "to_node_id": 64,
+      "from_change_id": "1a3006d8-8748-4eba-97a8-d7b2937dbb2d",
+      "to_change_id": "a0913acc-e2aa-4c6c-b6c5-d846d8c2d68a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M6 netcode core delivered",
+      "created_at": "2026-06-08T17:08:18.568818-04:00"
+    },
+    {
+      "id": 94,
+      "from_node_id": 64,
+      "to_node_id": 65,
+      "from_change_id": "a0913acc-e2aa-4c6c-b6c5-d846d8c2d68a",
+      "to_change_id": "f743ec9f-48b5-4fc7-977a-e3cadee893eb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M6 remaining work",
+      "created_at": "2026-06-08T17:08:18.855113-04:00"
     }
   ]
 }
