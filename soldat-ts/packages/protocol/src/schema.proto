@@ -1,0 +1,254 @@
+// OpenSoldat web rewrite — wire protocol, proto3.
+//
+// This is the EVENTUAL SOURCE OF TRUTH for the wire format. The hand-written
+// TS in ./messages.ts mirrors it 1:1 so the workspace can type-check before a
+// protobuf-es codegen toolchain is wired up. When codegen lands, generate from
+// THIS file and delete the hand-written shapes.
+//
+// Provenance: field semantics trace to docs/rewrite-reference/wire-protocol.md
+// (derived from shared/network/Net.pas). This is a CLEAN BREAK: a versioned
+// envelope, length-prefixed counts (proto `repeated`), explicit named fields —
+// none of the legacy `packed record` / MAX_* / Keys16 baggage.
+
+syntax = "proto3";
+
+package soldat.protocol.v1;
+
+// PROTOCOL_VERSION mirror (messages.ts PROTOCOL_VERSION = 1). Bump on any
+// breaking shape change; carried in Envelope so peers reject mismatches.
+
+// ---------------------------------------------------------------------------
+// Small value types
+// ---------------------------------------------------------------------------
+
+// PORT: TVector2 (two IEEE single floats). Modernized to double on the wire;
+// the sim re-applies f32 fidelity on consumption.
+message Vec2 {
+  double x = 1;
+  double y = 2;
+}
+
+// PORT: wire-protocol.md "Keys16 Bitmap Layout" B1..B11. Explicit booleans
+// instead of a packed Word so adding a button is non-breaking.
+message Buttons {
+  bool left = 1;          // Keys16 B1
+  bool right = 2;         // Keys16 B2
+  bool up = 3;            // Keys16 B3
+  bool down = 4;          // Keys16 B4
+  bool fire = 5;          // Keys16 B5
+  bool jetpack = 6;       // Keys16 B6
+  bool throw_nade = 7;    // Keys16 B7
+  bool change_weapon = 8; // Keys16 B8
+  bool throw_weapon = 9;  // Keys16 B9
+  bool reload = 10;       // Keys16 B10
+  bool flag_throw = 11;   // Keys16 B11
+}
+
+// PORT: MouseAimX/MouseAimY: SmallInt (pixel offsets from screen centre).
+message MouseAim {
+  sint32 x = 1;
+  sint32 y = 2;
+}
+
+// PORT: shared/network/Net.pas:170-173 MSGTYPE_*.
+enum ChatChannel {
+  CHAT_CHANNEL_COMMAND = 0; // MSGTYPE_CMD
+  CHAT_CHANNEL_PUBLIC = 1;  // MSGTYPE_PUB
+  CHAT_CHANNEL_TEAM = 2;    // MSGTYPE_TEAM
+  CHAT_CHANNEL_RADIO = 3;   // MSGTYPE_RADIO
+}
+
+// PORT: wire-protocol.md "Unaccepted Connection" State codes.
+// proto3 requires a zero value; UNSPECIFIED guards against accidental defaults
+// (legacy OK = 1, so the numeric values still line up for >= 1).
+enum HandshakeResult {
+  HANDSHAKE_RESULT_UNSPECIFIED = 0;
+  HANDSHAKE_RESULT_OK = 1;
+  HANDSHAKE_RESULT_WRONG_VERSION = 2;
+  HANDSHAKE_RESULT_WRONG_PASSWORD = 3;
+  HANDSHAKE_RESULT_BANNED_IP = 4;
+  HANDSHAKE_RESULT_SERVER_FULL = 5;
+  HANDSHAKE_RESULT_INVALID_HANDSHAKE = 8;
+  HANDSHAKE_RESULT_WRONG_CHECKSUM = 9;
+  HANDSHAKE_RESULT_ANTICHEAT_REQUIRED = 10;
+  HANDSHAKE_RESULT_ANTICHEAT_REJECTED = 11;
+  HANDSHAKE_RESULT_STEAM_ONLY = 12;
+}
+
+// PORT: legacy `Position: Byte`.
+enum Posture {
+  POSTURE_STANDING = 0;
+  POSTURE_PRONE = 1;
+  POSTURE_CROUCHING = 2;
+}
+
+// PORT: WeaponNum/SecondaryWeaponNum/AmmoCount/GrenadeCount.
+message WeaponState {
+  uint32 weapon_num = 1;
+  uint32 secondary_weapon_num = 2;
+  uint32 ammo_count = 3;
+  uint32 grenade_count = 4;
+}
+
+// PORT: subset of the legacy `Look: Byte` bitfield.
+message Cosmetics {
+  bool wear_helmet = 1; // Look B5 "Helm"
+  bool cigar = 2;
+}
+
+// ---------------------------------------------------------------------------
+// Payloads
+// ---------------------------------------------------------------------------
+
+// PORT: TMsg_ClientSpriteSnapshot_Mov (ID=42) + weapon/posture half of
+// ClientSpriteSnapshot (ID=4). client_tick drives lag comp
+// (PingTicksB = ServerTick - client_tick, clamp [0, MAX_OLDPOS=125]).
+message InputFrame {
+  int32 client_tick = 1;       // ClientTicks: LongInt
+  Buttons buttons = 2;         // Keys16: Word
+  MouseAim aim = 3;            // MouseAimX/Y: SmallInt
+  Posture posture = 4;         // Position: Byte
+  optional Vec2 predicted_pos = 5; // Pos: TVector2 (hint)
+  optional Vec2 predicted_vel = 6; // Velocity: TVector2 (hint)
+}
+
+// PORT: TMsg_ServerSpriteSnapshot (ID=3, "Full").
+message SpriteSnapshotFull {
+  uint32 num = 1;          // Num: Byte (1-indexed)
+  int32 server_tick = 2;   // ServerTicks: LongInt
+  Vec2 pos = 3;            // Pos: TVector2
+  Vec2 velocity = 4;       // Velocity: TVector2
+  MouseAim aim = 5;        // MouseAimX/Y
+  Posture posture = 6;     // Position: Byte
+  Buttons buttons = 7;     // Keys16: Word
+  Cosmetics cosmetics = 8; // Look: Byte
+  float health = 9;        // Health: Single
+  float vest = 10;         // Vest: Single
+  WeaponState weapon = 11;
+}
+
+// PORT: fusion of ID=41 "Major" + deltas ID=21/25/26/29. Optional = "changed".
+message SpriteSnapshotDelta {
+  uint32 num = 1;
+  int32 server_tick = 2;
+  optional Vec2 pos = 3;        // ID=21 / ID=41
+  optional Vec2 velocity = 4;   // ID=21 / ID=41
+  optional MouseAim aim = 5;    // ID=29 / ID=41
+  optional Posture posture = 6; // ID=41
+  optional Buttons buttons = 7; // ID=21 / ID=41
+  optional float health = 8;    // ID=41
+  optional uint32 weapon_num = 9;           // ID=25
+  optional uint32 secondary_weapon_num = 10; // ID=25
+  optional bool wear_helmet = 11;           // ID=26
+}
+
+message SpriteSnapshot {
+  oneof tier {
+    SpriteSnapshotFull full = 1;
+    SpriteSnapshotDelta delta = 2;
+  }
+}
+
+// PORT: TMsg_ServerSkeletonSnapshot (ID=7) + skeleton positions from
+// TMsg_SpriteDeath (ID=13). Wire indices 1..16; client derives 17..20.
+message SkeletonSnapshot {
+  uint32 num = 1;             // Num: Byte
+  sint32 respawn_counter = 2; // RespawnCounter: SmallInt
+  uint32 constraints = 3;     // Constraints: Byte
+  repeated Vec2 pos = 4;      // Pos: array[1..16] of TVector2
+  repeated Vec2 old_pos = 5;  // OldPos: array[1..16] of TVector2
+}
+
+// PORT: TMsg_ServerThingSnapshot (ID=9) + TMsg_ServerThingMustSnapshot (ID=33).
+message ThingSnapshot {
+  uint32 num = 1;
+  uint32 owner = 2;
+  uint32 style = 3;
+  uint32 holding_sprite = 4;
+  repeated Vec2 pos = 5;       // Pos: array[1..4] of TVector2
+  repeated Vec2 old_pos = 6;   // OldPos: array[1..4] of TVector2
+  optional int32 timeout = 7;  // Timeout: LongInt (reliable "must" variant)
+}
+
+// PORT: one transposed column-row from TMsg_HeartBeat (ID=2).
+message ScoreboardEntry {
+  uint32 num = 1;              // legacy array index (1-indexed)
+  bool active = 2;            // Active: Boolean
+  uint32 team = 3;            // Team: Byte
+  uint32 kills = 4;          // Kills: Word
+  uint32 deaths = 5;         // Deaths: Word
+  uint32 caps = 6;           // Caps: Byte
+  uint32 ping = 7;           // Ping: Byte
+  uint32 real_ping = 8;      // RealPing: Word
+  uint32 connection_quality = 9; // ConnectionQuality: Byte
+  uint32 flags = 10;         // Flags: Byte
+}
+
+// PORT: TMsg_HeartBeat (ID=2), transposed to length-prefixed rows.
+message Heartbeat {
+  uint32 map_id = 1;                  // MapID: LongWord
+  repeated uint32 team_score = 2;     // TeamScore: array[1..4] of Word
+  repeated ScoreboardEntry players = 3;
+}
+
+// PORT: TMsg_StringMessage (ID=6). WideChar text -> string. 100-char cap is a
+// codec concern, not a schema one.
+message Chat {
+  uint32 sender_num = 1; // Num: Byte (255 = system)
+  ChatChannel channel = 2;
+  string text = 3;
+}
+
+// PORT: TMsg_RequestGame (ID=58) + identity from TMsg_PlayerInfo (ID=15).
+message HandshakeHello {
+  uint32 protocol_version = 1; // explicit reject support
+  string game_version = 2;     // Version: array[0..3] of char
+  bool have_anti_cheat = 3;    // HaveAntiCheat: Byte
+  string hardware_id = 4;      // HardwareID: string[11]
+  string password = 5;         // Password: array[0..24] of char
+  string name = 6;             // Name: array[0..23] of char
+  uint32 team = 7;             // Team: Byte
+  uint32 look = 8;             // Look: Byte
+  string mod_checksum = 9;     // GameModChecksum: TSHA1Digest (hex)
+}
+
+// PORT: TMsg_UnAccepted (ID=44) for rejects; roster from PlayersList (ID=16) /
+// NewPlayer (ID=17) on accept.
+message HandshakeWelcome {
+  HandshakeResult result = 1; // State: Byte
+  uint32 protocol_version = 2;
+  optional uint32 your_num = 3;    // NewPlayer.Num (AdoptSpriteID=1)
+  optional string map_name = 4;    // MapName: array[0..63] of char
+  optional int32 server_tick = 5;  // ServerTicks: LongInt
+  optional string reason = 6;      // Text: array[0..0] of char
+}
+
+message Handshake {
+  oneof phase {
+    HandshakeHello hello = 1;
+    HandshakeWelcome welcome = 2;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Versioned envelope + top-level union
+// ---------------------------------------------------------------------------
+
+// PORT: modern replacement for the 8-bit TMsgHeader.ID switch.
+message Message {
+  oneof kind {
+    InputFrame input_frame = 1;
+    SpriteSnapshot sprite_snapshot = 2;
+    SkeletonSnapshot skeleton_snapshot = 3;
+    ThingSnapshot thing_snapshot = 4;
+    Heartbeat heartbeat = 5;
+    Chat chat = 6;
+    Handshake handshake = 7;
+  }
+}
+
+// The framed unit on the wire: version stamp + exactly one Message.
+message Envelope {
+  uint32 version = 1; // PROTOCOL_VERSION
+  Message message = 2;
+}

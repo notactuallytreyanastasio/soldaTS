@@ -37,4 +37,5 @@ export const normalize = (a: Vec2): Vec2 => {
   return len > 0 ? scale(a, f(1 / len)) : vec2();
 };
 
-export const distance = (a: Vec2, b: Vec2): number => length(sub(a, b));
+// Distance between two points lives in ./calc as `distanceV` (faithful port of
+// Calc.pas `Distance`); not duplicated here to keep one canonical API.

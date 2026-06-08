@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/sim" },
+    { "path": "./packages/protocol" },
+    { "path": "./packages/assets" }
+  ]
+}
