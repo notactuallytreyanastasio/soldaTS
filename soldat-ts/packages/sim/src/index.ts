@@ -17,6 +17,8 @@ export * from './weapons/guns';
 export * from './entities/bullet';
 export * from './entities/spark';
 export * from './combat/damage';
+export * from './ai/waypoints';
+export * from './ai/bot';
 // Golden-master harness (determinism validation; see tools/golden-master/).
 export * from './golden/trace';
 export * from './golden/runner';
