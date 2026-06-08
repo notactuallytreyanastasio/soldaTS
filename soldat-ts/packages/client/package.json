@@ -1,0 +1,13 @@
+{
+  "name": "@soldat/client",
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": { "dev": "vite", "build": "vite build" },
+  "dependencies": {
+    "@soldat/sim": "workspace:*",
+    "@soldat/assets": "workspace:*",
+    "@soldat/protocol": "workspace:*",
+    "pixi.js": "^8.5.0"
+  },
+  "devDependencies": { "vite": "^5.4.0" }
+}
