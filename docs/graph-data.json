@@ -736,6 +736,39 @@
       "created_at": "2026-06-08T17:19:41.324579-04:00",
       "updated_at": "2026-06-08T17:19:41.324579-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":78}"
+    },
+    {
+      "id": 68,
+      "change_id": "ba7edefb-bfc4-405e-944a-751a975d6ae3",
+      "node_type": "observation",
+      "title": "[review] Verification depth: 7 milestones green by typecheck+unit-test, zero ground-truth validation",
+      "description": "Delta review #5. M6 (codec/replication/prediction, node 64) and a 'playable SP' build (node 66) landed; M7 is 'launching' per PROCESS.md. node 67 states plainly: the client has NEVER been run in a real browser ('verified by typecheck only — no GPU smoke-test'), and sprite feel has NEVER been validated against a Pascal golden trace (closed-form only). So across M0-M6 + playable-SP, every milestone is 'done' on the strength of tsc --build + Vitest unit tests alone — validated entirely against the port's own internal assumptions, never against (a) a real browser runtime or (b) the original game's behavior. The two ground-truth checks that would catch a whole class of errors unit tests cannot (does it actually render/run? does it actually match Soldat?) are both perpetually deferred while feature milestones advance into netcode and now M7. Mitigant: the versioned clean-break codec means the wire contract can still evolve cheaply (softens finding 63). Recommendation: before M7 broadens surface area, force the two ground-truth gates ONCE — a browser smoke-test of the playable-SP loop, and a single fpc golden-trace cross-check — so the stack has been validated against reality at least once, not only against itself.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:22:35.017695-04:00",
+      "updated_at": "2026-06-08T17:22:35.017695-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":85}"
+    },
+    {
+      "id": 69,
+      "change_id": "212c3a98-2d9a-425c-848a-d5c26e3a0855",
+      "node_type": "outcome",
+      "title": "M7 done: game modes + HUD + WebAudio",
+      "description": "Game-mode scoring (DM/PM/TDM/CTF/INF/HTF/Rambo: onKill/onFlagCapture/updateGameMode with touchdown detection + win conditions, GameState holds player team/score). HUD (pixi: health/jet/ammo/score/kill-feed) with unit-tested pure helpers. WebAudio AudioEngine (positional play/playAt, registry, headless fallback) + SoundName manifest. 246 tests green f64+STRICT_F32. Commits 323efa0, 8faadbb, b01f9bb. (Fixed a SECOND/MINUTE barrel clash — sourced from constants.)",
+      "status": "pending",
+      "created_at": "2026-06-08T17:26:48.613561-04:00",
+      "updated_at": "2026-06-08T17:26:48.613561-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":85,\"files\":[\"soldat-ts/packages/sim/src/game/gamemode.ts\",\"soldat-ts/packages/client/src/ui/hud.ts\"]}"
+    },
+    {
+      "id": 70,
+      "change_id": "211f494e-694c-4961-a790-3484fb4b935c",
+      "node_type": "observation",
+      "title": "M7 deferred: INF/HTF tick scoring, HUD skins, audio channels",
+      "description": "Deferred: INF/HTF tick-based team scoring (bluelimit/HTFTime awards), Rambo bow gating (needs weapon at call site), HUD original bitmap skins + scoreboard/minimap, audio stop/pause-by-channel + looping voices + battle distant-sound substitution. Game-mode + HUD + audio are not yet WIRED into the running client game loop (main.ts) — that integration is the next step to a full playable match.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:26:48.901630-04:00",
+      "updated_at": "2026-06-08T17:26:48.901630-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":79}"
     }
   ],
   "edges": [
@@ -1794,6 +1827,39 @@
       "weight": 1.0,
       "rationale": "Playable SP verification gaps",
       "created_at": "2026-06-08T17:19:41.465544-04:00"
+    },
+    {
+      "id": 98,
+      "from_node_id": 30,
+      "to_node_id": 68,
+      "from_change_id": "d743cdad-609d-4bb4-9dbf-99869a2e64a3",
+      "to_change_id": "ba7edefb-bfc4-405e-944a-751a975d6ae3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #5: validation strategy gap — no ground-truth gate has fired across 7 milestones",
+      "created_at": "2026-06-08T17:22:35.158142-04:00"
+    },
+    {
+      "id": 99,
+      "from_node_id": 38,
+      "to_node_id": 69,
+      "from_change_id": "563b1594-5d5b-4d45-a260-3addeb9be87e",
+      "to_change_id": "212c3a98-2d9a-425c-848a-d5c26e3a0855",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M7 modes/HUD/audio delivered",
+      "created_at": "2026-06-08T17:26:48.757575-04:00"
+    },
+    {
+      "id": 100,
+      "from_node_id": 69,
+      "to_node_id": 70,
+      "from_change_id": "212c3a98-2d9a-425c-848a-d5c26e3a0855",
+      "to_change_id": "211f494e-694c-4961-a790-3484fb4b935c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M7 remaining + integration gap",
+      "created_at": "2026-06-08T17:26:49.044858-04:00"
     }
   ]
 }

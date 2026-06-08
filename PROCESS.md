@@ -14,7 +14,7 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **213 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`); netcode prediction is proven bit-identical to the server tick-for-tick. Client is keyboard-playable on a real `.PMS` map (typecheck-verified; not browser-smoke-tested here).
+**Verification:** `tsc --build` clean; **246 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`); netcode prediction is proven bit-identical to the server tick-for-tick. Client is keyboard-playable on a real `.PMS` map (typecheck-verified; not browser-smoke-tested here).
 
 ### Milestone board
 | # | Milestone | Status |
@@ -28,7 +28,10 @@
 | — | Integration: Things + stepWorld tick spine | 🟢 done — full deterministic tick runs |
 | M6 | Netcode ⭐ | 🟢 codec + replication + prediction done; WebTransport transport wiring deferred (needs server runtime) |
 | — | Playable SP: client game loop + jump/foot collision | 🟢 done — keyboard-playable on a real map (typecheck-only) |
-| M7 | Modes / HUD / audio | 🔵 launching |
+| M7 | Modes / HUD / audio | 🟢 game-mode scoring + HUD + WebAudio done; not yet wired into main.ts loop |
+| M8 | Modding + content + polish | ⬜ |
+| — | WebTransport transport wiring (client/server runtime) | ⬜ |
+| — | Gostek skeleton rendering | ⬜ |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -57,6 +60,14 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 8, autonomous loop)
+- **M7 landed** (3-track workflow): game-mode scoring (DM/PM/TDM/CTF/INF/HTF/Rambo),
+  HUD (health/jet/ammo/score/kill-feed), WebAudio sound engine (positional). Fixed a
+  SECOND/MINUTE barrel clash. **246 tests green.** Commits 323efa0, 8faadbb, b01f9bb. Graph 69/70.
+- **M7 deferred/integration gap (graph 70):** modes+HUD+audio not yet wired into the
+  client main.ts loop; INF/HTF tick scoring, HUD skins, audio channels pending.
+- → next: wire M7 into the playable loop OR WebTransport transport OR M8 modding.
 
 ### 2026-06-08 (cont. 7, autonomous loop)
 - **Playable SP landed** (2-track workflow). M3 finished: jump/jetpack + multi-point
