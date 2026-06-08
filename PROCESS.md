@@ -14,7 +14,7 @@
 **Phase:** M0 ✅ · M1/M2 substantially landed → next: M3 (full PolyMap collision + playable movement) and the fpc-side golden-master capture.
 **Branch:** `rewrite/ts-port` → **PR: notactuallytreyanastasio/soldat#1** (on fork; base `develop`).
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
-**Verification:** `tsc --build` clean; **210 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`); netcode prediction is proven bit-identical to the server tick-for-tick.
+**Verification:** `tsc --build` clean; **213 Vitest tests pass in both f64 and STRICT_F32**. The sim has a deterministic heartbeat (`stepWorld`); netcode prediction is proven bit-identical to the server tick-for-tick. Client is keyboard-playable on a real `.PMS` map (typecheck-verified; not browser-smoke-tested here).
 
 ### Milestone board
 | # | Milestone | Status |
@@ -22,13 +22,13 @@
 | M0 | Bootstrap (monorepo, tooling, shared foundations) | ✅ done |
 | M1 | Map loads & renders (.PMS loader + PixiJS) | 🟢 mesh+renderer+app+real .PMS load done; live browser smoke-test pending |
 | M2 | Physics core + golden master ⭐ | 🟢 harness + movement done (vs closed-form); fpc trace cross-check pending |
-| M3 | Moves like Soldat (SP, no net) | 🟡 PolyMap collision + resolution primitive done; multi-point foot collision + Area/anim + jump pending |
+| M3 | Moves like Soldat (SP, no net) | 🟢 multi-point foot collision + jump/jetpack done — player stands & jumps on real geometry; animation-frame gating/prone/roll pending |
 | M4 | Combat (weapons/bullets/things) | 🟢 weapons+bullets/damage+sparks+RNG; Things.pas + hitboxes/ricochet/explosion-AoE pending |
 | M5 | Bots | 🟢 waypoints + AI brain done; RayCast LOS / weapon model / grenade+flag AI pending |
 | — | Integration: Things + stepWorld tick spine | 🟢 done — full deterministic tick runs |
 | M6 | Netcode ⭐ | 🟢 codec + replication + prediction done; WebTransport transport wiring deferred (needs server runtime) |
-| — | Playable SP: client game loop + jump/foot collision | 🔵 launching |
-| M7 | Modes / HUD / audio | ⬜ |
+| — | Playable SP: client game loop + jump/foot collision | 🟢 done — keyboard-playable on a real map (typecheck-only) |
+| M7 | Modes / HUD / audio | 🔵 launching |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
 | M6 | Netcode ⭐ | ⬜ |
@@ -57,6 +57,15 @@ Legend: ✅ done · ⏳ in progress · ⬜ later.
 ---
 
 ## Activity log (newest first)
+
+### 2026-06-08 (cont. 7, autonomous loop)
+- **Playable SP landed** (2-track workflow). M3 finished: jump/jetpack + multi-point
+  foot collision (player rests standing on floor polygons, not COM-sunk; onGround latch).
+  Client game loop: Game (60Hz stepWorld) + EntityRenderer + InputController + camera follow
+  — keyboard-playable on a real `.PMS`. **213 tests green.** Commits 59cac82, 817c187. Graph 66/67.
+- **Caveats (graph 67):** client typecheck-only (no browser smoke-test here); entity render is
+  placeholder markers (no gostek skeleton yet); feel still pending fpc golden-master.
+- → launching **M7**: game-mode logic (DM/CTF scoring) + HUD (InterfaceGraphics) + WebAudio sound.
 
 ### 2026-06-08 (cont. 6, autonomous loop)
 - **M6 netcode core landed** (3-track workflow). `@soldat/protocol` binary codec

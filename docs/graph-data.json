@@ -714,6 +714,28 @@
       "created_at": "2026-06-08T17:08:18.711658-04:00",
       "updated_at": "2026-06-08T17:08:18.711658-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":79}"
+    },
+    {
+      "id": 66,
+      "change_id": "3ab92d84-f63b-406c-9d49-8b004da210c8",
+      "node_type": "outcome",
+      "title": "Playable SP: client game loop + M3 jump/foot-collision done",
+      "description": "M3 finished: jump/side-jump + jetpack in applyControl; collideSpriteAgainstMap rewritten to the faithful multi-point foot/body loop so the player rests standing on floor polygons (not COM-sunk) and latches onGround (ports the \"do not double the ground-repelling force\" guard). Client: Game (60Hz stepWorld accumulator + player spawn + collision map), EntityRenderer (sprites/bullets/things interpolated), InputController (WASD/space/mouse->Control), main.ts rAF loop with camera follow. Keyboard-playable on a real .PMS map. 213 tests green f64+STRICT_F32. Commits 59cac82, 817c187.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:19:40.899761-04:00",
+      "updated_at": "2026-06-08T17:19:40.899761-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":85,\"files\":[\"soldat-ts/packages/sim/src/entities/sprite.ts\",\"soldat-ts/packages/client/src/app/game.ts\"]}"
+    },
+    {
+      "id": 67,
+      "change_id": "abc0205c-573d-4212-975a-7cbee3f0c6c2",
+      "node_type": "observation",
+      "title": "Playable SP caveats: typecheck-only client, feel still pre-fpc",
+      "description": "Client game loop verified by typecheck only — NOT yet run in a real browser (no GPU smoke-test here). Entity rendering is placeholder markers (no gostek skeleton/animation/textures). Sprite movement feel (jump arcs, friction, multi-point collision) is faithfully ported + unit-tested but still NOT validated against a Pascal golden-master trace (needs fpc). Deferred: animation-frame gating of jump, prone/roll, RayCast leg probe, crouch-run forces.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:19:41.324579-04:00",
+      "updated_at": "2026-06-08T17:19:41.324579-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":78}"
     }
   ],
   "edges": [
@@ -1739,6 +1761,39 @@
       "weight": 1.0,
       "rationale": "M6 remaining work",
       "created_at": "2026-06-08T17:08:18.855113-04:00"
+    },
+    {
+      "id": 95,
+      "from_node_id": 34,
+      "to_node_id": 66,
+      "from_change_id": "e6adec1b-e11f-4f62-988f-844b577f7ac8",
+      "to_change_id": "3ab92d84-f63b-406c-9d49-8b004da210c8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M3 multi-point collision + jump completes the feel path",
+      "created_at": "2026-06-08T17:19:41.043013-04:00"
+    },
+    {
+      "id": 96,
+      "from_node_id": 32,
+      "to_node_id": 66,
+      "from_change_id": "786b933e-87ee-4ec7-a6ee-75bf85a074a7",
+      "to_change_id": "3ab92d84-f63b-406c-9d49-8b004da210c8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Client now renders the live world, not just the map",
+      "created_at": "2026-06-08T17:19:41.184718-04:00"
+    },
+    {
+      "id": 97,
+      "from_node_id": 66,
+      "to_node_id": 67,
+      "from_change_id": "3ab92d84-f63b-406c-9d49-8b004da210c8",
+      "to_change_id": "abc0205c-573d-4212-975a-7cbee3f0c6c2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Playable SP verification gaps",
+      "created_at": "2026-06-08T17:19:41.465544-04:00"
     }
   ]
 }
