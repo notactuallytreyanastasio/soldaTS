@@ -20,14 +20,8 @@
 import { MAX_SPRITES, MAX_BULLETS, MAX_SPARKS, MAX_THINGS } from './constants';
 import type { Sprite, Bullet, Spark, Thing } from './entities/types';
 import type { ParticleSystem } from './physics/particles';
+import type { PolyMap } from './map/polymap';
 import { vec2 } from './math/vec2';
-
-/**
- * Placeholder for the polygon collision map (`Map: TPolyMap;`, Game.pas:93).
- * The map subsystem is not implemented here; `null` until a map is loaded.
- * PORT: shared/PolyMap.pas — TPolyMap.
- */
-export type PolyMap = unknown;
 
 export interface World {
   // PORT: shared/Game.pas:114 — Sprite[1..MAX_SPRITES]. Length MAX_SPRITES+1; [0] sentinel.

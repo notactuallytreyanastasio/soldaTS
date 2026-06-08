@@ -35,6 +35,8 @@ import { f } from '../scalar';
 import type { World } from '../world';
 import type { Sprite, Control } from './types';
 import type { ParticleSystem } from '../physics/particles';
+import type { MapCollision } from '../map/polymap';
+import { POLY_TYPE_BOUNCY, isBackground, isOnlyBullets } from '../map/polymap';
 import {
   RUNSPEED,
   RUNSPEEDUP,
@@ -363,4 +365,84 @@ export function updateSpriteMovement(
 
   // 2. Translate this tick's control input into forces for the NEXT integration.
   applyControl(sprite, sprite.control, spriteParts);
+}
+
+// ---------------------------------------------------------------------------
+// PolyMap collision (M3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a single particle against a map collision — the faithful pushout
+ * primitive from `Sprites.pas` CheckMapCollision.
+ *
+ * PORT: shared/mechanics/Sprites.pas:2718-2751. Given the closest-edge
+ * collision for particle `num`, push the particle out along the (normalized)
+ * perpendicular by `min(penetration, |velocity|)`, mirror that onto OldPos for
+ * the Verlet/friction path, and remove the pushout from the velocity. Bouncy
+ * polygons reflect with `bounciness * |velocity|` instead.
+ *
+ * NOTE: this is the resolution MATH only. WHICH particles to test (Soldat
+ * collides at multiple skeleton foot points, not the COM) and the `Area`/
+ * animation gating (Sprites.pas:2731-2772) are the caller's job — see
+ * collideSpriteAgainstMap below, which currently drives it with the COM as an
+ * approximation pending the full multi-point port (remaining M3 work).
+ */
+export function resolveParticleMapCollision(
+  parts: ParticleSystem,
+  num: number,
+  col: MapCollision,
+): void {
+  // D := Vec2Length(Velocity) — Sprites.pas:2723.
+  const velLen = f(Math.sqrt(f(f(parts.velocityX[num]! * parts.velocityX[num]!) + f(parts.velocityY[num]! * parts.velocityY[num]!))));
+  // Perp magnitude is clamped to the velocity length (Sprites.pas:2724-2728).
+  const mag = col.distance > velLen ? velLen : col.distance;
+  // col.perp is normalized; pushout = perp * mag.
+  let perpX = f(col.perp.x * mag);
+  let perpY = f(col.perp.y * mag);
+
+  // OldPos := Pos; Pos := Pos - Perp (Sprites.pas:2737-2738).
+  parts.oldX[num] = parts.posX[num]!;
+  parts.oldY[num] = parts.posY[num]!;
+  parts.posX[num] = f(parts.posX[num]! - perpX);
+  parts.posY[num] = f(parts.posY[num]! - perpY);
+
+  // Bouncy polygons reflect with bounciness * |velocity| (Sprites.pas:2739-2742).
+  if (col.polyType === POLY_TYPE_BOUNCY) {
+    perpX = f(col.perp.x * f(col.bounciness * velLen));
+    perpY = f(col.perp.y * f(col.bounciness * velLen));
+  }
+
+  // Velocity := Velocity - Perp (Sprites.pas:2750).
+  parts.velocityX[num] = f(parts.velocityX[num]! - perpX);
+  parts.velocityY[num] = f(parts.velocityY[num]! - perpY);
+}
+
+/**
+ * Drive map collision for a sprite against a loaded PolyMap.
+ *
+ * APPROXIMATION (remaining M3 work): queries the map at the sprite's COM
+ * particle with `radius`, then applies resolveParticleMapCollision. The faithful
+ * engine tests multiple skeleton foot points (Sprites.pas CheckMapCollision
+ * iterates the collision points) — porting that multi-point loop is the next
+ * step. Returns the MapCollision that was resolved, or null if no contact.
+ */
+export function collideSpriteAgainstMap(
+  world: World,
+  spriteIndex: number,
+  radius: number,
+): MapCollision | null {
+  const sprite = world.sprites[spriteIndex];
+  const parts = world.spriteParts;
+  const map = world.map;
+  if (sprite === undefined || parts === null || map === null) {
+    return null;
+  }
+  const center = { x: parts.posX[spriteIndex]!, y: parts.posY[spriteIndex]! };
+  // Players collide on POLY_TYPE_NORMAL + team/player polys; ignore bullet-only
+  // and background polys (full polytype/team gating is M3+).
+  const col = map.collideCircle(center, radius, (polyType) => !isBackground(polyType) && !isOnlyBullets(polyType));
+  if (col !== null) {
+    resolveParticleMapCollision(parts, spriteIndex, col);
+  }
+  return col;
 }

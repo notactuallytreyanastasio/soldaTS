@@ -8,6 +8,8 @@ export * from './math/calc';
 export * from './entities/types';
 export * from './entities/sprite';
 export * from './map/collision';
+export * from './map/polymap';
+export * from './map/buildPolyMap';
 export * from './world';
 export * from './physics/particles';
 // Golden-master harness (determinism validation; see tools/golden-master/).
