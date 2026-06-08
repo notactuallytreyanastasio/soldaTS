@@ -20,6 +20,7 @@ export * from './entities/spark';
 export * from './combat/damage';
 export * from './ai/waypoints';
 export * from './ai/bot';
+export * from './game/gamemode';
 export * from './setup';
 export * from './step';
 // Golden-master harness (determinism validation; see tools/golden-master/).
