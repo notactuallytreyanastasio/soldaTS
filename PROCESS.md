@@ -11,16 +11,17 @@
 
 ## Where we are right now
 
-**Phase:** M0 (bootstrap) → starting M1/M2 foundations.
+**Phase:** M0 ✅ complete → next: M1 (PixiJS map render) + M2 (golden-master harness).
 **Branch:** `rewrite/ts-port`.
 **Decision of record:** TypeScript · web-first · clean-break protocol · faithful-first. (graph node 30)
+**Verification:** `tsc --build` clean; **90 Vitest tests pass in both f64 and STRICT_F32**.
 
 ### Milestone board
 | # | Milestone | Status |
 |---|-----------|--------|
-| M0 | Bootstrap (monorepo, tooling, shared foundations) | 🟡 in progress |
-| M1 | Map loads & renders (.PMS loader + PixiJS) | ⬜ not started |
-| M2 | Physics core + golden master ⭐ | ⬜ not started |
+| M0 | Bootstrap (monorepo, tooling, shared foundations) | ✅ done |
+| M1 | Map loads & renders (.PMS loader + PixiJS) | 🟡 loader+CRC32 ported; render pending |
+| M2 | Physics core + golden master ⭐ | 🟡 integrator ported + fidelity tests; harness pending |
 | M3 | Moves like Soldat (SP, no net) | ⬜ |
 | M4 | Combat (weapons/bullets/things) | ⬜ |
 | M5 | Bots | ⬜ |
@@ -37,21 +38,26 @@ soldat-ts/                     # the rewrite (pnpm monorepo)
   packages/sim/                # @soldat/sim — deterministic core (platform-pure)
     src/scalar.ts              # ✅ Scalar + STRICT_F32/f() f32 policy
     src/math/vec2.ts           # ✅ Vec2 (port of TVector2)
-    src/constants.ts           # ⏳ port of Constants.pas + verified caps
-    src/world.ts               # ⏳ World: 1-indexed global arrays, sentinel-0
-    src/entities/types.ts      # ⏳ Sprite/Bullet/Thing/Spark/Control records
-    src/math/calc.ts           # ⏳ geometry helpers (Calc.pas/Vector.pas)
-    src/physics/particles.ts   # ⏳ ParticleSystem (Parts.pas) — THE feel core
-  packages/assets/             # @soldat/assets — .PMS loader + tools
-  packages/protocol/           # @soldat/protocol — clean-break wire schema
+    src/constants.ts           # ✅ Constants.pas + verified caps (+test)
+    src/world.ts               # ✅ World: 1-indexed global arrays, sentinel-0 (+test)
+    src/entities/types.ts      # ✅ Sprite/Bullet/Thing/Spark/Control records
+    src/math/calc.ts           # ✅ geometry helpers (Calc.pas) (+test, 46 cases)
+    src/physics/particles.ts   # ✅ ParticleSystem (Parts.pas) — THE feel core (+test)
+  packages/assets/             # ✅ @soldat/assets — .PMS loader + CRC32 + types (+test)
+  packages/protocol/           # ✅ @soldat/protocol — clean-break wire schema + .proto (+test)
 ```
-Legend: ✅ done · ⏳ being built in current workflow · ⬜ later.
+Legend: ✅ done · ⏳ in progress · ⬜ later.
 
 ---
 
 ## Activity log (newest first)
 
 ### 2026-06-08
+- **M0 COMPLETE.** Foundational port workflow (6 agents) landed; wired the `index.ts`
+  barrel, resolved 2 name collisions (`distance`, `ParticleSystem`), and fixed the
+  constants test to assert `f(literal)` so it's STRICT_F32-safe. `tsc --build` clean;
+  **90 tests pass in f64 AND STRICT_F32.** Committed (6fe83cd scaffold, 0882109 ports).
+  Graph: M0 outcome node 41; divergence watch-items node 42.
 - **Committed understanding + plan** in 4 logical chunks on `rewrite/ts-port`
   (gitignore, reference specs, port plan, graph export).
 - **Scaffolded `soldat-ts/` monorepo** inline: pnpm/Vite/Vitest config, `tsconfig`,
@@ -65,6 +71,10 @@ Legend: ✅ done · ⏳ being built in current workflow · ⬜ later.
 ---
 
 ## Open decisions / watch-items
-- f64-vs-f32: resolved in principle (STRICT_F32 golden master); **must be proven at M2.**
+- f64-vs-f32: resolved in principle (STRICT_F32 golden master); **must be proven at M2**
+  against a real Pascal trace.
+- **M2 fidelity risk (graph node 42):** `vec2.dot` rounds each op in `f()`, but Pascal
+  `Vec2Dot` is a single unrounded `Single` expr. Physics inlined dot/length to match
+  per-op rounding; if the golden master diverges, drop the inner `f()` on the dot sum.
 - `.PMS` kept read-compatible even though netcode is a clean break (separate axes).
-- Nothing in `soldat-ts/` is dependency-installed yet (`pnpm install` needs network).
+- Deps now installed (`pnpm install` ran); `pnpm test` / `STRICT_F32=1 pnpm test` both green.

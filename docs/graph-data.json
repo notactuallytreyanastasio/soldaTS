@@ -439,6 +439,28 @@
       "created_at": "2026-06-08T14:36:41.430134-04:00",
       "updated_at": "2026-06-08T14:36:41.430134-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":82,\"files\":[\"docs/PORT-PLAN.md\"]}"
+    },
+    {
+      "id": 41,
+      "change_id": "703ccf87-6387-4b51-87d9-2c9b23effddd",
+      "node_type": "outcome",
+      "title": "M0 done: scaffold + ported foundations, 90 tests green",
+      "description": "pnpm monorepo (sim/assets/protocol) scaffolded; scalar.ts STRICT_F32 policy + vec2 authored inline. 6-agent workflow ported: constants (verified caps), World (1-indexed sentinel-0), ParticleSystem integrator (Parts.pas Euler/Verlet/constraints, SoA Float32Array), Calc.pas geometry, read-only .PMS loader + CRC32, clean-break versioned protocol schema. tsc --build clean; 90 Vitest tests pass in BOTH f64 and STRICT_F32. Committed on rewrite/ts-port (6fe83cd, 0882109).",
+      "status": "pending",
+      "created_at": "2026-06-08T16:02:15.632202-04:00",
+      "updated_at": "2026-06-08T16:02:15.632202-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":88,\"files\":[\"soldat-ts/packages/sim/src/scalar.ts\",\"soldat-ts/packages/sim/src/physics/particles.ts\"]}"
+    },
+    {
+      "id": 42,
+      "change_id": "41761ce9-bdcd-488f-af33-bb67791cd923",
+      "node_type": "observation",
+      "title": "STRICT_F32 divergence watch-items for M2 golden master",
+      "description": "Porters flagged two fidelity risks to validate against a Pascal trace at M2: (1) vec2.dot wraps each multiply AND the add in f(), but Pascal Vec2Dot is a single unrounded Single expression x1*x2 + y1*y2 — the physics agent inlined dot/length in satisfyConstraintsFor to match per-op rounding; if golden master diverges, drop the inner f() on the dot sum to match Pascal fused expr. (2) Doc discrepancy: wire-protocol.md said ORIGINAL_WEAPONS=64 but source Weapons.pas:86 is 20 (corrected in protocol).",
+      "status": "pending",
+      "created_at": "2026-06-08T16:02:16.022469-04:00",
+      "updated_at": "2026-06-08T16:02:16.022469-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":80}"
     }
   ],
   "edges": [
@@ -1156,6 +1178,39 @@
       "weight": 1.0,
       "rationale": "precedes",
       "created_at": "2026-06-08T14:36:42.851041-04:00"
+    },
+    {
+      "id": 66,
+      "from_node_id": 31,
+      "to_node_id": 41,
+      "from_change_id": "cb719334-6a60-4a3f-b1e0-f70ad865d690",
+      "to_change_id": "703ccf87-6387-4b51-87d9-2c9b23effddd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "M0 bootstrap completed",
+      "created_at": "2026-06-08T16:02:15.833016-04:00"
+    },
+    {
+      "id": 67,
+      "from_node_id": 41,
+      "to_node_id": 42,
+      "from_change_id": "703ccf87-6387-4b51-87d9-2c9b23effddd",
+      "to_change_id": "41761ce9-bdcd-488f-af33-bb67791cd923",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Known fidelity risks surfaced during the port",
+      "created_at": "2026-06-08T16:02:16.194659-04:00"
+    },
+    {
+      "id": 68,
+      "from_node_id": 33,
+      "to_node_id": 42,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "41761ce9-bdcd-488f-af33-bb67791cd923",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Must be resolved by the M2 golden-master cross-check",
+      "created_at": "2026-06-08T16:02:16.388761-04:00"
     }
   ]
 }
