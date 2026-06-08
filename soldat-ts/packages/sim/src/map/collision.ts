@@ -33,6 +33,54 @@ import { pointLineDistance, lineCircleCollision } from '../math/calc';
 // not yet exported there. Provenance kept so it can be hoisted later.)
 export const SLIDELIMIT = f(0.2);
 
+// ===========================================================================
+// Sprite body collision points (relative to the COM particle position).
+//
+// PORT: shared/mechanics/Sprites.pas:819-862 — TSprite.Update's CheckMapCollision
+// call sites. The body is sampled at four offsets from the COM (`Pos`):
+//
+//   head L  = (X - 3.5, Y - 12)   Area = 1   (Sprites.pas:820-821)
+//   head R  = (X + 3.5, Y - 12)   Area = 1   (Sprites.pas:823-824)
+//   leg  R  = (X + 2,   Y + 2)    Area = 0   (Sprites.pas:858-859, sets OnGround)
+//   leg  L  = (X - 2,   Y + 2)    Area = 0   (Sprites.pas:861-862, sets OnGround)
+//
+// The `Area` flag governs whether a contact resolves (pushes the COM out):
+//   Area = 0 always resolves (Sprites.pas:2731 first disjunct);
+//   Area = 1 resolves only when Velocity.Y < 0 or |Velocity.X| > SLIDELIMIT
+//            (Sprites.pas:2732-2735) — keeps the head from "sticking" to ceilings
+//            while standing.
+//
+// The BodyY / ArmS slope nudge (Sprites.pas:826-854) is DEFERRED: it depends on
+// the LegsAnimation walk direction and the Map.RayCast leg probe, neither of
+// which exists yet. With BodyY = ArmS = 0 the leg points sit at Y + 2 exactly,
+// which is the faithful default when standing/idle.
+// ===========================================================================
+
+/** Per-point body-collision sample. `area` mirrors the Pascal `Area` argument. */
+export interface SpriteCollisionPoint {
+  /** X offset from the COM. */
+  dx: number;
+  /** Y offset from the COM (positive = below the COM, screen space). */
+  dy: number;
+  /** Pascal `Area`: 0 = legs/feet (always resolve), 1 = head (gated resolve). */
+  area: 0 | 1;
+  /** True for the leg points whose contact establishes OnGround. */
+  isLeg: boolean;
+}
+
+/**
+ * The four sprite body collision points, in the exact order TSprite.Update
+ * tests them (head L, head R, leg R, leg L).
+ *
+ * PORT: shared/mechanics/Sprites.pas:819-862.
+ */
+export const SPRITE_COLLISION_POINTS: readonly SpriteCollisionPoint[] = Object.freeze([
+  { dx: f(-3.5), dy: f(-12), area: 1, isLeg: false }, // head L (Sprites.pas:820)
+  { dx: f(3.5), dy: f(-12), area: 1, isLeg: false }, //  head R (Sprites.pas:823)
+  { dx: f(2), dy: f(2), area: 0, isLeg: true }, //        leg  R (Sprites.pas:858)
+  { dx: f(-2), dy: f(2), area: 0, isLeg: true }, //       leg  L (Sprites.pas:861)
+]);
+
 /**
  * Result of a flat-ground test. `collided` is the Pascal `OnGround` boolean;
  * `correctedY` is the de-penetrated sprite Y (clamped to floorY); `stepY` is the
