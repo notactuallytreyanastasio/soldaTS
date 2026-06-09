@@ -1,5 +1,13 @@
 [
   {
+    "hash": "f5d3c9ad9f0836c1bb386efd304eb30e40518307",
+    "short_hash": "f5d3c9a",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T14:56:47-04:00",
+    "message": "feat(sim): vertical rocket boots — 1.8x up-thrust, damped drift, big tank + ground regen\n\nThis is a VERY vertical game; the boots should rocket you UP, not sideways.\nFirst deliberate DESIGN OVERRIDE of the faithful Pascal constants (decision\nnode 94, marked in code):\n- JET_THRUST 0.1 -> 0.18 (net lift vs gravity triples: 0.04 -> 0.12)\n- While the jet burns, lateral air force halves (JET_AIR_DRIFT = FLYSPEED/2)\n  so boosting reads as up + steer; full air control returns when fuel is dry\n- Fuel 250 -> 700 ticks (~11.7 s burn) + on-ground regen (3/tick, empty->full\n  ~3.9 s) for player and bots — jets gate engagements, not movement\n- Jet HUD bar fixed: was jetsCountReal (never decremented) over a hardcoded\n  max of 100; now live jetsCount over JET_FUEL_MAX\n\nTests: 344 green, incl. new 'climbs more than it drifts' (vertical gain must\nbeat 1.5x horizontal drift while jetting) and dry-tank air-control restore.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
     "hash": "a37fcae568a43401c3d8c00f5afdd378f31ec3cf",
     "short_hash": "a37fcae",
     "author": "Robert Grayson",

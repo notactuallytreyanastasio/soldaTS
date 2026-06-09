@@ -110,6 +110,41 @@ Committed as `8c75a7e`.
 
 ---
 
+## Turn 6 — Vertical rocket boots
+
+**Robert:**
+
+> rocket boots should favor UP not left/right boosting, and they should have more gas
+
+**Robert (follow-up):**
+
+> it is a VERY vertical game, we should be able to fly around a bunch
+
+**Claude:**
+
+First deliberate DESIGN OVERRIDE of the faithful Pascal physics (decision node 94, options weighed: tune in the sim core vs. client-layer scaling — sim core won so player and bots share one physics truth, marked `DESIGN OVERRIDE` in code):
+
+- **Up-thrust 1.8×**: `JET_THRUST` 0.1 → 0.18, tripling net lift against gravity (0.04 → 0.12).
+- **Damped drift**: while the jet burns, lateral air force halves (`JET_AIR_DRIFT = FLYSPEED/2`) — boosting reads as "up + steer", not "sideways with lift". Full air control returns when the tank is dry.
+- **More gas**: fuel 250 → 700 ticks (~11.7s of continuous burn) plus on-ground regen (empty→full in ~3.9s) for player and bots — jets gate engagements, not movement.
+- **Bug found along the way**: the HUD jet bar read `jetsCountReal` (which nothing ever decremented) against a hardcoded max of 100 — it was always full. Now shows live fuel over `JET_FUEL_MAX`.
+
+New sim tests pin the intent: "climbs more than it drifts" (vertical gain must beat 1.5× horizontal drift while jetting) and dry-tank air-control restore. 344 tests green. Committed as `f5d3c9a`.
+
+---
+
+## Turn 7 — README rewrite + porting diary (fanned-out agent)
+
+**Robert:**
+
+> rewrite the README to reflect the new architecture and facets of the game that are being built out in TS and also keep a "diary" in the README at the bottom fo how the porting process has worked and is going with a subagent you fan out
+
+**Claude:**
+
+Launched a background agent (running in parallel with the jet work) that researched the port plan, extracted specs, git history, and the decision graph, then replaced the Pascal-era README: pitch + quick start, "The game today", monorepo architecture with the four locked rewrite axes, Pascal-reference and decision-graph pointers, license/credits preserved — and a 12-entry dated **Porting Diary** at the bottom telling the story from the understanding phase through M0–M8, the playability push, the one-gun ratification, the keyboard-controls workflow (including the first-mousemove bug verification caught), the controls screen, and the vertical-jets tuning, closing with the honest gaps (no golden-master feel cross-check yet, no WebTransport transport, mod-sandbox criticism). Committed as `e5c0924`.
+
+---
+
 ## Decision-graph nodes created this session
 
 | Node | Type | Title |
@@ -125,6 +160,11 @@ Committed as `8c75a7e`.
 | 88 | outcome | Keyboard-only controls verified (CDP playtest + 339 tests) and committed |
 | 89 | action | Implement startup controls screen rendered from the real binding table |
 | 90 | outcome | Controls screen live: 8-row overlay, browser-verified, 342 tests green |
+| 91 | goal | Rocket boots: favor UP over lateral boost + more gas |
+| 92–93 | options | Tune jets in sim core vs. client-layer override |
+| 94 | decision | Tune jets in the sim core with explicit DESIGN OVERRIDE markers |
+| 95 / 98 | action / outcome | Vertical jets implemented and committed (344 tests) |
+| 96 / 97 / 99 | goal / action / outcome | README rewrite + porting diary *(action+outcome by fanned-out agent)* |
 
 ## Commits this session
 
@@ -133,4 +173,6 @@ Committed as `8c75a7e`.
 | `1d2025f` | chore: commit project tooling — Claude commands/hooks, CI workflows, graph export |
 | `8c75a7e` | feat(client): keyboard-only controls — WASD move, IJKL aim, Space fire, Tab reload |
 | `a37fcae` | feat(client): startup controls screen rendered from the real binding table |
-| `(final)` | docs: TRANSCRIPT.md + decision-graph export |
+| `f5d6006` | docs: TRANSCRIPT.md + decision-graph export |
+| `f5d3c9a` | feat(sim): vertical rocket boots — 1.8× up-thrust, damped drift, big tank + ground regen |
+| `e5c0924` | docs: rewrite README for the TS port — architecture, game today, porting diary |

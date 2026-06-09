@@ -989,6 +989,105 @@
       "created_at": "2026-06-09T14:48:03.620937-04:00",
       "updated_at": "2026-06-09T14:48:03.620937-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a37fcae\",\"confidence\":95,\"files\":[\"soldat-ts/packages/client/src/ui/controlsScreen.ts\",\"soldat-ts/packages/client/src/input/input.ts\",\"soldat-ts/packages/client/src/app/main.ts\"]}"
+    },
+    {
+      "id": 91,
+      "change_id": "65beeaf7-93f4-4130-bba9-93e10ca1369d",
+      "node_type": "goal",
+      "title": "Rocket boots: favor UP over lateral boost + more gas",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:51:28.030109-04:00",
+      "updated_at": "2026-06-09T14:51:28.030109-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"rocket boots should favor UP not left/right boosting, and they should have more gas\"}"
+    },
+    {
+      "id": 92,
+      "change_id": "e41e565d-1b9e-4a05-975e-f0ba921e641d",
+      "node_type": "option",
+      "title": "Tune jets in sim core (sprite.ts thrust + lateral damp) — player AND bots inherit",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:53:11.054462-04:00",
+      "updated_at": "2026-06-09T14:53:11.054462-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 93,
+      "change_id": "934acdc5-fb79-44e9-959a-3382397fa281",
+      "node_type": "option",
+      "title": "Override at client game layer only (scale forces post-sim)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:53:11.202422-04:00",
+      "updated_at": "2026-06-09T14:53:11.202422-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 94,
+      "change_id": "05d3d0f8-03c4-4f44-895d-ffe527aa0b99",
+      "node_type": "decision",
+      "title": "Tune jets in the sim core with explicit DESIGN OVERRIDE markers",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:53:37.656640-04:00",
+      "updated_at": "2026-06-09T14:53:37.656640-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 95,
+      "change_id": "36b24e66-64ba-4044-afe7-938000dc23c5",
+      "node_type": "action",
+      "title": "Implement vertical-favoring jets: 1.8x thrust, half lateral drift while jetting, 700 fuel + ground regen, fix jet HUD bar",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:53:38.087571-04:00",
+      "updated_at": "2026-06-09T14:53:38.087571-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 96,
+      "change_id": "5c5172fc-af36-4b21-9bd6-afb0fb84edbc",
+      "node_type": "goal",
+      "title": "README rewrite: TS architecture + porting diary (subagent)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:53:38.377789-04:00",
+      "updated_at": "2026-06-09T14:53:38.377789-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"rewrite the README to reflect the new architecture and facets of the game that are being built out in TS and also keep a \\\"diary\\\" in the README at the bottom fo how the porting process has worked and is going with a subagent you fan out\"}"
+    },
+    {
+      "id": 97,
+      "change_id": "16881e86-ac91-4f5e-b76a-02126a754a88",
+      "node_type": "action",
+      "title": "Rewrite README: TS architecture + porting diary",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:55:27.164973-04:00",
+      "updated_at": "2026-06-09T14:55:27.164973-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 98,
+      "change_id": "91c7eb36-1158-4e75-83ac-de8899e130ae",
+      "node_type": "outcome",
+      "title": "Vertical jets live: 3x net lift, damped drift, 700 fuel + regen, HUD bar fixed (344 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:56:47.956635-04:00",
+      "updated_at": "2026-06-09T14:56:47.956635-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"f5d3c9a\",\"confidence\":95}"
+    },
+    {
+      "id": 99,
+      "change_id": "a340f119-2848-4f65-8dc1-cc4d841cf1c2",
+      "node_type": "outcome",
+      "title": "README rewritten: pitch, quick start, architecture, porting diary",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:56:57.628198-04:00",
+      "updated_at": "2026-06-09T14:56:57.628198-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -2300,6 +2399,94 @@
       "weight": 1.0,
       "rationale": "Implementation verified in browser (CDP) and committed as a37fcae",
       "created_at": "2026-06-09T14:48:08.374215-04:00"
+    },
+    {
+      "id": 124,
+      "from_node_id": 91,
+      "to_node_id": 92,
+      "from_change_id": "65beeaf7-93f4-4130-bba9-93e10ca1369d",
+      "to_change_id": "e41e565d-1b9e-4a05-975e-f0ba921e641d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Sim-core tuning option",
+      "created_at": "2026-06-09T14:53:37.362248-04:00"
+    },
+    {
+      "id": 125,
+      "from_node_id": 91,
+      "to_node_id": 93,
+      "from_change_id": "65beeaf7-93f4-4130-bba9-93e10ca1369d",
+      "to_change_id": "934acdc5-fb79-44e9-959a-3382397fa281",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Client-layer option",
+      "created_at": "2026-06-09T14:53:37.507719-04:00"
+    },
+    {
+      "id": 126,
+      "from_node_id": 92,
+      "to_node_id": 94,
+      "from_change_id": "e41e565d-1b9e-4a05-975e-f0ba921e641d",
+      "to_change_id": "05d3d0f8-03c4-4f44-895d-ffe527aa0b99",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen: one physics truth for player and bots",
+      "created_at": "2026-06-09T14:53:37.796626-04:00"
+    },
+    {
+      "id": 127,
+      "from_node_id": 93,
+      "to_node_id": 94,
+      "from_change_id": "934acdc5-fb79-44e9-959a-3382397fa281",
+      "to_change_id": "05d3d0f8-03c4-4f44-895d-ffe527aa0b99",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Rejected: post-sim scaling would desync bots/netcode later",
+      "created_at": "2026-06-09T14:53:37.937302-04:00"
+    },
+    {
+      "id": 128,
+      "from_node_id": 94,
+      "to_node_id": 95,
+      "from_change_id": "05d3d0f8-03c4-4f44-895d-ffe527aa0b99",
+      "to_change_id": "36b24e66-64ba-4044-afe7-938000dc23c5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T14:53:38.229446-04:00"
+    },
+    {
+      "id": 129,
+      "from_node_id": 96,
+      "to_node_id": 97,
+      "from_change_id": "5c5172fc-af36-4b21-9bd6-afb0fb84edbc",
+      "to_change_id": "16881e86-ac91-4f5e-b76a-02126a754a88",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "README implementation",
+      "created_at": "2026-06-09T14:55:31.022400-04:00"
+    },
+    {
+      "id": 131,
+      "from_node_id": 95,
+      "to_node_id": 98,
+      "from_change_id": "36b24e66-64ba-4044-afe7-938000dc23c5",
+      "to_change_id": "91c7eb36-1158-4e75-83ac-de8899e130ae",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implemented and committed as f5d3c9a",
+      "created_at": "2026-06-09T14:56:55.839862-04:00"
+    },
+    {
+      "id": 133,
+      "from_node_id": 97,
+      "to_node_id": 99,
+      "from_change_id": "16881e86-ac91-4f5e-b76a-02126a754a88",
+      "to_change_id": "a340f119-2848-4f65-8dc1-cc4d841cf1c2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Result of README rewrite",
+      "created_at": "2026-06-09T14:57:05.021024-04:00"
     }
   ]
 }
