@@ -60,6 +60,48 @@ const MOVE_SPREAD_SPEED = 3; // |vx| above which the move penalty applies
 export const JET_FUEL_MAX = 700; // ticks of burn (~11.7 s of continuous thrust)
 const JET_REGEN_PER_TICK = 3; // refuel rate on the ground (empty→full ~3.9 s)
 
+// --- Aim assist (player only — bots would become aimbots) -------------------
+// LIGHT magnetism (goal node 102): keyboard aim is coarse, so shots already
+// pointed near a target get bent the last few degrees onto it. The cone is
+// small enough that aim still has to be earned, the bend is under the
+// half-spread of a short burst, and spread/spray-bloom applies AFTER the bend
+// so the assist never cancels the spray-control dynamic.
+export const ASSIST_CONE = 0.16; // rad (~9°) — only assist near-misses
+export const ASSIST_MAX_BEND = 0.05; // rad (~2.9°) — the "light" in light assist
+export const ASSIST_RANGE = 700; // px — no cross-map magnetism
+
+/**
+ * Bend a unit aim vector toward the angularly-closest target within the
+ * assist cone and range. Pure (exported for tests); returns the input aim
+ * when no target qualifies.
+ */
+export function applyAimAssist(
+  ax: number,
+  ay: number,
+  ox: number,
+  oy: number,
+  targets: readonly { x: number; y: number }[],
+): { x: number; y: number } {
+  const aimAng = Math.atan2(ay, ax);
+  let bestOff = Infinity;
+  for (const t of targets) {
+    const dx = t.x - ox;
+    const dy = t.y - oy;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1 || dist > ASSIST_RANGE) continue;
+    // Angular offset wrapped into (-PI, PI].
+    let off = Math.atan2(dy, dx) - aimAng;
+    if (off <= -Math.PI) off += 2 * Math.PI;
+    else if (off > Math.PI) off -= 2 * Math.PI;
+    if (Math.abs(off) > ASSIST_CONE) continue;
+    if (Math.abs(off) < Math.abs(bestOff)) bestOff = off;
+  }
+  if (!Number.isFinite(bestOff)) return { x: ax, y: ay };
+  const bent =
+    aimAng + Math.sign(bestOff) * Math.min(Math.abs(bestOff), ASSIST_MAX_BEND);
+  return { x: Math.cos(bent), y: Math.sin(bent) };
+}
+
 interface BotEntry {
   readonly index: number;
   readonly brain: BotState;
@@ -324,6 +366,29 @@ export class Game {
     } else {
       ax /= len;
       ay /= len;
+    }
+
+    // Aim assist: player shots near a live enemy bend the last few degrees
+    // onto it (player ONLY — assisted bots are aimbots). Applied before
+    // spread so spray bloom still punishes held fire.
+    if (index === this.playerIndex) {
+      const targets: { x: number; y: number }[] = [];
+      for (const other of this.world.sprites) {
+        if (!other.active || other.deadMeat || other.num === index) continue;
+        targets.push({
+          x: parts.posX[other.num] ?? 0,
+          y: parts.posY[other.num] ?? 0,
+        });
+      }
+      const bent = applyAimAssist(
+        ax,
+        ay,
+        parts.posX[index] ?? 0,
+        parts.posY[index] ?? 0,
+        targets,
+      );
+      ax = bent.x;
+      ay = bent.y;
     }
 
     // Spread = base + spray bloom + a movement penalty (stand still to be precise).
