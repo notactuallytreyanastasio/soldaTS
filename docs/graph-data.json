@@ -1440,6 +1440,116 @@
       "created_at": "2026-06-09T17:00:40.144649-04:00",
       "updated_at": "2026-06-09T17:00:40.144649-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 132,
+      "change_id": "b5fe1a6a-ddf0-46ff-b8a0-56f8e25cac21",
+      "node_type": "outcome",
+      "title": "Full 0-to-now transcript extracted from session logs (37 verbatim prompts, 3 session segments) and pushed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:07:42.580445-04:00",
+      "updated_at": "2026-06-09T17:07:42.580445-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"9384f56\",\"confidence\":95}"
+    },
+    {
+      "id": 133,
+      "change_id": "e4021944-cc6b-4408-9621-7b4acab2142e",
+      "node_type": "goal",
+      "title": "Swappable bot-AI engines (adapter pattern) + dual-match viewing; better use of Soldat assets",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:25:56.833824-04:00",
+      "updated_at": "2026-06-09T17:25:56.833824-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"are we really using the soldat assets to their best ability? I want this game to look better. but we should now draw a line in the sand. now we will make the engine for the bot AI swappable using an adapter pattern. you want to build this first principles version, but we should be able to just turn on 2 games at once and watch each of them play!\"}"
+    },
+    {
+      "id": 134,
+      "change_id": "e8248748-0200-4176-98d3-be0f18debadd",
+      "node_type": "option",
+      "title": "Adapter at sim layer (engines inside @soldat/sim)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:27:37.973813-04:00",
+      "updated_at": "2026-06-09T17:27:37.973813-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 135,
+      "change_id": "6d33a89b-84bf-4695-a597-d99fd7d6bee7",
+      "node_type": "option",
+      "title": "Adapter at client layer (engines see world + client weapon state via context)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:27:38.129725-04:00",
+      "updated_at": "2026-06-09T17:27:38.129725-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 136,
+      "change_id": "ebc2da3f-7252-4189-8ab9-9a594c1775c3",
+      "node_type": "decision",
+      "title": "Client-layer BotEngine adapter: ammo/reload/spawns live in Game, and brains need them",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:27:38.284231-04:00",
+      "updated_at": "2026-06-09T17:27:38.284231-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 137,
+      "change_id": "5f855a86-8f11-4abe-841a-ac16e855235d",
+      "node_type": "action",
+      "title": "Implement engine registry + classic/pilot brains + ?ai= param + ?duel side-by-side viewer",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:27:38.434581-04:00",
+      "updated_at": "2026-06-09T17:27:38.434581-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 138,
+      "change_id": "e55b84ca-543a-4fc0-bbcf-5b34ac45539b",
+      "node_type": "goal",
+      "title": "Longform build-diary weblog post with live-captured screenshots",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:28:29.625012-04:00",
+      "updated_at": "2026-06-09T17:28:29.625012-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"write a whole weblog entry about the building up of this game, covering the entire logical model, choices made, weird tidbits worked around, the whole of it. it can be very longform. insert screenshots by running the game at those points in time and executing screenshot capture and showing the game off live to really show off your capabilities\"}"
+    },
+    {
+      "id": 139,
+      "change_id": "5e78211f-1816-4609-bff2-9182be98aa0e",
+      "node_type": "action",
+      "title": "Build CDP screenshot tool (tools/screenshot.mjs) for live game captures",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:30:29.589118-04:00",
+      "updated_at": "2026-06-09T17:30:29.589118-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"soldat-ts/tools/screenshot.mjs\"]}"
+    },
+    {
+      "id": 140,
+      "change_id": "df497808-dbe8-49a5-b3a8-14974ef8ffb5",
+      "node_type": "action",
+      "title": "Write longform build-diary blog post (docs/blog/) with 7 live-captured screenshots",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:38:05.507743-04:00",
+      "updated_at": "2026-06-09T17:38:05.507743-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":88,\"files\":[\"docs/blog/building-soldat-ts.md\"]}"
+    },
+    {
+      "id": 141,
+      "change_id": "7caea8c0-851d-44e6-baa5-6fb3c72557b1",
+      "node_type": "outcome",
+      "title": "Adapter live; duel telemetry: pilot beats classic (35% vs 22% hit rate, 291px vs 164px kills, 71% vs 46% jet use); duel caught pilot aim bug in first minute",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:39:40.458662-04:00",
+      "updated_at": "2026-06-09T17:39:40.458662-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"c5c224d\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3191,6 +3301,116 @@
       "weight": 1.0,
       "rationale": "Transcript completion for sharing",
       "created_at": "2026-06-09T17:00:40.297994-04:00"
+    },
+    {
+      "id": 166,
+      "from_node_id": 131,
+      "to_node_id": 132,
+      "from_change_id": "4bad450e-9fa5-489d-9d51-84ef0062e88f",
+      "to_change_id": "b5fe1a6a-ddf0-46ff-b8a0-56f8e25cac21",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Completed after recovering queued messages from session JSONL",
+      "created_at": "2026-06-09T17:07:42.721447-04:00"
+    },
+    {
+      "id": 167,
+      "from_node_id": 133,
+      "to_node_id": 134,
+      "from_change_id": "e4021944-cc6b-4408-9621-7b4acab2142e",
+      "to_change_id": "e8248748-0200-4176-98d3-be0f18debadd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-06-09T17:27:38.583470-04:00"
+    },
+    {
+      "id": 168,
+      "from_node_id": 133,
+      "to_node_id": 135,
+      "from_change_id": "e4021944-cc6b-4408-9621-7b4acab2142e",
+      "to_change_id": "6d33a89b-84bf-4695-a597-d99fd7d6bee7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-06-09T17:27:38.739336-04:00"
+    },
+    {
+      "id": 169,
+      "from_node_id": 134,
+      "to_node_id": 136,
+      "from_change_id": "e8248748-0200-4176-98d3-be0f18debadd",
+      "to_change_id": "ebc2da3f-7252-4189-8ab9-9a594c1775c3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Rejected: sim cannot see client weapon state",
+      "created_at": "2026-06-09T17:27:38.886672-04:00"
+    },
+    {
+      "id": 170,
+      "from_node_id": 135,
+      "to_node_id": 136,
+      "from_change_id": "6d33a89b-84bf-4695-a597-d99fd7d6bee7",
+      "to_change_id": "ebc2da3f-7252-4189-8ab9-9a594c1775c3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen",
+      "created_at": "2026-06-09T17:27:39.039738-04:00"
+    },
+    {
+      "id": 171,
+      "from_node_id": 136,
+      "to_node_id": 137,
+      "from_change_id": "ebc2da3f-7252-4189-8ab9-9a594c1775c3",
+      "to_change_id": "5f855a86-8f11-4abe-841a-ac16e855235d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T17:27:39.203194-04:00"
+    },
+    {
+      "id": 172,
+      "from_node_id": 138,
+      "to_node_id": 139,
+      "from_change_id": "e55b84ca-543a-4fc0-bbcf-5b34ac45539b",
+      "to_change_id": "5e78211f-1816-4609-bff2-9182be98aa0e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Screenshot rig is the enabling tooling for the live-capture blog post",
+      "created_at": "2026-06-09T17:30:29.756294-04:00"
+    },
+    {
+      "id": 173,
+      "from_node_id": 138,
+      "to_node_id": 140,
+      "from_change_id": "e55b84ca-543a-4fc0-bbcf-5b34ac45539b",
+      "to_change_id": "df497808-dbe8-49a5-b3a8-14974ef8ffb5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "The writing deliverable of the blog goal",
+      "created_at": "2026-06-09T17:38:05.724093-04:00"
+    },
+    {
+      "id": 174,
+      "from_node_id": 139,
+      "to_node_id": 140,
+      "from_change_id": "5e78211f-1816-4609-bff2-9182be98aa0e",
+      "to_change_id": "df497808-dbe8-49a5-b3a8-14974ef8ffb5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Screenshot rig enables the post's live captures",
+      "created_at": "2026-06-09T17:38:05.910759-04:00"
+    },
+    {
+      "id": 175,
+      "from_node_id": 137,
+      "to_node_id": 138,
+      "from_change_id": "5f855a86-8f11-4abe-841a-ac16e855235d",
+      "to_change_id": "e55b84ca-543a-4fc0-bbcf-5b34ac45539b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed; duel-verified",
+      "created_at": "2026-06-09T17:39:40.617076-04:00"
     }
   ]
 }

@@ -1,5 +1,21 @@
 [
   {
+    "hash": "c5c224da6f35957f01b5c59ce3adb016a4d1e33c",
+    "short_hash": "c5c224d",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T17:39:40-04:00",
+    "message": "feat: swappable bot-AI engines (adapter) + ?duel side-by-side engine matches\n\nThe line in the sand (decision node 136): every bot brain now lives behind\none adapter seam — BotEngine/BotBrain in client/src/ai/ with a name registry.\nGame takes aiEngine ('classic'|'pilot'|any registered id; unknown falls back\nto classic), brains see the world plus client weapon state via a narrow\ncontext, and their only output is their bot's control.\n\n- classic: pure extraction of the existing brain (sim updateBot + spectate\n  aim conversion + shared roam fallback) — behavior unchanged, play mode\n  regression-tested\n- pilot: first-principles aerial brain v0 (observation node 130): fights\n  from above (height-edge seeking with fuel commit/reserve), keeps a\n  200-420px range band, strafe-jukes on an rng clock to defeat constant-\n  velocity lead aim, reloads on its own terms and disengages while dry,\n  hunts last-seen positions for 4s after losing LOS, tap-bursts at range,\n  time-of-flight lead + true ballistic drop compensation\n- ?ai=<engine> picks the brain for any match; ?duel[=a,b] runs TWO\n  simultaneous independent matches side by side (iframe per engine, own sim/\n  renderer/telemetry each); telemetry meta now records the engine id\n\nThe duel paid for itself in its first minute: pilot v0 telemetry showed a\n0.1% hit rate — a 60x overshoot in drop compensation — fixed and re-raced.\nFinal 90s comparison: pilot 35% hit rate / 291px median kill distance / 71%\njet use vs classic 22% / 164px / 46%. 396 tests green (6 new: registry\nresolution + per-engine 6000-tick match sustainment + play-mode regression).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 8
+  },
+  {
+    "hash": "9384f566c74429cfff1608a0f0170cc82ae9fa32",
+    "short_hash": "9384f56",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T17:07:39-04:00",
+    "message": "docs: TRANSCRIPT.md — full verbatim conversation from first clone to now\n\nReplaces the curated per-turn summary (still in git history at 7aa3222) with\nthe complete extracted conversation: all three resumed session segments of\n2026-06-08/09, every Robert prompt exactly as typed (including queued\nmid-task messages recovered from the session queue records), every visible\nClaude response. Thinking blocks, tool calls, and tool output omitted.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
     "hash": "8ba891acd1d23ef416ab94d9748c4976af1bb26e",
     "short_hash": "8ba891a",
     "author": "Robert Grayson",
