@@ -87,12 +87,20 @@ export const SPRITE_EDAMPING = f(0.99);
 export { SLIDELIMIT };
 
 // PORT: shared/mechanics/Control.pas:328/334 — iif(GRAV > 0.05, JETSPEED, GRAV*2).
-// DEFAULT_GRAVITY (0.06) > 0.05, so the jet thrust per frame is JETSPEED. We
-// precompute the selected value once; if GRAV ever drops to <= 0.05 the
-// orchestrator can re-derive this from the live gravity.
-// PORT: Control.pas:328 — on-ground jetpack force = -2.5 * JETSPEED.
-export const JET_THRUST = JETSPEED;
+// DEFAULT_GRAVITY (0.06) > 0.05, so the faithful jet thrust per frame would be
+// JETSPEED (0.1, a net lift of only 0.04 against GRAV 0.06).
+//
+// DESIGN OVERRIDE (decision graph node 94): this remake is a VERY vertical
+// game — rocket boots should rocket you UP, not drift you sideways. Thrust is
+// 1.8 × JETSPEED (net lift 0.12, three times the faithful net), and while the
+// jet burns, the air-control force drops to JET_AIR_DRIFT (half FLYSPEED) so
+// boosting reads as "up + steer", not "sideways with lift".
+export const JET_THRUST = f(1.8 * JETSPEED);
+// PORT: Control.pas:328 — on-ground jetpack force = -2.5 * JETSPEED (the
+// takeoff kick; kept faithful).
 export const JET_GROUND_THRUST = f(2.5 * JETSPEED);
+// DESIGN OVERRIDE (node 94): lateral air force while the jet is thrusting.
+export const JET_AIR_DRIFT = f(FLYSPEED / 2);
 
 // ===========================================================================
 // 1. Control -> Forces
@@ -180,6 +188,10 @@ export function applyControl(
 
   // Jetpack thrust (independent of the run/jump else-if chain in Pascal —
   // Control.pas:324 is its own block running before the movement anims).
+  // Captured BEFORE applyJetpack burns fuel so the lateral damping below
+  // matches exactly the ticks that actually thrust.
+  const jetting =
+    control.jetpack && sprite.jetsCount > 0 && sprite.position !== POS_PRONE;
   applyJetpack(sprite, control, spriteParts);
 
   // Pascal assigns (not accumulates) Forces in these branches; the force
@@ -195,8 +207,9 @@ export function applyControl(
       spriteParts.forceX[num] = RUNSPEED;
       spriteParts.forceY[num] = f(-RUNSPEEDUP);
     } else {
-      // Control.pas:1940
-      spriteParts.forceX[num] = FLYSPEED;
+      // Control.pas:1940. DESIGN OVERRIDE (node 94): while the jet thrusts,
+      // air control is halved so the boost goes UP, not sideways.
+      spriteParts.forceX[num] = jetting ? JET_AIR_DRIFT : FLYSPEED;
     }
     return;
   }
@@ -208,8 +221,8 @@ export function applyControl(
       spriteParts.forceX[num] = f(-RUNSPEED);
       spriteParts.forceY[num] = f(-RUNSPEEDUP);
     } else {
-      // Control.pas:1967
-      spriteParts.forceX[num] = f(-FLYSPEED);
+      // Control.pas:1967. DESIGN OVERRIDE (node 94): see the right branch.
+      spriteParts.forceX[num] = f(-(jetting ? JET_AIR_DRIFT : FLYSPEED));
     }
     return;
   }

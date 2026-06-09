@@ -81,4 +81,39 @@ describe('stepWorld applies control on the map path', () => {
     expect(ground - top).toBeGreaterThan(40); // lifted off
     expect(s.jetsCount).toBeLessThan(250); // burned fuel
   });
+
+  // DESIGN OVERRIDE (decision node 94): rocket boots favor UP. While the jet
+  // burns, vertical gain must dominate horizontal drift — the boost is "up +
+  // steer", not "sideways with lift".
+  it('jetting while holding a direction climbs more than it drifts', () => {
+    const { w, p, s } = landedPlayer();
+    const x0 = p.posX[1]!;
+    const y0 = p.posY[1]!;
+    for (let i = 0; i < 80; i++) {
+      s.control = { ...s.control, jetpack: true, right: true };
+      stepWorld(w, { spriteRadius: 0 });
+    }
+    const climb = y0 - p.posY[1]!; // up is -y
+    const drift = p.posX[1]! - x0;
+    expect(climb).toBeGreaterThan(60); // strong vertical boost
+    expect(climb).toBeGreaterThan(drift * 1.5); // UP wins over sideways
+  });
+
+  it('air control is restored once the fuel runs dry', () => {
+    const { w, p, s } = landedPlayer();
+    s.jetsCount = 0;
+    // Get airborne with a jump, then hold right with the (empty) jet held.
+    for (let i = 0; i < 10; i++) {
+      s.control = { ...s.control, up: true };
+      stepWorld(w, { spriteRadius: 0 });
+    }
+    const x0 = p.posX[1]!;
+    for (let i = 0; i < 30; i++) {
+      s.control = { ...s.control, up: false, jetpack: true, right: true };
+      stepWorld(w, { spriteRadius: 0 });
+    }
+    // Full FLYSPEED air control applies (no thrust ticks happened).
+    expect(p.posX[1]! - x0).toBeGreaterThan(3);
+    expect(s.jetsCount).toBe(0);
+  });
 });

@@ -32,7 +32,7 @@ import { Crosshair } from '../render/fx';
 import { buildTexturedMap } from '../render/mapTextured';
 import { AudioEngine } from '../audio/audio';
 import { SoundManager } from '../audio/soundManager';
-import { Game } from './game';
+import { Game, JET_FUEL_MAX } from './game';
 import { buildArena, ARENA_SPAWNS } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 
@@ -345,8 +345,10 @@ async function main(): Promise<void> {
     const hudState: HudState = {
       health: player.health,
       maxHealth: START_HEALTH,
-      jet: player.jetsCountReal,
-      maxJet: 100,
+      // Live fuel (jetsCount is what applyJetpack burns and regen refills;
+      // jetsCountReal is an unused Pascal mirror that never decrements).
+      jet: player.jetsCount,
+      maxJet: JET_FUEL_MAX,
       ammo: game.playerAmmo(),
       weaponName: game.playerReloading() ? 'RELOADING…' : 'RIFLE',
       scores: { alpha: 0, bravo: 0, playerKills: 0, leading: false, gap: 0 },

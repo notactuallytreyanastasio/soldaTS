@@ -52,6 +52,14 @@ const SPREAD_HEAT_DECAY = 0.05; // bloom recovered per tick when not firing
 const SPREAD_MOVE = 0.06; // extra spread while moving fast (stand still to be accurate)
 const MOVE_SPREAD_SPEED = 3; // |vx| above which the move penalty applies
 
+// --- Rocket boots ------------------------------------------------------------
+// This is a VERY vertical game (decision node 94): flying around is the point.
+// A big tank plus on-ground regen means jets gate ENGAGEMENTS (you can't hover
+// forever in a duel) without gating MOVEMENT (you're never stranded walking).
+// The thrust direction itself is tuned in @soldat/sim (JET_THRUST/JET_AIR_DRIFT).
+export const JET_FUEL_MAX = 700; // ticks of burn (~11.7 s of continuous thrust)
+const JET_REGEN_PER_TICK = 3; // refuel rate on the ground (empty→full ~3.9 s)
+
 interface BotEntry {
   readonly index: number;
   readonly brain: BotState;
@@ -156,8 +164,8 @@ export class Game {
     s.deadMeat = false;
     s.dummy = false;
     s.selWeapon = WeaponIndex.AK74;
-    s.jetsCount = 250;
-    s.jetsCountReal = 250;
+    s.jetsCount = JET_FUEL_MAX;
+    s.jetsCountReal = JET_FUEL_MAX;
     s.jumpTicksLeft = 0;
     s.control = {
       left: false,
@@ -251,6 +259,15 @@ export class Game {
 
     // Physics + bullets + things.
     stepWorld(this.world);
+
+    // Jet refuel: standing on the ground with the burner off tops the tank
+    // back up (player and bots alike).
+    for (const s of this.world.sprites) {
+      if (s.deadMeat || !s.active) continue;
+      if (s.onGround && !s.control.jetpack && s.jetsCount < JET_FUEL_MAX) {
+        s.jetsCount = Math.min(s.jetsCount + JET_REGEN_PER_TICK, JET_FUEL_MAX);
+      }
+    }
 
     // Death / respawn upkeep.
     this.respawnUpkeep();
