@@ -890,6 +890,105 @@
       "created_at": "2026-06-09T14:04:49.573743-04:00",
       "updated_at": "2026-06-09T14:04:49.573743-04:00",
       "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":90,\"prompt\":\"spin up a workflow that will make it focus on making the game playable with no mouse, using wsad + ijkl and tab/space/shift\"}"
+    },
+    {
+      "id": 82,
+      "change_id": "79ce5da1-b23c-42b0-954b-61b6cf54c60f",
+      "node_type": "goal",
+      "title": "Controls screen on every game start (dev: always first-start)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:10:23.479119-04:00",
+      "updated_at": "2026-06-09T14:10:23.479119-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":90,\"prompt\":\"we also sohuld make a screen that shows the controls on first game start (and make it seem like every startup for us is a first start to make sure its accurate etc)\"}"
+    },
+    {
+      "id": 83,
+      "change_id": "44da4ef6-4215-4a63-81c4-e79cae4f707a",
+      "node_type": "action",
+      "title": "Implement keyboard-only controls: IJKL aim state machine, Space=fire, Tab=reload, blur hardening in input.ts + tests",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:17:30.991375-04:00",
+      "updated_at": "2026-06-09T14:17:30.991375-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":85}"
+    },
+    {
+      "id": 84,
+      "change_id": "5e2bd8d4-730f-4e0f-9089-11425e83ae52",
+      "node_type": "outcome",
+      "title": "Keyboard-only controls implemented: typecheck + 338 tests green (19 new input tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:24:31.835020-04:00",
+      "updated_at": "2026-06-09T14:24:31.835020-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":95,\"files\":[\"soldat-ts/packages/client/src/input/input.ts\",\"soldat-ts/packages/client/src/input/input.test.ts\",\"soldat-ts/packages/client/src/app/main.ts\"]}"
+    },
+    {
+      "id": 85,
+      "change_id": "0715310f-8647-482b-a05f-be8786d51d8b",
+      "node_type": "action",
+      "title": "Write TRANSCRIPT.md — shareable session transcript",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:31:03.336439-04:00",
+      "updated_at": "2026-06-09T14:31:03.336439-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":90}"
+    },
+    {
+      "id": 86,
+      "change_id": "e73b68fc-1781-4abf-b159-439279fc343f",
+      "node_type": "action",
+      "title": "Fix first-mousemove takeover bug: baseline-only first mouse sample in input.ts",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:34:57.926904-04:00",
+      "updated_at": "2026-06-09T14:34:57.926904-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":90}"
+    },
+    {
+      "id": 87,
+      "change_id": "50b7717b-f945-4efc-a789-7053388a7ac6",
+      "node_type": "outcome",
+      "title": "First-mousemove takeover bug fixed; typecheck + 339 tests green",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:36:02.621991-04:00",
+      "updated_at": "2026-06-09T14:36:02.621991-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 88,
+      "change_id": "77c21477-db36-4915-8c10-e5e4d76df62d",
+      "node_type": "outcome",
+      "title": "Keyboard-only controls verified (CDP playtest + 339 tests) and committed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:43:27.804748-04:00",
+      "updated_at": "2026-06-09T14:43:27.804748-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"8c75a7e\",\"confidence\":95,\"files\":[\"soldat-ts/packages/client/src/input/input.ts\",\"soldat-ts/packages/client/src/input/input.test.ts\",\"soldat-ts/packages/client/src/app/main.ts\"]}"
+    },
+    {
+      "id": 89,
+      "change_id": "0e48d066-00d8-4d02-93b3-a7e851b10f72",
+      "node_type": "action",
+      "title": "Implement startup controls screen rendered from the real binding table",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:43:28.118661-04:00",
+      "updated_at": "2026-06-09T14:43:28.118661-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 90,
+      "change_id": "475146f2-16a7-4d4e-a2be-fcf0707a2104",
+      "node_type": "outcome",
+      "title": "Controls screen live: 8-row overlay, browser-verified, 342 tests green",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T14:48:03.620937-04:00",
+      "updated_at": "2026-06-09T14:48:03.620937-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a37fcae\",\"confidence\":95,\"files\":[\"soldat-ts/packages/client/src/ui/controlsScreen.ts\",\"soldat-ts/packages/client/src/input/input.ts\",\"soldat-ts/packages/client/src/app/main.ts\"]}"
     }
   ],
   "edges": [
@@ -2091,6 +2190,116 @@
       "weight": 1.0,
       "rationale": "Playtest of the one-gun dynamic felt right; user ratified it as the starting baseline",
       "created_at": "2026-06-09T14:01:42.963555-04:00"
+    },
+    {
+      "id": 111,
+      "from_node_id": 81,
+      "to_node_id": 82,
+      "from_change_id": "c55078d2-a3a7-400d-96a8-26dea3383a20",
+      "to_change_id": "79ce5da1-b23c-42b0-954b-61b6cf54c60f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Controls screen documents the new keyboard-only scheme; depends on its final mapping",
+      "created_at": "2026-06-09T14:10:29.751540-04:00"
+    },
+    {
+      "id": 112,
+      "from_node_id": 81,
+      "to_node_id": 83,
+      "from_change_id": "c55078d2-a3a7-400d-96a8-26dea3383a20",
+      "to_change_id": "44da4ef6-4215-4a63-81c4-e79cae4f707a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation step",
+      "created_at": "2026-06-09T14:17:34.245052-04:00"
+    },
+    {
+      "id": 113,
+      "from_node_id": 83,
+      "to_node_id": 84,
+      "from_change_id": "44da4ef6-4215-4a63-81c4-e79cae4f707a",
+      "to_change_id": "5e2bd8d4-730f-4e0f-9089-11425e83ae52",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation result",
+      "created_at": "2026-06-09T14:24:31.977620-04:00"
+    },
+    {
+      "id": 115,
+      "from_node_id": 82,
+      "to_node_id": 85,
+      "from_change_id": "79ce5da1-b23c-42b0-954b-61b6cf54c60f",
+      "to_change_id": "0715310f-8647-482b-a05f-be8786d51d8b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Transcript documents the session including the controls-screen request",
+      "created_at": "2026-06-09T14:31:36.247724-04:00"
+    },
+    {
+      "id": 116,
+      "from_node_id": 81,
+      "to_node_id": 86,
+      "from_change_id": "c55078d2-a3a7-400d-96a8-26dea3383a20",
+      "to_change_id": "e73b68fc-1781-4abf-b159-439279fc343f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation step",
+      "created_at": "2026-06-09T14:35:01.601669-04:00"
+    },
+    {
+      "id": 117,
+      "from_node_id": 86,
+      "to_node_id": 87,
+      "from_change_id": "e73b68fc-1781-4abf-b159-439279fc343f",
+      "to_change_id": "50b7717b-f945-4efc-a789-7053388a7ac6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "result of fix",
+      "created_at": "2026-06-09T14:36:02.766194-04:00"
+    },
+    {
+      "id": 120,
+      "from_node_id": 84,
+      "to_node_id": 86,
+      "from_change_id": "5e2bd8d4-730f-4e0f-9089-11425e83ae52",
+      "to_change_id": "e73b68fc-1781-4abf-b159-439279fc343f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Verification round 1 caught a first-mousemove takeover bug",
+      "created_at": "2026-06-09T14:43:47.430932-04:00"
+    },
+    {
+      "id": 121,
+      "from_node_id": 87,
+      "to_node_id": 88,
+      "from_change_id": "50b7717b-f945-4efc-a789-7053388a7ac6",
+      "to_change_id": "77c21477-db36-4915-8c10-e5e4d76df62d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "After the fix all 3 verifiers passed; committed as 8c75a7e",
+      "created_at": "2026-06-09T14:43:47.611539-04:00"
+    },
+    {
+      "id": 122,
+      "from_node_id": 82,
+      "to_node_id": 89,
+      "from_change_id": "79ce5da1-b23c-42b0-954b-61b6cf54c60f",
+      "to_change_id": "0e48d066-00d8-4d02-93b3-a7e851b10f72",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation of the controls-screen goal",
+      "created_at": "2026-06-09T14:43:47.809144-04:00"
+    },
+    {
+      "id": 123,
+      "from_node_id": 89,
+      "to_node_id": 90,
+      "from_change_id": "0e48d066-00d8-4d02-93b3-a7e851b10f72",
+      "to_change_id": "475146f2-16a7-4d4e-a2be-fcf0707a2104",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation verified in browser (CDP) and committed as a37fcae",
+      "created_at": "2026-06-09T14:48:08.374215-04:00"
     }
   ]
 }

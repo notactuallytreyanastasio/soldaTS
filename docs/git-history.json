@@ -1,5 +1,21 @@
 [
   {
+    "hash": "a37fcae568a43401c3d8c00f5afdd378f31ec3cf",
+    "short_hash": "a37fcae",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T14:47:57-04:00",
+    "message": "feat(client): startup controls screen rendered from the real binding table\n\nFull-screen DOM overlay listing the keyboard-only controls, shown over the\nrunning game until the first keypress (which also acts in game — right feel\nfor a fast drop-in shooter). Rendered from CONTROL_BINDINGS, a table exported\nfrom input.ts next to the key switch; new tests assert every documented code\nis actually handled by InputController (handled keys preventDefault), so the\nscreen cannot silently drift from the real bindings.\n\nEvery startup currently counts as a first start (ALWAYS_SHOW) while the\nscheme is in flux; a localStorage gate is already in place for when it\nstabilises.\n\nVerified: typecheck + 342 tests green; CDP browser check — overlay present\nwith all 8 rows over the live game, dismissed by the first keypress.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "8c75a7e5abba4d0489fe93838ec5f6539f017ba4",
+    "short_hash": "8c75a7e",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T14:43:20-04:00",
+    "message": "feat(client): keyboard-only controls — WASD move, IJKL aim, Space fire, Tab reload\n\nThe game is now fully playable with no mouse. IJKL drive a persistent aim\nangle emitted through the unchanged Control.mouseAimX/Y offset contract:\ndt-based two-phase rotation (3 rad/s fine-nudge for 80ms after each chord\nchange, then 14 rad/s swing) toward 8 octant targets, exact settle, instant\nelevation-preserving mirror-flip for turnarounds, ±1px vertical-aim facing\nbias. Space fires (W/Up is jump), Tab reloads (preventDefault on both key\nevents so focus never moves), Shift stays jetpack. Mouse remains optional:\n3px-accumulated mousemove reclaims aim, any IJKL keydown takes it back\nseeded from the last offset so the crosshair never jumps. Window blur now\nclears all held keys (fixes latent stuck-key bug for ALL bindings).\n\nVerified: typecheck + 339 tests green (20 new input tests); live headless-\nChrome CDP playtest with zero mouse events — movement, jump/jet, all aim\nchords + persistence, ammo drain 30->21 on held Space, Tab reload, focus\nretained after Tab. Multi-agent workflow: 3-lens design + judge, implement,\n3-verifier adversarial check, 1 fix round.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "967097b7623f6e8b24b3bc7ad10d97a9367a99f0",
     "short_hash": "967097b",
     "author": "pewpew",
