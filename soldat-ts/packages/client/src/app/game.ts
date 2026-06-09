@@ -75,10 +75,20 @@ export interface BulletRenderView {
   style: number;
 }
 
+/** Sound event hook: (event, worldX, worldY). Set by the client to play sfx. */
+export type GameSoundHook = (
+  event: 'fire' | 'reloadStart' | 'death',
+  x: number,
+  y: number,
+) => void;
+
 export class Game {
   readonly world: World;
   readonly playerIndex = 1;
   framePercent = 0;
+
+  /** Optional sound hook — invoked on fire / reload / death (world coords). */
+  onSound: GameSoundHook | null = null;
 
   private accumulator = 0;
   private readonly spawns: readonly { x: number; y: number }[];
@@ -268,6 +278,7 @@ export class Game {
     // Manual reload (R) when not full and not already reloading.
     if (s.control.reload && !reloading && (this.ammo[index] ?? 0) < MAG_SIZE) {
       this.reloadUntil[index] = clock + RELOAD_TICKS;
+      this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
     }
 
@@ -282,6 +293,7 @@ export class Game {
     // Empty magazine → auto-reload.
     if ((this.ammo[index] ?? 0) <= 0) {
       this.reloadUntil[index] = clock + RELOAD_TICKS;
+      this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
     }
 
@@ -321,6 +333,7 @@ export class Game {
     this.ammo[index] = (this.ammo[index] ?? 0) - 1;
     this.sprayHeat[index] = Math.min(SPREAD_HEAT_MAX, (this.sprayHeat[index] ?? 0) + SPREAD_HEAT_PER_SHOT);
     this.nextFireTick[index] = clock + FIRE_INTERVAL;
+    this.onSound?.('fire', px, py);
   }
 
   /** Start respawn timers for the freshly dead; respawn when they elapse. */
@@ -332,6 +345,8 @@ export class Game {
       if (s.deadMeat || s.health <= 0) {
         if ((this.respawnIn[index] ?? 0) === 0) {
           this.respawnIn[index] = RESPAWN_TICKS;
+          const dp = this.world.spriteParts;
+          this.onSound?.('death', dp?.posX[index] ?? 0, dp?.posY[index] ?? 0);
           s.deadMeat = true;
           // freeze control while dead
           s.control = { ...s.control, left: false, right: false, up: false, fire: false, jetpack: false };

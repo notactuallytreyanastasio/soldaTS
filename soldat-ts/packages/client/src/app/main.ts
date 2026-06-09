@@ -29,6 +29,8 @@ import { Hud, type HudState } from '../ui/hud';
 import { START_HEALTH } from '../ui/helpers';
 import { Crosshair } from '../render/fx';
 import { buildTexturedMap } from '../render/mapTextured';
+import { AudioEngine } from '../audio/audio';
+import { SoundManager } from '../audio/soundManager';
 import { Game } from './game';
 import { buildArena, ARENA_SPAWNS } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
@@ -208,6 +210,22 @@ async function main(): Promise<void> {
   const game = new Game({ seed: 1, spawns, botCount: 3 });
   // Attach the sim collision map so sprites collide with the floor.
   game.loadMap(map);
+
+  // --- Sound: load sfx, resume audio on first input, play on game events ----
+  const audio = new AudioEngine();
+  const sound = new SoundManager(audio);
+  void sound.load();
+  const resumeAudio = (): void => {
+    void audio.resume();
+  };
+  window.addEventListener('pointerdown', resumeAudio, { once: true });
+  window.addEventListener('keydown', resumeAudio, { once: true });
+  game.onSound = (event, x, y): void => {
+    const sp = game.world.spriteParts;
+    const lx = sp?.posX[game.playerIndex] ?? 0;
+    const ly = sp?.posY[game.playerIndex] ?? 0;
+    sound.play(event, x, y, lx, ly);
+  };
 
   // --- Entity renderer: lives inside the camera/world container --------
   // Adding to renderer.world means entity graphics share the map's pan/zoom
