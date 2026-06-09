@@ -780,6 +780,50 @@
       "created_at": "2026-06-08T17:37:17.278697-04:00",
       "updated_at": "2026-06-08T17:37:17.278697-04:00",
       "metadata_json": "{\"branch\":\"develop\",\"confidence\":86,\"files\":[\"soldat-ts/packages/modding/src/host.ts\",\"soldat-ts/packages/modding/src/api.ts\"]}"
+    },
+    {
+      "id": 72,
+      "change_id": "b678d541-f8d0-4fc3-9ff9-5826e54250f6",
+      "node_type": "outcome",
+      "title": "M0-M8 complete + capstone; loop paused at human-gated work",
+      "description": "Numbered milestone arc M0-M8 done. Capstone: soldat-ts/README.md, HUD wired into client loop, PROCESS state-of-the-rewrite summary. 38 commits on PR #1, 269 tests green f64+STRICT_F32, tsc clean. Autonomous loop PAUSED: remaining work is human-gated and not attempted blind — (1) FreePascal golden-master cross-check for feel validation, (2) browser smoke-test of the client, (3) WebTransport server runtime, (4) decisions on Gostek/animation/AoE/INF-HTF fidelity. All deferrals logged across graph nodes 42,50,54,58,60,62,65,67,70.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:40:06.077272-04:00",
+      "updated_at": "2026-06-08T17:40:06.077272-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":88}"
+    },
+    {
+      "id": 73,
+      "change_id": "b09960d7-a5a6-42c3-8296-d504bd03d1e6",
+      "node_type": "observation",
+      "title": "[review] M8 'sandboxed ScriptHost' is not sandboxed — reproduces the original's worst failure mode",
+      "description": "Delta review #6. node 71 markets M8 as 'sandboxed ScriptHost', but modding/src/host.ts states in its own comments: 'There is no per-tick CPU budget; a runaway loop hangs forever.' It runs mod handlers IN-PROCESS with a documented seam (Inject a production isolation invoker) for a future isolated-vm/Worker build. PORT-PLAN §8 sold M8's safety as the headline win — 'a hung OnClockTick cannot stall the server, the original's worst failure mode, fixed by design.' The current implementation does NOT fix that failure mode; it reproduces it exactly. The code is honest about this, but the milestone/node title is not — 'done' here means 'mod API + event dispatch wired', with the sandbox (the actual de-risking value) still stubbed. Recommend retitling to 'mod API + UNSANDBOXED host (isolation pending)' and tracking the real isolated-vm/Worker + CPU-budget build as explicit remaining M8 work.",
+      "status": "pending",
+      "created_at": "2026-06-08T17:42:34.876822-04:00",
+      "updated_at": "2026-06-08T17:42:34.876822-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":86,\"files\":[\"soldat-ts/packages/modding/src/host.ts\"]}"
+    },
+    {
+      "id": 74,
+      "change_id": "d936ae2b-ef87-4d3a-ab74-9ad1fd6b4f0f",
+      "node_type": "observation",
+      "title": "[review] Sequence human-gated work fpc-FIRST — it can retroactively invalidate M2-M8",
+      "description": "Delta review #6. node 72 pauses with 3-4 human-gated items (fpc golden cross-check, browser smoke-test, WebTransport runtime, fidelity decisions) presented as a flat remaining-work list. They are not co-equal: the fpc golden-master cross-check is load-bearing for everything else. If it reveals the f64/f32 integrator diverges from Pascal feel, the fix touches the shared physics core that M2-M8 (movement, combat, bots, and netcode client-prediction which re-runs the sim) ALL depend on. Browser rendering polish and transport wiring built before that gate fires risk being redone. Recommendation: order the human-gated work fpc-fidelity FIRST (cheap to attempt — the instrument-serverloop.patch is written; finding 52 notes the CI already provisions fpc), and only invest in browser/Gostek/transport once feel is confirmed. This is the concrete prioritization of the verification-depth point (finding 68).",
+      "status": "pending",
+      "created_at": "2026-06-08T17:42:35.162623-04:00",
+      "updated_at": "2026-06-08T17:42:35.162623-04:00",
+      "metadata_json": "{\"branch\":\"rewrite/ts-port\",\"confidence\":83}"
+    },
+    {
+      "id": 75,
+      "change_id": "1802acf2-40d0-474d-97ee-f9b479c1a491",
+      "node_type": "outcome",
+      "title": "Browser smoke-test done: fixed 2 runtime bugs, game now renders & plays",
+      "description": "User reported \"nothing in the game works\". Drove the client in headless Chrome via CDP (screenshots) and found two runtime bugs the typecheck-only verification missed: (1) MapRenderer custom GLSL/WGSL shader had unbound uColor -> map drew BLACK (invisible); fixed by drawing the map with pixi Graphics (per-triangle averaged vertex color). (2) Collision failed on the synthetic/gridless map: PolyMap bailed with no sector grid, AND degenerate normals gave zero edge perpendiculars -> push-out (0,0) -> players fell through; fixed with PolyMap.candidatePolys brute-force fallback + buildPolyMap geometric inward-normal derivation. Screenshot confirms: map renders (colored triangles + ground) and player rests standing on the ground. Regression test added. 271 tests green f64+STRICT_F32. Fixes pushed (0af9392, 8a03878).",
+      "status": "pending",
+      "created_at": "2026-06-09T10:28:10.177806-04:00",
+      "updated_at": "2026-06-09T10:28:10.177806-04:00",
+      "metadata_json": "{\"branch\":\"develop\",\"confidence\":90}"
     }
   ],
   "edges": [
@@ -1882,6 +1926,50 @@
       "weight": 1.0,
       "rationale": "M8 modding delivered; completes M0-M8",
       "created_at": "2026-06-08T17:37:17.421739-04:00"
+    },
+    {
+      "id": 102,
+      "from_node_id": 1,
+      "to_node_id": 72,
+      "from_change_id": "f0d02e2c-ef94-4306-b5cb-2a4d0182aa2d",
+      "to_change_id": "b678d541-f8d0-4fc3-9ff9-5826e54250f6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Understanding->plan->M0-M8 execution complete; capstone",
+      "created_at": "2026-06-08T17:40:06.218196-04:00"
+    },
+    {
+      "id": 103,
+      "from_node_id": 39,
+      "to_node_id": 73,
+      "from_change_id": "ba9997b0-0c2d-49cd-9c94-a12935edde0f",
+      "to_change_id": "b09960d7-a5a6-42c3-8296-d504bd03d1e6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #6: M8 sandbox is the deliverable's value and it is stubbed",
+      "created_at": "2026-06-08T17:42:35.016750-04:00"
+    },
+    {
+      "id": 104,
+      "from_node_id": 33,
+      "to_node_id": 74,
+      "from_change_id": "3bdcb4ea-b676-409d-b139-8a896244f0ec",
+      "to_change_id": "d936ae2b-ef87-4d3a-ab74-9ad1fd6b4f0f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Review #6: fpc fidelity gate should precede other human-gated work",
+      "created_at": "2026-06-08T17:42:35.302149-04:00"
+    },
+    {
+      "id": 105,
+      "from_node_id": 67,
+      "to_node_id": 75,
+      "from_change_id": "abc0205c-573d-4212-975a-7cbee3f0c6c2",
+      "to_change_id": "1802acf2-40d0-474d-97ee-f9b479c1a491",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Resolves the M3/Playable-SP browser smoke-test gap",
+      "created_at": "2026-06-09T10:28:10.275683-04:00"
     }
   ]
 }

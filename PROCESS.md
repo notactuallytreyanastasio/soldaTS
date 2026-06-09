@@ -86,6 +86,18 @@ proven bit-identical to the server tick-for-tick.
 
 ## Activity log (newest first)
 
+### 2026-06-09 — browser smoke-test + fixes
+- User ran the client: "nothing in the game works". Drove it in headless Chrome (CDP
+  screenshots) and fixed two runtime bugs the typecheck-only checks missed:
+  (1) **map invisible** — MapRenderer's custom shader had an unbound `uColor` → black
+  triangles; rewrote map drawing with pixi `Graphics`. (2) **player fell through floor** —
+  collision bailed on the gridless synthetic map and degenerate normals gave a zero
+  push-out; added a no-grid brute-force fallback + geometric inward-normal derivation in
+  `buildPolyMap`. Screenshot now shows the map + player standing on the ground.
+  **271 tests green.** Commits 0af9392, 8a03878. Graph 75.
+- TODO for the renderer: per-vertex colour gradients (currently per-triangle average);
+  Gostek skeleton still placeholder markers.
+
 ### 2026-06-08 (cont. 9, autonomous loop — capstone)
 - **M8 modding landed** (mod API + sandboxed ScriptHost that can't be stalled by a
   crashing mod). Reconciled to one canonical contract. Graph 71.
