@@ -164,6 +164,9 @@ export function applyHealthHit(
   // Health := Health - HM   (Sprites.pas:3308)
   sprite.health = f(sprite.health - hm);
 
+  // GLUE: telemetry observer — notification only, after the damage landed.
+  world.onDamage?.(spriteIndex, bullet !== undefined ? bullet.owner : 0, hm);
+
   // safety precautions (Sprites.pas:3349-3353)
   if (sprite.health < BRUTALDEATHHEALTH - 1) {
     sprite.health = BRUTALDEATHHEALTH;

@@ -174,6 +174,9 @@ export class Game {
    */
   onKill: ((killer: number, victim: number) => void) | null = null;
 
+  /** Optional shot hook — invoked for every bullet spawned (telemetry). */
+  onShot: ((shooter: number) => void) | null = null;
+
   private accumulator = 0;
   private readonly spectate: boolean;
   private readonly spawns: readonly { x: number; y: number }[];
@@ -583,6 +586,7 @@ export class Game {
     this.ammo[index] = (this.ammo[index] ?? 0) - 1;
     this.sprayHeat[index] = Math.min(SPREAD_HEAT_MAX, (this.sprayHeat[index] ?? 0) + SPREAD_HEAT_PER_SHOT);
     this.nextFireTick[index] = clock + FIRE_INTERVAL;
+    this.onShot?.(index);
     this.onSound?.('fire', px, py);
   }
 

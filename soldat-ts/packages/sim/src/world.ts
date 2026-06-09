@@ -59,6 +59,14 @@ export interface World {
   // --- Deterministic randomness (replaces Pascal global Random) ---
   // The sim must never call Math.random; all randomness flows through here.
   rng: Rng;
+
+  // --- Observation hooks (GLUE; no Pascal provenance) ---
+  /**
+   * Optional damage observer: (victim, attacker, amount) after each health
+   * hit lands (attacker 0 = unattributed). Notification ONLY — observers must
+   * never mutate the world, or determinism dies. Used by match telemetry.
+   */
+  onDamage: ((victim: number, attacker: number, amount: number) => void) | null;
 }
 
 // --- Sentinel/empty record factories ---------------------------------------
@@ -234,5 +242,6 @@ export function createWorld(): World {
     sparkParts: null,
     thingParts: null,
     rng: new Rng(),
+    onDamage: null,
   };
 }

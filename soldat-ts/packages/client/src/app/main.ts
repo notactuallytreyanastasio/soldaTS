@@ -44,6 +44,7 @@ import {
   type KillBoard,
   type SubjectInfo,
 } from './director';
+import { MatchRecorder } from './telemetry';
 
 // ---------------------------------------------------------------------------
 // Synthetic map
@@ -272,7 +273,34 @@ async function main(): Promise<void> {
   const director = new Director(game.botIndices()[0] ?? game.playerIndex);
   const board: KillBoard = { kills: new Map(), feed: [] };
   const nameOf = (i: number): string => subjectName(i, game.playerIndex);
+
+  // --- Match telemetry (spectate only) ------------------------------------
+  // Records samples/shots/hits/kills under a versioned JSON schema so agents
+  // and tooling can analyze the gameplay math (hit rates, flight patterns,
+  // death clusters). Pull via window.__match.dump() (CDP-friendly), save with
+  // the T key, analyze with soldat-ts/tools/analyze-match.mjs.
+  const recorder = spectate
+    ? new MatchRecorder(game, map.mapName, botCount, spectate)
+    : null;
+  if (recorder !== null) {
+    (window as unknown as { __match: { dump(): unknown } }).__match = {
+      dump: (): unknown => recorder.dump(),
+    };
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.code !== 'KeyT') return;
+      const blob = new Blob([JSON.stringify(recorder.dump())], {
+        type: 'application/json',
+      });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `match-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  }
+
   game.onKill = (killer, victim): void => {
+    recorder?.recordKill(killer, victim);
     applyKill(
       board,
       killer,
@@ -515,6 +543,7 @@ async function main(): Promise<void> {
 
     // 3. Advance the simulation by real elapsed time (fixed-step internally).
     game.tick(dt);
+    recorder?.maybeSample();
 
     // 4. Render entities, interpolated between ticks by the leftover fraction.
     entityRenderer.render(game.world, game.framePercent);
