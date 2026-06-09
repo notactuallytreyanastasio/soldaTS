@@ -1,0 +1,7 @@
+dist/
+node_modules/
+public/gfx/
+public/sfx/
+public/objects/
+public/textures/
+public/maps/*.pms

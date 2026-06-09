@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:strict": "STRICT_F32=1 vitest run",
     "play": "pnpm --filter @soldat/client dev",
-    "dev": "pnpm --filter @soldat/client dev"
+    "dev": "pnpm --filter @soldat/client dev",
+    "assets": "bash tools/fetch-assets.sh"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -28,6 +28,7 @@ import { InputController } from '../input/input';
 import { Hud, type HudState } from '../ui/hud';
 import { START_HEALTH } from '../ui/helpers';
 import { Crosshair } from '../render/fx';
+import { buildTexturedMap } from '../render/mapTextured';
 import { Game } from './game';
 import { buildArena, ARENA_SPAWNS } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
@@ -185,9 +186,22 @@ async function main(): Promise<void> {
   }
   // ----------------------------------------------------------------------
 
-  // Draw the static map geometry.
+  // Draw the static map geometry (flat-colour fallback).
   const mesh = buildMapMesh(map);
   renderer.setMap(mesh);
+
+  // Try to overlay the REAL map texture on top of the flat geometry. If the
+  // texture is missing, buildTexturedMap returns an empty container and we keep
+  // the flat map. Inserted just above the flat map, below entities.
+  try {
+    const texturedMap = await buildTexturedMap(map, mesh);
+    if (texturedMap.children.length > 0) {
+      renderer.world.addChildAt(texturedMap, 1);
+    }
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('textured map failed, using flat colours:', err);
+  }
 
   // --- Game: sim world + local player + bots ---------------------------
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
@@ -201,6 +215,12 @@ async function main(): Promise<void> {
   const entityRenderer = new EntityRenderer();
   entityRenderer.playerIndex = game.playerIndex;
   renderer.world.addChild(entityRenderer.container);
+  // Load the real Gostek part textures (async); until ready, the vector
+  // fallback draws. Don't block the loop on it.
+  void entityRenderer.enableTextured().catch((err: unknown) => {
+    // eslint-disable-next-line no-console
+    console.warn('textured Gostek unavailable, using vector figures:', err);
+  });
 
   // Crosshair at the aim point (in the world container, follows the camera).
   const crosshair = new Crosshair();

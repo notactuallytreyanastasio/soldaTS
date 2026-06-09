@@ -19,6 +19,12 @@ import {
   type World,
 } from '@soldat/sim';
 import { drawGostek } from './gostek';
+import { TexturedGostek } from './gostekTextured';
+
+/** How many textured-Gostek instances to pre-build (player + bots + headroom). */
+const GOSTEK_POOL = 12;
+/** World-Y nudge so the textured figure's feet sit on the collision contact. */
+const GOSTEK_Y_OFFSET = -8;
 
 /**
  * Per-entity interpolation state. `prevX/prevY` is the entity's position at the
@@ -69,11 +75,36 @@ export class EntityRenderer {
   /** 1-based index of the local player (drawn in the player tint). */
   playerIndex = 1;
 
+  // Textured Gostek: a pre-loaded pool of figures (one per sprite slot). When
+  // ready, sprites are drawn with the real part PNGs instead of vector limbs.
+  private texturedReady = false;
+  private readonly gostekLayer: Container = new Container();
+  private readonly gostekPool: (TexturedGostek | undefined)[] = [];
+
+  /**
+   * Load the real Gostek part textures and pre-build a pool of figures. Call
+   * once (async) during startup; until it resolves, sprites render with the
+   * vector fallback. Safe to skip — on failure we keep the vector look.
+   */
+  async enableTextured(): Promise<void> {
+    await TexturedGostek.load();
+    for (let i = 1; i <= GOSTEK_POOL; i++) {
+      const g = new TexturedGostek();
+      await g.load();
+      g.view.visible = false;
+      this.gostekLayer.addChild(g.view);
+      this.gostekPool[i] = g;
+    }
+    this.spriteGfx.visible = false; // hide vector limbs once textured is live
+    this.texturedReady = true;
+  }
+
   constructor() {
     // Draw order: things under bullets under sprites (players on top).
     this.container.addChild(this.thingGfx);
     this.container.addChild(this.bulletGfx);
     this.container.addChild(this.spriteGfx);
+    this.container.addChild(this.gostekLayer);
   }
 
   /**
@@ -94,7 +125,7 @@ export class EntityRenderer {
 
   private renderSprites(world: World, t: number): void {
     const g = this.spriteGfx;
-    g.clear();
+    if (!this.texturedReady) g.clear();
     const parts = world.spriteParts;
     if (parts === null) return;
 
@@ -102,6 +133,8 @@ export class EntityRenderer {
       const sprite = world.sprites[i];
       if (sprite === undefined || !sprite.active) {
         this.spriteInterp[i] = undefined;
+        const pooled = this.gostekPool[i];
+        if (pooled !== undefined) pooled.view.visible = false;
         continue;
       }
       const num = sprite.num;
@@ -122,22 +155,41 @@ export class EntityRenderer {
       // Aim point = COM + the control's relative aim vector.
       const aimX = x + sprite.control.mouseAimX;
       const aimY = y + sprite.control.mouseAimY;
+      const team = i === this.playerIndex ? 1 : 2;
+      const facing = sprite.direction >= 0 ? 1 : -1;
 
-      // The collision COM rests near the feet; draw the figure anchored so its
-      // hips sit above the contact point (FOOT_LIFT puts the body over the COM).
-      drawGostek(g, {
-        comX: x,
-        comY: y - FOOT_LIFT,
-        aimX,
-        aimY,
-        vx,
-        vy,
-        onGround: sprite.onGround,
-        phase,
-        team: i === this.playerIndex ? 1 : 2,
-        alpha: sprite.deadMeat ? 0.45 : 1,
-        dead: sprite.deadMeat,
-      });
+      const pooled = this.texturedReady ? this.gostekPool[i] : undefined;
+      if (pooled !== undefined) {
+        pooled.view.visible = true;
+        pooled.update({
+          comX: x,
+          comY: y + GOSTEK_Y_OFFSET,
+          aimX,
+          aimY,
+          vx,
+          vy,
+          onGround: sprite.onGround,
+          phase,
+          facing,
+          team,
+          dead: sprite.deadMeat,
+        });
+      } else {
+        // Vector fallback (textures not loaded / pool exhausted).
+        drawGostek(g, {
+          comX: x,
+          comY: y - FOOT_LIFT,
+          aimX,
+          aimY,
+          vx,
+          vy,
+          onGround: sprite.onGround,
+          phase,
+          team,
+          alpha: sprite.deadMeat ? 0.45 : 1,
+          dead: sprite.deadMeat,
+        });
+      }
     }
   }
 
