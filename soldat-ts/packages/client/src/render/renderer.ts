@@ -1,158 +1,19 @@
-// MapRenderer — PixiJS v8 browser glue that draws a triangulated map mesh.
+// MapRenderer — PixiJS v8 browser glue that draws the map.
 //
-// GLUE module: this is the only place pixi.js is touched for map drawing. It
-// consumes the Track-C MapMesh contract (positions / colors / uvs / indices)
-// and builds a real pixi Geometry + Mesh with a custom per-vertex-color shader,
-// then exposes a simple camera (pan / zoom via the stage transform) and a
-// resize handler.
+// GLUE module: the only place pixi.js is touched for map drawing. It consumes
+// the Track-C MapMesh contract (positions / colors / uvs / indices) and draws
+// each triangle as a filled pixi Graphics polygon, then exposes a simple camera
+// (pan / zoom via the world container transform) and a resize handler.
 //
-// Faithful note: OpenSoldat renders the map by filling a vertex buffer of
-// per-vertex-coloured triangles and drawing them with the world/projection
-// transform (client/GameRendering.pas / MapGraphics.pas). We mirror that here:
-// one Mesh, vertex colours straight from the PMS polygons, camera applied as
-// the container transform.
+// Faithful note: OpenSoldat fills a vertex buffer of per-vertex-coloured
+// triangles and draws them with the world/projection transform
+// (client/GameRendering.pas / MapGraphics.pas). We mirror the geometry; each
+// triangle is filled with the average of its three vertex colours (pixi
+// Graphics has no per-vertex gradient — a solid fill is robust and reads fine
+// for gameplay; a per-vertex-colour Mesh shader can replace this later).
 
-import {
-  Application,
-  Container,
-  Geometry,
-  GlProgram,
-  GpuProgram,
-  Mesh,
-  Shader,
-} from 'pixi.js';
+import { Application, Container, Graphics } from 'pixi.js';
 import type { MapMesh } from './mapMesh';
-
-// ---------------------------------------------------------------------------
-// Shaders
-// ---------------------------------------------------------------------------
-//
-// The custom shader mirrors pixi's own default mesh shader so the engine binds
-// the global uniforms (projection / world transform) at group(100) and the
-// local uniforms (transform / colour / round) at group(101) automatically — see
-// GlMeshAdaptor / GpuMeshAdaptor in pixi v8. We add a single extra vertex
-// attribute, `aColor`, carrying the per-vertex RGBA from the PMS polygons.
-
-const VERTEX_GLSL = /* glsl */ `
-  in vec2 aPosition;
-  in vec2 aUV;
-  in vec4 aColor;
-
-  out vec4 vColor;
-  out vec2 vUV;
-
-  uniform mat3 uProjectionMatrix;
-  uniform mat3 uWorldTransformMatrix;
-  uniform vec4 uWorldColorAlpha;
-
-  uniform mat3 uTransformMatrix;
-  uniform vec4 uColor;
-
-  void main(void) {
-    mat3 mvp = uProjectionMatrix * uWorldTransformMatrix * uTransformMatrix;
-    gl_Position = vec4((mvp * vec3(aPosition, 1.0)).xy, 0.0, 1.0);
-    vUV = aUV;
-    vColor = aColor * uColor * uWorldColorAlpha;
-  }
-`;
-
-const FRAGMENT_GLSL = /* glsl */ `
-  in vec4 vColor;
-  in vec2 vUV;
-
-  out vec4 finalColor;
-
-  void main(void) {
-    finalColor = vColor;
-  }
-`;
-
-const VERTEX_WGSL = /* wgsl */ `
-  struct GlobalUniforms {
-    uProjectionMatrix: mat3x3<f32>,
-    uWorldTransformMatrix: mat3x3<f32>,
-    uWorldColorAlpha: vec4<f32>,
-    uResolution: vec2<f32>,
-  }
-
-  struct LocalUniforms {
-    uTransformMatrix: mat3x3<f32>,
-    uColor: vec4<f32>,
-    uRound: f32,
-  }
-
-  @group(100) @binding(0) var<uniform> globalUniforms: GlobalUniforms;
-  @group(101) @binding(0) var<uniform> localUniforms: LocalUniforms;
-
-  struct VSInput {
-    @location(0) aPosition: vec2<f32>,
-    @location(1) aUV: vec2<f32>,
-    @location(2) aColor: vec4<f32>,
-  }
-
-  struct VSOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) vUV: vec2<f32>,
-    @location(1) vColor: vec4<f32>,
-  }
-
-  @vertex
-  fn main(input: VSInput) -> VSOutput {
-    var out: VSOutput;
-    let mvp = globalUniforms.uProjectionMatrix
-      * globalUniforms.uWorldTransformMatrix
-      * localUniforms.uTransformMatrix;
-    out.position = vec4<f32>((mvp * vec3<f32>(input.aPosition, 1.0)).xy, 0.0, 1.0);
-    out.vUV = input.aUV;
-    out.vColor = input.aColor * localUniforms.uColor * globalUniforms.uWorldColorAlpha;
-    return out;
-  }
-`;
-
-const FRAGMENT_WGSL = /* wgsl */ `
-  struct FSInput {
-    @location(0) vUV: vec2<f32>,
-    @location(1) vColor: vec4<f32>,
-  }
-
-  @fragment
-  fn main(input: FSInput) -> @location(0) vec4<f32> {
-    return input.vColor;
-  }
-`;
-
-/** Build the dual (WebGL + WebGPU) shader used for map triangles. */
-function createMapShader(): Shader {
-  const glProgram = GlProgram.from({
-    name: 'soldat-map',
-    vertex: VERTEX_GLSL,
-    fragment: FRAGMENT_GLSL,
-  });
-
-  const gpuProgram = GpuProgram.from({
-    name: 'soldat-map',
-    vertex: { source: VERTEX_WGSL, entryPoint: 'main' },
-    fragment: { source: FRAGMENT_WGSL, entryPoint: 'main' },
-  });
-
-  return new Shader({ glProgram, gpuProgram });
-}
-
-/**
- * Build a pixi Geometry from a Track-C {@link MapMesh}. positions/uvs are 2
- * floats per vertex, colors 4 floats per vertex, indices a flat Uint32 list.
- */
-function createMapGeometry(mesh: MapMesh): Geometry {
-  return new Geometry({
-    attributes: {
-      aPosition: { buffer: mesh.positions, format: 'float32x2' },
-      aUV: { buffer: mesh.uvs, format: 'float32x2' },
-      aColor: { buffer: mesh.colors, format: 'float32x4' },
-    },
-    indexBuffer: mesh.indices,
-    topology: 'triangle-list',
-  });
-}
 
 /** Options for constructing a {@link MapRenderer}. */
 export interface MapRendererOptions {
@@ -171,9 +32,17 @@ export interface Camera {
   zoom: number;
 }
 
+/** Pack three 0..1 colour floats into a 0xRRGGBB integer. */
+function rgb(r: number, g: number, b: number): number {
+  const ri = Math.max(0, Math.min(255, Math.round(r * 255)));
+  const gi = Math.max(0, Math.min(255, Math.round(g * 255)));
+  const bi = Math.max(0, Math.min(255, Math.round(b * 255)));
+  return (ri << 16) | (gi << 8) | bi;
+}
+
 /**
  * Owns a pixi Application, a world {@link Container} (the camera), and the map
- * {@link Mesh}. Call {@link MapRenderer.init} (async) before {@link setMap}.
+ * {@link Graphics}. Call {@link MapRenderer.init} (async) before {@link setMap}.
  */
 export class MapRenderer {
   /** The pixi application; undefined until {@link init} resolves. */
@@ -186,8 +55,7 @@ export class MapRenderer {
   readonly camera: Camera = { x: 0, y: 0, zoom: 1 };
 
   private readonly options: MapRendererOptions;
-  private shader: Shader | undefined;
-  private mesh: Mesh<Geometry, Shader> | undefined;
+  private mapGfx: Graphics | undefined;
 
   constructor(options: MapRendererOptions) {
     this.options = options;
@@ -206,31 +74,42 @@ export class MapRenderer {
     });
     this.options.container.appendChild(app.canvas);
     app.stage.addChild(this.world);
-    this.shader = createMapShader();
     this.app = app;
     this.applyCamera();
   }
 
   /**
-   * Replace the drawn map. Builds geometry from the {@link MapMesh} and adds a
-   * single {@link Mesh} to the world container.
+   * Replace the drawn map. Fills each triangle of the {@link MapMesh} with the
+   * average of its three vertex colours into a single Graphics.
    */
   setMap(mesh: MapMesh): void {
-    if (this.shader === undefined) {
-      throw new Error('MapRenderer.setMap called before init()');
+    if (this.mapGfx !== undefined) {
+      this.world.removeChild(this.mapGfx);
+      this.mapGfx.destroy();
+      this.mapGfx = undefined;
     }
-    if (this.mesh !== undefined) {
-      this.world.removeChild(this.mesh);
-      this.mesh.destroy();
-      this.mesh = undefined;
+    const g = new Graphics();
+    const { positions, colors, indices } = mesh;
+    for (let t = 0; t + 2 < indices.length; t += 3) {
+      const a = indices[t] ?? 0;
+      const b = indices[t + 1] ?? 0;
+      const c = indices[t + 2] ?? 0;
+      const ax = positions[a * 2] ?? 0;
+      const ay = positions[a * 2 + 1] ?? 0;
+      const bx = positions[b * 2] ?? 0;
+      const by = positions[b * 2 + 1] ?? 0;
+      const cx = positions[c * 2] ?? 0;
+      const cy = positions[c * 2 + 1] ?? 0;
+      // Average the three vertex colours (rgba, 0..1).
+      const r = ((colors[a * 4] ?? 1) + (colors[b * 4] ?? 1) + (colors[c * 4] ?? 1)) / 3;
+      const gr = ((colors[a * 4 + 1] ?? 1) + (colors[b * 4 + 1] ?? 1) + (colors[c * 4 + 1] ?? 1)) / 3;
+      const bl = ((colors[a * 4 + 2] ?? 1) + (colors[b * 4 + 2] ?? 1) + (colors[c * 4 + 2] ?? 1)) / 3;
+      const al = ((colors[a * 4 + 3] ?? 1) + (colors[b * 4 + 3] ?? 1) + (colors[c * 4 + 3] ?? 1)) / 3;
+      g.poly([ax, ay, bx, by, cx, cy]).fill({ color: rgb(r, gr, bl), alpha: al });
     }
-    const geometry = createMapGeometry(mesh);
-    const drawn = new Mesh<Geometry, Shader>({
-      geometry,
-      shader: this.shader,
-    });
-    this.mesh = drawn;
-    this.world.addChild(drawn);
+    this.mapGfx = g;
+    // Draw the map beneath everything else added to the world container.
+    this.world.addChildAt(g, 0);
   }
 
   // -------------------------------------------------------------------------
@@ -252,7 +131,6 @@ export class MapRenderer {
     const prevZoom = this.camera.zoom;
     const nextZoom = clamp(prevZoom * factor, 0.05, 50);
     if (nextZoom === prevZoom) return;
-    // World point under the cursor before zoom must stay under it after.
     const worldX = (screenX - this.camera.x) / prevZoom;
     const worldY = (screenY - this.camera.y) / prevZoom;
     this.camera.zoom = nextZoom;
@@ -261,8 +139,8 @@ export class MapRenderer {
     this.applyCamera();
   }
 
-  /** Push the current camera state onto the world container transform. */
-  private applyCamera(): void {
+  /** Push the current camera onto the world container transform. */
+  applyCamera(): void {
     this.world.position.set(this.camera.x, this.camera.y);
     this.world.scale.set(this.camera.zoom);
   }
@@ -278,11 +156,9 @@ export class MapRenderer {
 
   /** Tear down pixi resources. */
   destroy(): void {
-    this.mesh?.destroy();
-    this.shader?.destroy(true);
+    this.mapGfx?.destroy();
     this.app?.destroy(true, { children: true });
-    this.mesh = undefined;
-    this.shader = undefined;
+    this.mapGfx = undefined;
     this.app = undefined;
   }
 }
