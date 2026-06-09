@@ -22,6 +22,7 @@ import {
   type World,
   type PolyMap,
   type WaypointGraph,
+  type PmsWaypoint,
   type BotState,
   type Gun,
 } from '@soldat/sim';
@@ -102,9 +103,27 @@ export function applyAimAssist(
   return { x: Math.cos(bent), y: Math.sin(bent) };
 }
 
+// --- Spectate-only wander tuning ---------------------------------------------
+// With no visible target and no waypoint graph, updateBot leaves a bot's
+// controls fully cleared — it stands perfectly still forever. In spectate mode
+// (where nobody is around to come find it) bots instead roam toward a
+// periodically re-rolled x goal so bot-vs-bot matches stay active.
+const ROAM_MARGIN = 200; // px beyond the spawn-point span bots may roam
+const ROAM_REACHED = 20; // px — close enough to the roam goal to stop
+const ROAM_MIN_TICKS = 120; // re-roll the goal every 120–240 ticks (2–4 s)
+const ROAM_VAR_TICKS = 120;
+const STUCK_SPEED = 0.3; // |vx| below this counts as "not moving"
+const STUCK_TRIGGER = 45; // ticks of not moving before a jump/jet pulse
+const STUCK_PULSE = 20; // ticks the up/jet pulse is held
+const STUCK_JET_MIN_FUEL = 100; // only burn jets when the tank has a reserve
+
 interface BotEntry {
   readonly index: number;
   readonly brain: BotState;
+  // Spectate-only wander state (unused in normal play).
+  roamX: number;
+  retargetAtTick: number;
+  stuckTicks: number;
 }
 
 export interface GameOptions {
@@ -114,6 +133,14 @@ export interface GameOptions {
   spawns?: readonly { x: number; y: number }[];
   /** Number of bots to spawn (default 3). */
   botCount?: number;
+  /**
+   * Spectate mode: the local player sprite is never spawned (slot 1 stays
+   * inactive — invisible to bot perception, bullets, and the renderer) and the
+   * bots get spectate-only sustainment (real-waypoint navigation, wander
+   * fallback, corrected aim) so a bot-vs-bot match runs indefinitely with zero
+   * input. Default false; normal play is completely unaffected.
+   */
+  spectate?: boolean;
 }
 
 /** A renderable view of a bullet (matches fx.BulletView). */
@@ -140,10 +167,19 @@ export class Game {
   /** Optional sound hook — invoked on fire / reload / death (world coords). */
   onSound: GameSoundHook | null = null;
 
+  /**
+   * Optional kill hook — invoked exactly once per death, on the tick the death
+   * is first observed (the respawn timer arms). `killer` is the owner of the
+   * last bullet that damaged the victim (Sprite.lastHitBy); 0 = no attribution.
+   */
+  onKill: ((killer: number, victim: number) => void) | null = null;
+
   private accumulator = 0;
+  private readonly spectate: boolean;
   private readonly spawns: readonly { x: number; y: number }[];
   private readonly bots: BotEntry[] = [];
-  private readonly graph: WaypointGraph;
+  /** Bot navigation graph; rebuilt from real map waypoints in spectate mode. */
+  private graph: WaypointGraph;
   private readonly gun: Gun;
   /** Per-sprite next-fire tick (world.mainTickCounter clock). */
   private readonly nextFireTick: number[] = [];
@@ -160,21 +196,33 @@ export class Game {
     this.world = createWorld();
     initSimWorld(this.world, opts.seed !== undefined ? { seed: opts.seed } : undefined);
 
+    this.spectate = opts.spectate ?? false;
     this.spawns = opts.spawns ?? [{ x: 0, y: 0 }];
     // No waypoints in the sandbox arena → an empty graph. Bots still perceive,
-    // aim and fire at the nearest enemy; navigation is a no-op (they hold ground).
+    // aim and fire at the nearest enemy; navigation is a no-op (they hold
+    // ground — spectate mode layers a wander fallback over this, see simTick).
     this.graph = buildWaypoints({ waypoints: [] });
     this.gun = getGun(WeaponIndex.AK74, false);
 
-    // Player.
-    this.spawnSprite(this.playerIndex, this.spawnFor(0));
+    // Player. In spectate mode slot 1 is never spawned: an inactive sprite is
+    // skipped by bot perception (findTarget), bullet collision, and the
+    // renderer, so the human is truly absent rather than a dormant target.
+    if (!this.spectate) {
+      this.spawnSprite(this.playerIndex, this.spawnFor(0));
+    }
 
     // Bots.
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
       const index = this.playerIndex + 1 + b;
       this.spawnSprite(index, this.spawnFor(index));
-      this.bots.push({ index, brain: createBotState({ accuracy: 9 }) });
+      this.bots.push({
+        index,
+        brain: createBotState({ accuracy: 9 }),
+        roamX: this.spawnFor(index).x,
+        retargetAtTick: 0,
+        stuckTicks: 0,
+      });
     }
   }
 
@@ -203,6 +251,16 @@ export class Game {
     s.direction = 1;
     s.health = 150; // STARTHEALTH
     s.visible = 1;
+    // Spectate-only: opaque sprites. Bot perception (findTarget) skips any
+    // sprite whose alpha is not 255 ("invisible sprites aren't seen"), and
+    // NOTHING in the sim ever raises alpha from emptySprite's 0 — so without
+    // this, bots never acquire ANY target and a bot-vs-bot match never fires
+    // a shot. Gated on spectate to keep normal play byte-for-byte unchanged
+    // (where, NOTE, bots are currently pacifists for exactly this reason —
+    // promoting `s.alpha = 255` to both modes is the one-line fix).
+    if (this.spectate) {
+      s.alpha = 255;
+    }
     s.deadMeat = false;
     s.dummy = false;
     s.selWeapon = WeaponIndex.AK74;
@@ -226,6 +284,8 @@ export class Game {
       mouseAimY: 0,
       mouseDist: 0,
     };
+    // Fresh life — stale attribution must not credit a long-gone shooter.
+    s.lastHitBy = 0;
     this.nextFireTick[index] = 0;
     this.respawnIn[index] = 0;
     this.ammo[index] = MAG_SIZE;
@@ -233,23 +293,44 @@ export class Game {
     this.sprayHeat[index] = 0;
   }
 
+  /** Rounds left in `index`'s magazine (for the HUD). */
+  ammoOf(index: number): number {
+    return this.ammo[index] ?? 0;
+  }
+
+  /** Whether sprite `index` is mid-reload (for the HUD). */
+  reloadingOf(index: number): boolean {
+    return this.world.mainTickCounter < (this.reloadUntil[index] ?? 0);
+  }
+
   /** Local player's rounds left (for the HUD). */
   playerAmmo(): number {
-    return this.ammo[this.playerIndex] ?? 0;
+    return this.ammoOf(this.playerIndex);
   }
 
   /** Whether the local player is mid-reload (for the HUD). */
   playerReloading(): boolean {
-    return this.world.mainTickCounter < (this.reloadUntil[this.playerIndex] ?? 0);
+    return this.reloadingOf(this.playerIndex);
+  }
+
+  /** Sprite indices of the bots (for spectator cameras / scoreboards). */
+  botIndices(): readonly number[] {
+    return this.bots.map((b) => b.index);
   }
 
   magSize(): number {
     return MAG_SIZE;
   }
 
-  loadMap(source: PolyMapSource): void {
+  loadMap(source: PolyMapSource & { waypoints?: PmsWaypoint[] }): void {
     const polyMap: PolyMap = buildPolyMap(source);
     this.world.map = polyMap;
+    // Spectate-only: adopt the map's real bot waypoints so targetless bots
+    // patrol the level instead of holding ground. Gated on spectate so
+    // normal-mode bot behaviour is unchanged.
+    if (this.spectate && source.waypoints !== undefined && source.waypoints.length > 0) {
+      this.graph = buildWaypoints({ waypoints: source.waypoints });
+    }
   }
 
   /** Bullets to render this frame (active, with velocity). */
@@ -291,7 +372,12 @@ export class Game {
     for (const bot of this.bots) {
       const s = this.world.sprites[bot.index];
       if (s === undefined || s.deadMeat) continue;
+      const aimXBefore = s.control.mouseAimX;
+      const aimYBefore = s.control.mouseAimY;
       updateBot(this.world, bot.index, bot.brain, this.graph);
+      if (this.spectate) {
+        this.botSustainment(bot, s, aimXBefore, aimYBefore);
+      }
     }
 
     // Firing: anyone holding fire whose weapon is off cooldown spawns a bullet.
@@ -313,6 +399,88 @@ export class Game {
 
     // Death / respawn upkeep.
     this.respawnUpkeep();
+  }
+
+  /**
+   * Spectate-only per-tick bot upkeep, run right after updateBot:
+   *
+   * (a) AIM FIX — the ported AI (simpleDecision / navigateWaypoints) writes
+   * ABSOLUTE world coords into control.mouseAimX/Y (the Pascal convention),
+   * but this client's tryFire and the renderer treat mouseAim as a RELATIVE
+   * direction vector from the shooter. Convert when the AI wrote an aim this
+   * tick (an unconverted value left in place is already relative from a prior
+   * tick — freeControls intentionally keeps the last aim).
+   *
+   * (b) WANDER — with no visible target and no usable waypoint graph the AI
+   * leaves every control cleared and the bot freezes. Roam toward a
+   * periodically re-rolled x goal (world.rng — never Math.random, the sim
+   * must stay deterministic) and pulse jump/jets when stuck against geometry.
+   */
+  private botSustainment(
+    bot: BotEntry,
+    s: World['sprites'][number],
+    aimXBefore: number,
+    aimYBefore: number,
+  ): void {
+    const parts = this.world.spriteParts;
+    if (parts === null) return;
+    const px = parts.posX[bot.index] ?? 0;
+    const py = parts.posY[bot.index] ?? 0;
+
+    // (a) Absolute → relative aim. targetNum > 0 guarantees simpleDecision
+    // wrote both aim fields (even if the value happens to match); otherwise a
+    // changed aim means navigateWaypoints faced a waypoint.
+    const wroteAim =
+      bot.brain.targetNum > 0 ||
+      s.control.mouseAimX !== aimXBefore ||
+      s.control.mouseAimY !== aimYBefore;
+    if (wroteAim) {
+      s.control.mouseAimX = Math.round(s.control.mouseAimX - px);
+      s.control.mouseAimY = Math.round(s.control.mouseAimY - py);
+    }
+
+    // (b) Wander when the AI produced no intent at all this tick (no target →
+    // no fire; empty/unreachable graph → no movement).
+    const idle =
+      !s.control.fire && !s.control.left && !s.control.right && !s.control.up;
+    if (!idle) {
+      bot.stuckTicks = 0;
+      return;
+    }
+
+    const clock = this.world.mainTickCounter;
+    if (clock >= bot.retargetAtTick) {
+      let minX = Infinity;
+      let maxX = -Infinity;
+      for (const sp of this.spawns) {
+        if (sp.x < minX) minX = sp.x;
+        if (sp.x > maxX) maxX = sp.x;
+      }
+      if (!Number.isFinite(minX)) {
+        minX = 0;
+        maxX = 0;
+      }
+      const lo = minX - ROAM_MARGIN;
+      const hi = maxX + ROAM_MARGIN;
+      bot.roamX = lo + this.world.rng.next() * (hi - lo);
+      bot.retargetAtTick =
+        clock + ROAM_MIN_TICKS + Math.floor(this.world.rng.next() * ROAM_VAR_TICKS);
+    }
+    if (px < bot.roamX - ROAM_REACHED) s.control.right = true;
+    else if (px > bot.roamX + ROAM_REACHED) s.control.left = true;
+
+    // Stuck against a wall/ledge → pulse jump (and jets, fuel permitting).
+    const vx = parts.velocityX[bot.index] ?? 0;
+    if ((s.control.left || s.control.right) && Math.abs(vx) < STUCK_SPEED) {
+      bot.stuckTicks += 1;
+    } else {
+      bot.stuckTicks = 0;
+    }
+    if (bot.stuckTicks > STUCK_TRIGGER) {
+      s.control.up = true;
+      s.control.jetpack = s.jetsCount > STUCK_JET_MIN_FUEL;
+      if (bot.stuckTicks > STUCK_TRIGGER + STUCK_PULSE) bot.stuckTicks = 0;
+    }
   }
 
   /**
@@ -420,7 +588,12 @@ export class Game {
 
   /** Start respawn timers for the freshly dead; respawn when they elapse. */
   private respawnUpkeep(): void {
-    const all = [this.playerIndex, ...this.bots.map((b) => b.index)];
+    // In spectate mode the player slot is never spawned and MUST stay out of
+    // this list: a never-spawned sprite has health 0, which the freshly-dead
+    // check below reads as a death — it would "respawn" the player ~3 s in.
+    const all = this.spectate
+      ? this.bots.map((b) => b.index)
+      : [this.playerIndex, ...this.bots.map((b) => b.index)];
     for (const index of all) {
       const s = this.world.sprites[index];
       if (s === undefined) continue;
@@ -430,6 +603,9 @@ export class Game {
           const dp = this.world.spriteParts;
           this.onSound?.('death', dp?.posX[index] ?? 0, dp?.posY[index] ?? 0);
           s.deadMeat = true;
+          // The one-shot death edge (gated by respawnIn === 0): report the
+          // kill with the last-hit attribution the sim recorded.
+          this.onKill?.(s.lastHitBy, index);
           // freeze control while dead
           s.control = { ...s.control, left: false, right: false, up: false, fire: false, jetpack: false };
         } else {

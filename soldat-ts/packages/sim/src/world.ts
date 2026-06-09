@@ -69,6 +69,7 @@ function emptySprite(): Sprite {
   return {
     active: false,
     deadMeat: false,
+    lastHitBy: 0,
     dummy: false,
     style: 0,
     num: 0,

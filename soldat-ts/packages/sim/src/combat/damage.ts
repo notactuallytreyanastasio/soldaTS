@@ -150,6 +150,12 @@ export function applyHealthHit(
   // we apply the server-side (unconditional) form.
   const bullet = world.bullets[bulletIndex];
   const owner = bullet !== undefined ? world.sprites[bullet.owner] : undefined;
+  // DESIGN OVERRIDE: kill attribution — remember who landed the last damaging
+  // bullet (last hit wins). Recorded on EVERY hit, not just the lethal one, so
+  // whoever flips deadMeat below is credited by the death consumer.
+  if (bullet !== undefined) {
+    sprite.lastHitBy = bullet.owner;
+  }
   // PORT: shared/Constants.pas:199 — BONUS_BERSERKER = 21.
   if (owner !== undefined && owner.bonusStyle === 21) {
     hm = f(4 * amount);

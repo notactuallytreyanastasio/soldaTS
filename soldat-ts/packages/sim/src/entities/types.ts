@@ -53,6 +53,12 @@ export interface Control {
 export interface Sprite {
   active: boolean; // PORT: Sprites.pas:108
   deadMeat: boolean; // PORT: Sprites.pas:108
+  // DESIGN OVERRIDE: kill attribution. Sprite index of the owner of the last
+  // bullet that damaged this sprite (0 = none yet). The Pascal engine threads
+  // the killer through the Die()/HealthHit call chain instead; we don't port
+  // that pipeline, so the last damaging hit is recorded here and the death
+  // consumer (client respawn upkeep) reads it when deadMeat flips.
+  lastHitBy: number;
   dummy: boolean; // PORT: Sprites.pas:108
   style: number; // PORT: Sprites.pas:109 — Byte
   num: number; // PORT: Sprites.pas:110 — Byte

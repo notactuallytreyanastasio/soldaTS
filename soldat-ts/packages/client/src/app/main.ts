@@ -35,6 +35,15 @@ import { SoundManager } from '../audio/soundManager';
 import { Game, JET_FUEL_MAX } from './game';
 import { buildArena, ARENA_SPAWNS } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
+import {
+  Director,
+  SNAP_DIST,
+  applyKill,
+  ffaScores,
+  subjectName,
+  type KillBoard,
+  type SubjectInfo,
+} from './director';
 
 // ---------------------------------------------------------------------------
 // Synthetic map
@@ -154,6 +163,48 @@ function pickSpawn(map: PmsMap): { x: number; y: number } {
 }
 
 // ---------------------------------------------------------------------------
+// Spectate mode (?spectate or ?spectate=8): a bot-vs-bot match with no human
+// soldier — the action camera follows the most interesting bot, the HUD shows
+// live kill counts + feed, and zero input is required. Normal play (?spectate
+// absent) is completely unaffected.
+// ---------------------------------------------------------------------------
+
+const SPECTATE_QUERY_PARAM = 'spectate';
+const SPECTATE_DEFAULT_BOTS = 6;
+const SPECTATE_MAX_BOTS = 12;
+
+/** Parse ?spectate[=n] following the pickMapUrl pattern (loadMap.ts). */
+export function parseSpectate(
+  search: string = typeof window !== 'undefined' ? window.location.search : '',
+): { spectate: boolean; botCount: number } {
+  const params = new URLSearchParams(search);
+  if (!params.has(SPECTATE_QUERY_PARAM)) {
+    return { spectate: false, botCount: 3 };
+  }
+  const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
+  const botCount =
+    Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
+  return { spectate: true, botCount };
+}
+
+/** Fixed bottom-left hint so a spectator knows the camera keys. */
+function showSpectateHint(): void {
+  const hint = document.createElement('div');
+  hint.textContent = 'SPECTATE — ←/→ follow · A auto';
+  hint.style.cssText = [
+    'position:fixed',
+    'left:12px',
+    'bottom:12px',
+    'color:#cfd6e4',
+    'font:12px monospace',
+    'opacity:0.8',
+    'pointer-events:none',
+    'z-index:10',
+  ].join(';');
+  document.body.appendChild(hint);
+}
+
+// ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
 
@@ -208,9 +259,29 @@ async function main(): Promise<void> {
 
   // --- Game: sim world + local player + bots ---------------------------
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
-  const game = new Game({ seed: 1, spawns, botCount: 3 });
-  // Attach the sim collision map so sprites collide with the floor.
+  const { spectate, botCount } = parseSpectate();
+  const game = new Game({ seed: 1, spawns, botCount, spectate });
+  // Attach the sim collision map so sprites collide with the floor (and, in
+  // spectate mode, the map's bot waypoints so targetless bots patrol).
   game.loadMap(map);
+
+  // --- Spectate director + scoreboard ------------------------------------
+  // The director picks which bot the action camera follows; the kill board
+  // (tally + feed) is fed by Game.onKill in BOTH modes (pure display data),
+  // though the normal-mode HUD currently keeps its placeholder scores.
+  const director = new Director(game.botIndices()[0] ?? game.playerIndex);
+  const board: KillBoard = { kills: new Map(), feed: [] };
+  const nameOf = (i: number): string => subjectName(i, game.playerIndex);
+  game.onKill = (killer, victim): void => {
+    applyKill(
+      board,
+      killer,
+      victim,
+      nameOf,
+      spectate ? director.followed : game.playerIndex,
+    );
+    director.notifyKill(killer, victim, game.world.mainTickCounter);
+  };
 
   // --- Sound: load sfx, resume audio on first input, play on game events ----
   const audio = new AudioEngine();
@@ -223,8 +294,11 @@ async function main(): Promise<void> {
   window.addEventListener('keydown', resumeAudio, { once: true });
   game.onSound = (event, x, y): void => {
     const sp = game.world.spriteParts;
-    const lx = sp?.posX[game.playerIndex] ?? 0;
-    const ly = sp?.posY[game.playerIndex] ?? 0;
+    // The "listener" is whoever the screen is centred on: the followed bot in
+    // spectate mode, the local player otherwise.
+    const ear = spectate ? director.followed : game.playerIndex;
+    const lx = sp?.posX[ear] ?? 0;
+    const ly = sp?.posY[ear] ?? 0;
     sound.play(event, x, y, lx, ly);
   };
 
@@ -242,7 +316,9 @@ async function main(): Promise<void> {
   });
 
   // Crosshair at the aim point (in the world container, follows the camera).
+  // Spectators don't aim — hide it entirely in spectate mode.
   const crosshair = new Crosshair();
+  crosshair.visible = !spectate;
   renderer.world.addChild(crosshair);
 
   // --- HUD --------------------------------------------------------------
@@ -266,8 +342,13 @@ async function main(): Promise<void> {
   // tests verify, shown over the running game until the first keypress.
   // Currently EVERY startup counts as a first start (controlsScreen.ts
   // ALWAYS_SHOW) — the scheme is in flux and the listing must stay exercised.
-  if (shouldShowControls()) {
+  // Spectate mode skips it (no input is needed; it would only obscure the
+  // match) and shows the camera-key hint instead.
+  if (!spectate && shouldShowControls()) {
     showControlsScreen();
+  }
+  if (spectate) {
+    showSpectateHint();
   }
 
   const player = game.world.sprites[game.playerIndex];
@@ -293,7 +374,104 @@ async function main(): Promise<void> {
     // applyCamera is private; panBy(0,0) flushes the camera onto the container.
     renderer.panBy(0, 0);
   }
-  centerCameraOnPlayer();
+
+  // --- Spectator action camera -------------------------------------------
+  // The camera follows a SMOOTHED WORLD POINT (camX/camY) lerped toward the
+  // followed bot, then camera.x/y are assigned absolutely from it each frame —
+  // so the wheel-zoom handler below coexists unchanged (zoom persists, x/y are
+  // overwritten exactly as in normal mode). Big subject switches snap instead
+  // of smearing across the map.
+  let camX = 0;
+  let camY = 0;
+  {
+    const parts = game.world.spriteParts;
+    camX = parts?.posX[director.followed] ?? 0;
+    camY = parts?.posY[director.followed] ?? 0;
+  }
+  function spectateCamera(dt: number): void {
+    const app = renderer.app;
+    if (app === undefined) return;
+    const parts = game.world.spriteParts;
+    if (parts === null) return;
+    const tx = parts.posX[director.followed] ?? 0;
+    const ty = parts.posY[director.followed] ?? 0;
+    if (director.switched && Math.hypot(tx - camX, ty - camY) > SNAP_DIST) {
+      // Cut, don't fly: a cross-map pan reads as disorienting smear.
+      camX = tx;
+      camY = ty;
+    } else {
+      // Exponential lerp (~0.25 s time constant) — reads as a broadcast pan.
+      const k = 1 - Math.exp(-4 * dt);
+      camX += (tx - camX) * k;
+      camY += (ty - camY) * k;
+    }
+    const zoom = renderer.camera.zoom;
+    renderer.camera.x = app.renderer.width / 2 - camX * zoom;
+    renderer.camera.y = app.renderer.height / 2 - camY * zoom;
+    renderer.panBy(0, 0);
+  }
+
+  /** SubjectInfo snapshot of every bot for the director's interest scoring. */
+  function buildSubjects(): SubjectInfo[] {
+    const parts = game.world.spriteParts;
+    const raw: { index: number; alive: boolean; x: number; y: number; firing: boolean }[] = [];
+    for (const i of game.botIndices()) {
+      const s = game.world.sprites[i];
+      if (s === undefined) continue;
+      raw.push({
+        index: i,
+        alive: s.active && !s.deadMeat,
+        x: parts?.posX[i] ?? 0,
+        y: parts?.posY[i] ?? 0,
+        firing: s.control.fire,
+      });
+    }
+    return raw.map((r) => {
+      let nearest = Infinity;
+      for (const o of raw) {
+        if (o.index === r.index || !o.alive) continue;
+        const d = Math.hypot(o.x - r.x, o.y - r.y);
+        if (d < nearest) nearest = d;
+      }
+      return {
+        ...r,
+        lastKillTick: director.lastKillTickOf(r.index),
+        nearestEnemyDist: nearest,
+      };
+    });
+  }
+
+  // Manual camera override (spectate only). A plain window listener — the
+  // InputController's binding table is test-pinned and player input is ignored
+  // in spectate anyway, so there is no collision.
+  if (spectate) {
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      const live = game.botIndices().filter((i) => {
+        const s = game.world.sprites[i];
+        return s !== undefined && s.active && !s.deadMeat;
+      });
+      const tick = game.world.mainTickCounter;
+      const key = e.key.toLowerCase();
+      if (key === 'arrowright' || key === 'n') {
+        if (live.length === 0) return;
+        const at = live.indexOf(director.followed);
+        director.setManual(live[(at + 1) % live.length] ?? director.followed, tick);
+      } else if (key === 'arrowleft' || key === 'p') {
+        if (live.length === 0) return;
+        const at = live.indexOf(director.followed);
+        const prev = (at <= 0 ? live.length : at) - 1;
+        director.setManual(live[prev] ?? director.followed, tick);
+      } else if (key === 'a' || key === '0') {
+        director.setAuto();
+      }
+    });
+  }
+
+  if (!spectate) {
+    centerCameraOnPlayer();
+  } else {
+    spectateCamera(0);
+  }
 
   // --- Wheel-zoom centred on the cursor (kept from the map viewer) ------
   canvas.addEventListener(
@@ -327,10 +505,13 @@ async function main(): Promise<void> {
     const control = input.readControl(playerScreenX, playerScreenY, now);
 
     // 2. Apply control to the player sprite (the sim reads it during stepWorld).
-    player.control = control;
-
-    // Crosshair at the aim point (world coords = COM + relative aim vector).
-    crosshair.moveTo(px + control.mouseAimX, py + control.mouseAimY);
+    //    Spectate: the human does not fight — slot 1 is never spawned and its
+    //    control is never written.
+    if (!spectate) {
+      player.control = control;
+      // Crosshair at the aim point (world coords = COM + relative aim vector).
+      crosshair.moveTo(px + control.mouseAimX, py + control.mouseAimY);
+    }
 
     // 3. Advance the simulation by real elapsed time (fixed-step internally).
     game.tick(dt);
@@ -338,23 +519,48 @@ async function main(): Promise<void> {
     // 4. Render entities, interpolated between ticks by the leftover fraction.
     entityRenderer.render(game.world, game.framePercent);
 
-    // 5. Camera follows the player.
-    centerCameraOnPlayer();
+    // 5. Camera: follow the player, or (spectate) the director's pick of the
+    //    most interesting bot.
+    if (spectate) {
+      director.update(buildSubjects(), game.world.mainTickCounter);
+      spectateCamera(dt);
+    } else {
+      centerCameraOnPlayer();
+    }
 
-    // 6. HUD reflects the local player's live state (screen-fixed).
-    const hudState: HudState = {
-      health: player.health,
-      maxHealth: START_HEALTH,
-      // Live fuel (jetsCount is what applyJetpack burns and regen refills;
-      // jetsCountReal is an unused Pascal mirror that never decrements).
-      jet: player.jetsCount,
-      maxJet: JET_FUEL_MAX,
-      ammo: game.playerAmmo(),
-      weaponName: game.playerReloading() ? 'RELOADING…' : 'RIFLE',
-      scores: { alpha: 0, bravo: 0, playerKills: 0, leading: false, gap: 0 },
-      killFeed: [],
-      fps: dt > 0 ? 1 / dt : 0,
-    };
+    // 6. HUD (screen-fixed): the local player's live state, or (spectate) the
+    //    followed bot's vitals plus the real FFA scoreboard and kill feed.
+    let hudState: HudState;
+    if (spectate) {
+      const followed = director.followed;
+      const fs = game.world.sprites[followed];
+      hudState = {
+        health: fs?.health ?? 0,
+        maxHealth: START_HEALTH,
+        jet: fs?.jetsCount ?? 0,
+        maxJet: JET_FUEL_MAX,
+        ammo: game.ammoOf(followed),
+        // The weapon line doubles as the "now watching" label.
+        weaponName: `${nameOf(followed)} · ${game.reloadingOf(followed) ? 'RELOADING…' : 'RIFLE'}`,
+        scores: ffaScores(board.kills, followed),
+        killFeed: board.feed,
+        fps: dt > 0 ? 1 / dt : 0,
+      };
+    } else {
+      hudState = {
+        health: player.health,
+        maxHealth: START_HEALTH,
+        // Live fuel (jetsCount is what applyJetpack burns and regen refills;
+        // jetsCountReal is an unused Pascal mirror that never decrements).
+        jet: player.jetsCount,
+        maxJet: JET_FUEL_MAX,
+        ammo: game.playerAmmo(),
+        weaponName: game.playerReloading() ? 'RELOADING…' : 'RIFLE',
+        scores: { alpha: 0, bravo: 0, playerKills: 0, leading: false, gap: 0 },
+        killFeed: [],
+        fps: dt > 0 ? 1 / dt : 0,
+      };
+    }
     hud.update(hudState);
 
     if (app !== undefined) {
