@@ -1,5 +1,21 @@
 [
   {
+    "hash": "4a5666f02b7f1c551cd26aae29095c3a57798fdb",
+    "short_hash": "4a5666f",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T19:22:27-04:00",
+    "message": "feat(client): softer wheel zoom + N-way duel grid\n\nZoom is now proportional to the actual scroll delta (exp(-deltaY*0.0004),\nclamped) instead of a fixed 10% per event — one wheel notch is a gentle ~4%\nand trackpad gestures stop teleporting the camera.\n\n?duel generalizes from exactly two to up to SIX comma-separated engines in\na 2-per-row grid (?duel=classic,pilot,pilot,classic), repeats allowed —\nmirror matches are legal. Verified: 4-way grid screenshot, all matches\n~118 FPS with independent kill feeds. 396 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "4e2ad818e5e0845f960b46a9e4b456585d69f5c0",
+    "short_hash": "4e2ad81",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T17:41:15-04:00",
+    "message": "docs: build-diary weblog post + CDP screenshot tool, 7 live-captured era screenshots\n\nThe post (docs/blog/building-soldat-ts.md) covers the whole arc: Pascal\narchaeology, the four locked decisions, the milestone loop, the browser\nsmoke-test bugs, one-gun combat, keyboard-only aim + assist, rocket boots,\nspectate + the pacifist-bots bug, telemetry, and Skyreach. All screenshots\ncaptured live today — four from historical commits resurrected in git\nworktrees, served and shot via the new tools/screenshot.mjs (headless\nChrome CDP: settle time, key/mouse holds, wheel zoom).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
     "hash": "c5c224da6f35957f01b5c59ce3adb016a4d1e33c",
     "short_hash": "c5c224d",
     "author": "Robert Grayson",

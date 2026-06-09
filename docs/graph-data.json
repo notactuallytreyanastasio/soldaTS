@@ -1550,6 +1550,50 @@
       "created_at": "2026-06-09T17:39:40.458662-04:00",
       "updated_at": "2026-06-09T17:39:40.458662-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c5c224d\",\"confidence\":95}"
+    },
+    {
+      "id": 142,
+      "change_id": "bef79130-d542-4fdd-9388-43fc81a11f10",
+      "node_type": "outcome",
+      "title": "Blog post + screenshot rig shipped: 7 live captures across 5 builds, committed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T17:41:23.906709-04:00",
+      "updated_at": "2026-06-09T17:41:23.906709-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"4e2ad81\",\"confidence\":95}"
+    },
+    {
+      "id": 143,
+      "change_id": "4a1949f6-6755-4c6a-9fa6-6047e606bb3d",
+      "node_type": "goal",
+      "title": "Softer wheel zoom + N-way duel (several games at once, mixed AIs)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T19:20:05.240050-04:00",
+      "updated_at": "2026-06-09T19:20:05.240050-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"make the zoom less sensitive. how do we spin up a few games at once with different AIs\"}"
+    },
+    {
+      "id": 144,
+      "change_id": "77fef5b8-f17d-4010-b166-ff953ebea192",
+      "node_type": "action",
+      "title": "Delta-proportional zoom; generalize ?duel to N comma-separated engines in a grid",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T19:20:05.342189-04:00",
+      "updated_at": "2026-06-09T19:20:05.342189-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 145,
+      "change_id": "aa1a33c6-de7f-4a43-b79e-2e7780402e0c",
+      "node_type": "outcome",
+      "title": "Soft zoom + N-way duel live: 4 simultaneous matches at 118 FPS verified",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T19:22:27.645138-04:00",
+      "updated_at": "2026-06-09T19:22:27.645138-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"4a5666f\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3411,6 +3455,50 @@
       "weight": 1.0,
       "rationale": "Committed as c5c224d; duel-verified",
       "created_at": "2026-06-09T17:40:06.857749-04:00"
+    },
+    {
+      "id": 179,
+      "from_node_id": 140,
+      "to_node_id": 142,
+      "from_change_id": "df497808-dbe8-49a5-b3a8-14974ef8ffb5",
+      "to_change_id": "bef79130-d542-4fdd-9388-43fc81a11f10",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "The post and captures landed in commit 4e2ad81",
+      "created_at": "2026-06-09T17:41:43.104736-04:00"
+    },
+    {
+      "id": 180,
+      "from_node_id": 139,
+      "to_node_id": 142,
+      "from_change_id": "5e78211f-1816-4609-bff2-9182be98aa0e",
+      "to_change_id": "bef79130-d542-4fdd-9388-43fc81a11f10",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Rig proven: 5 builds (4 worktree eras + HEAD) captured live",
+      "created_at": "2026-06-09T17:41:43.260996-04:00"
+    },
+    {
+      "id": 182,
+      "from_node_id": 143,
+      "to_node_id": 144,
+      "from_change_id": "4a1949f6-6755-4c6a-9fa6-6047e606bb3d",
+      "to_change_id": "77fef5b8-f17d-4010-b166-ff953ebea192",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T19:20:15.092596-04:00"
+    },
+    {
+      "id": 183,
+      "from_node_id": 144,
+      "to_node_id": 145,
+      "from_change_id": "77fef5b8-f17d-4010-b166-ff953ebea192",
+      "to_change_id": "aa1a33c6-de7f-4a43-b79e-2e7780402e0c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed as 4a5666f; 4-way grid screenshot-verified",
+      "created_at": "2026-06-09T19:22:35.452515-04:00"
     }
   ]
 }
