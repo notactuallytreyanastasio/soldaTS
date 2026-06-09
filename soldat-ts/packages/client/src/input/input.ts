@@ -82,6 +82,46 @@ export const MOUSE_TAKEOVER_PX = 3;
 /** Clamp dt so a stalled frame / tab-back can't teleport the aim. */
 export const MAX_AIM_DT_MS = 50;
 
+// --- Control bindings (single source of truth for the controls screen) --
+// KEEP IN SYNC WITH the onKey switch below — input.test.ts asserts that
+// every code listed here is actually handled by the controller (handled
+// keys call preventDefault, unhandled ones don't), so the startup controls
+// screen can never silently drift from the real bindings.
+
+/** One row of the player-facing controls listing. */
+export interface ControlBinding {
+  /** Human-readable key labels shown on the controls screen. */
+  keys: string[];
+  /** KeyboardEvent.code values the controller handles for this action (empty for mouse-only rows). */
+  codes: string[];
+  /** What the keys do, in player terms. */
+  action: string;
+}
+
+export const CONTROL_BINDINGS: readonly ControlBinding[] = [
+  { keys: ['A', 'D'], codes: ['KeyA', 'KeyD'], action: 'Move left / right' },
+  { keys: ['W'], codes: ['KeyW'], action: 'Jump' },
+  { keys: ['S'], codes: ['KeyS'], action: 'Crouch' },
+  {
+    keys: ['Shift'],
+    codes: ['ShiftLeft', 'ShiftRight'],
+    action: 'Jetpack (hold)',
+  },
+  {
+    keys: ['I', 'J', 'K', 'L'],
+    codes: ['KeyI', 'KeyJ', 'KeyK', 'KeyL'],
+    action:
+      'Aim up / left / down / right — combine for diagonals; aim stays where you leave it',
+  },
+  { keys: ['Space'], codes: ['Space'], action: 'Fire (hold for full-auto)' },
+  { keys: ['Tab'], codes: ['Tab'], action: 'Reload' },
+  {
+    keys: ['Mouse'],
+    codes: [],
+    action: 'Optional — move to take over aim, left button fires',
+  },
+];
+
 // --- Structural DOM slices (so tests can run without a DOM) -------------
 // vitest runs in a plain node environment; the controller therefore depends
 // only on these minimal shapes. Real Window / HTMLCanvasElement satisfy them

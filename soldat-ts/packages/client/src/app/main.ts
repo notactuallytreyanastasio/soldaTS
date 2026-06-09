@@ -26,6 +26,7 @@ import { MapRenderer } from '../render/renderer';
 import { EntityRenderer } from '../render/entityRender';
 import { InputController } from '../input/input';
 import { Hud, type HudState } from '../ui/hud';
+import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
 import { START_HEALTH } from '../ui/helpers';
 import { Crosshair } from '../render/fx';
 import { buildTexturedMap } from '../render/mapTextured';
@@ -260,6 +261,14 @@ async function main(): Promise<void> {
     throw new Error('renderer canvas missing after init()');
   }
   const input = new InputController(canvas);
+
+  // Controls screen: rendered from the same CONTROL_BINDINGS table the input
+  // tests verify, shown over the running game until the first keypress.
+  // Currently EVERY startup counts as a first start (controlsScreen.ts
+  // ALWAYS_SHOW) — the scheme is in flux and the listing must stay exercised.
+  if (shouldShowControls()) {
+    showControlsScreen();
+  }
 
   const player = game.world.sprites[game.playerIndex];
   if (player === undefined) {

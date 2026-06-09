@@ -15,6 +15,7 @@ import {
   AIM_SWING_RATE,
   AIM_NUDGE_MS,
   MAX_AIM_DT_MS,
+  CONTROL_BINDINGS,
   type CanvasLike,
   type WindowLike,
 } from './input';
@@ -458,5 +459,51 @@ describe('mouse handoff', () => {
     c = clock.step(h, 16, 1);
     expect(c.mouseAimX).toBe(406);
     expect(c.mouseAimY).toBe(300);
+  });
+});
+
+// --- Controls-screen accuracy ------------------------------------------
+// CONTROL_BINDINGS is what the startup controls screen shows the player.
+// These tests pin it to reality: handled keys call preventDefault in onKey
+// (the default case returns without it), so a binding row whose code the
+// controller doesn't actually handle fails here instead of lying on screen.
+
+describe('CONTROL_BINDINGS (controls screen source of truth)', () => {
+  it('every documented key code is handled on keydown AND keyup', () => {
+    for (const binding of CONTROL_BINDINGS) {
+      for (const code of binding.codes) {
+        const h = makeHarness();
+        expect(h.key(code, true), `${code} keydown unhandled`).toBe(true);
+        expect(h.key(code, false), `${code} keyup unhandled`).toBe(true);
+      }
+    }
+  });
+
+  it('covers the full keyboard-only key set (WASD + IJKL + Tab/Space/Shift)', () => {
+    const codes = new Set(CONTROL_BINDINGS.flatMap((b) => b.codes));
+    const required = [
+      'KeyW',
+      'KeyA',
+      'KeyS',
+      'KeyD',
+      'KeyI',
+      'KeyJ',
+      'KeyK',
+      'KeyL',
+      'Tab',
+      'Space',
+      'ShiftLeft',
+      'ShiftRight',
+    ];
+    for (const code of required) {
+      expect(codes.has(code), `${code} missing from controls screen`).toBe(true);
+    }
+  });
+
+  it('every row has key labels and an action description', () => {
+    for (const binding of CONTROL_BINDINGS) {
+      expect(binding.keys.length).toBeGreaterThan(0);
+      expect(binding.action.length).toBeGreaterThan(0);
+    }
   });
 });
