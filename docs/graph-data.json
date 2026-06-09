@@ -3402,15 +3402,15 @@
       "created_at": "2026-06-09T17:38:05.910759-04:00"
     },
     {
-      "id": 175,
+      "id": 176,
       "from_node_id": 137,
-      "to_node_id": 138,
+      "to_node_id": 141,
       "from_change_id": "5f855a86-8f11-4abe-841a-ac16e855235d",
-      "to_change_id": "e55b84ca-543a-4fc0-bbcf-5b34ac45539b",
+      "to_change_id": "7caea8c0-851d-44e6-baa5-6fb3c72557b1",
       "edge_type": "leads_to",
       "weight": 1.0,
-      "rationale": "Committed; duel-verified",
-      "created_at": "2026-06-09T17:39:40.617076-04:00"
+      "rationale": "Committed as c5c224d; duel-verified",
+      "created_at": "2026-06-09T17:40:06.857749-04:00"
     }
   ]
 }
