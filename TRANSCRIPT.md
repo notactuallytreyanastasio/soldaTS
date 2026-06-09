@@ -220,7 +220,45 @@ All three observations confirmed in telemetry and fixed:
 - **Less uniform**: Skyreach v2 has no two pads at the same height (15 distinct elevations), widths 130–300px, asymmetric density — dense stacked western face, wide central bench with a lone high island, sparse open eastern bowl, tight apex perches.
 - Also discovered the "default" map was silently ctf_Ash (`pickMapUrl` fetches it without `?map=`); spectate now defaults to Skyreach.
 
-Committed as `1745336` + `8ba891a`, telemetry-verified each step. Also logged Robert's first-principles bot-design prompt (CS:Source optimized play translated to 2D + vertical) as observation node 130 — the seed for the next-generation bot brain.
+Committed as `1745336` + `8ba891a`, telemetry-verified each step.
+
+---
+
+## Turn 12 — Bots from first principles
+
+**Robert (while the aerial work was in flight):**
+
+> think about building bots in a 2d shooter game from first principles -- imagine taking the optimized play of a counter strike source player but wawtching from the top down in 2 dimensions and assuming the vertical play
+
+**Robert (stray keypress, not acted on):**
+
+> 9000000000008
+
+**Claude:**
+
+Logged as design observation node 130 and answered after the Skyreach work shipped. The core: what a pro CS player *is*, mechanically, is positioning that makes fights unfair before they start, information discipline, engagement discipline, and movement that defeats prediction — aim is the last 10%. Rotated into 2D side-view with vertical play:
+
+1. **Positioning beats aim — height is the angle.** Shooting down means gravity helps your rounds; shooting up means decelerating bullets and full exposure. A first-principles bot moves *between positions scored* by height advantage, cover, escape routes, and fuel — not toward enemies.
+2. **Memory over omniscience.** Current bots have perfect line-of-sight knowledge and zero memory — the inverse of a human. Track last-seen + velocity, and since aerial movement is smooth ballistics, predict flight paths and pre-aim the lanes.
+3. **Engagement discipline.** A state machine (ENGAGE / REPOSITION / RELOAD-BEHIND-COVER / HUNT) where mag state and HP are tactical inputs: dry mag → break line of sight, re-peek at a different height. This creates the rhythm a spectator reads as "smart."
+4. **Movement as counter-prediction.** The bot aim model leads targets assuming constant velocity — so erratic jet thrust (burst-cut-burst, arc reversals) is literally the mathematical counter to it. Duels become prediction vs. anti-prediction.
+5. **Fire discipline + the fuel economy.** Tap at range while bloom recovers, spray up close; full tank vs dry opponent → force the air fight, low tank → hug pads and bait.
+
+Build shape: a new `pilot.ts` utility-scoring brain (candidate maneuvers per tick: hold, climb-attack, dive-attack, juke, disengage, reload-hold), keeping the faithful Pascal brain as "classic bots," tuned against telemetry (height-advantage-at-kill, hit-rate-while-jinking, fuel-at-death). Not yet built — the agreed next big step.
+
+---
+
+## Turn 13 — This document
+
+**Robert:**
+
+> can you give me a transcript of this entire process from 0 to now (minus your thinking blocks etc) so that I may share it outwardly
+
+> with all my prompts
+
+**Claude:**
+
+Brought this file current through every turn. Every Robert message in this session appears verbatim (typos preserved) in the turn it arrived, including mid-task interjections; Claude's responses are condensed to their substance (tool calls, file diffs, and internal reasoning omitted). For the project history *before* this session — the Pascal-engine study, the port plan, milestones M0–M8 — see the Porting Diary at the bottom of [README.md](README.md).
 
 ---
 
@@ -247,6 +285,12 @@ Committed as `1745336` + `8ba891a`, telemetry-verified each step. Also logged Ro
 | 100 / 103 | action / outcome | Boots/jump force-clobbering fixes (347 tests) |
 | 101 | goal | Jumps must clear basic land obstacles |
 | 102 / 104–108 | goal → options → decision → action → outcome | Light aim assist (fire-time bend, player-only) |
+| 109–120 | goal → options → decisions → actions → outcomes | Spectate mode workflow (incl. judge report node 119) |
+| 121–123 | goal / action / outcome | Match telemetry pipeline |
+| 124–126 | goal / action / outcome | Aerial-by-default: Skyreach, flying bots |
+| 127–129 | goal / action / outcome | Skyreach v2: ceiling + irregular layout |
+| 130 | observation | First-principles bot design seed (CS pro play → 2D + vertical) |
+| 131 | action | Finalize this transcript |
 
 ## Commits this session
 
@@ -260,3 +304,8 @@ Committed as `1745336` + `8ba891a`, telemetry-verified each step. Also logged Ro
 | `e5c0924` | docs: rewrite README for the TS port — architecture, game today, porting diary |
 | `7001744` | fix(sim): boots/jump force clobbering — most-upward-wins + 90% side-jump vertical |
 | `66ea796` | feat(client): light aim assist — bend near-miss player shots onto targets |
+| `1ebc405` | feat(client): spectate mode — bot-vs-bot matches with broadcast director camera |
+| `30d084a` | feat(client): match telemetry — versioned JSON schema + analyzer for gameplay math |
+| `1745336` | feat: aerial-by-default — Skyreach arena, flying bots, spectate on startup |
+| `8ba891a` | feat(client): Skyreach v2 — ceiling slab + irregular asymmetric pad layout |
+| *(docs)* | `f5d6006`, `8a37d02`, `0d48d89`, `5a45227`, `ec79da3` — transcript + graph exports along the way |
