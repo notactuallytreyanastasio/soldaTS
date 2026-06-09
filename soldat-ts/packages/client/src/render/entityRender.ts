@@ -18,6 +18,7 @@ import {
   MAX_THINGS,
   type World,
 } from '@soldat/sim';
+import { drawGostek } from './gostek';
 
 /**
  * Per-entity interpolation state. `prevX/prevY` is the entity's position at the
@@ -34,8 +35,9 @@ interface InterpState {
   tick: number;
 }
 
-/** Radius (world units) of the body marker drawn for each sprite. */
-const BODY_RADIUS = 8;
+/** How far above the collision COM to anchor the Gostek hips (world units), so
+ *  the figure's feet land near the ground contact point instead of sinking. */
+const FOOT_LIFT = 10;
 /** Half-size (world units) of the square marker drawn for each thing. */
 const THING_HALF = 6;
 /** Radius (world units) of the dot drawn for each bullet. */
@@ -60,6 +62,12 @@ export class EntityRenderer {
   private readonly spriteInterp: (InterpState | undefined)[] = [];
   private readonly bulletInterp: (InterpState | undefined)[] = [];
   private readonly thingInterp: (InterpState | undefined)[] = [];
+
+  // Per-sprite walk-cycle phase (0..1), advanced by horizontal travel.
+  private readonly spritePhase: number[] = [];
+
+  /** 1-based index of the local player (drawn in the player tint). */
+  playerIndex = 1;
 
   constructor() {
     // Draw order: things under bullets under sprites (players on top).
@@ -101,12 +109,35 @@ export class EntityRenderer {
       const cy = parts.posY[num] ?? 0;
       const [x, y] = this.interp(this.spriteInterp, i, cx, cy, world.ticks, t);
 
-      // Body marker: a filled circle at the COM, with a facing line for aim/dir.
-      g.circle(x, y, BODY_RADIUS).fill({ color: 0xffd17a });
-      const dir = sprite.direction >= 0 ? 1 : -1;
-      g.moveTo(x, y)
-        .lineTo(x + dir * BODY_RADIUS * 1.6, y)
-        .stroke({ color: 0x222222, width: 2 });
+      const vx = parts.velocityX[num] ?? 0;
+      const vy = parts.velocityY[num] ?? 0;
+
+      // Advance the walk-cycle phase by horizontal travel (only while moving).
+      let phase = this.spritePhase[i] ?? 0;
+      if (Math.abs(vx) > 1) {
+        phase = (phase + Math.abs(vx) * 0.03) % 1;
+      }
+      this.spritePhase[i] = phase;
+
+      // Aim point = COM + the control's relative aim vector.
+      const aimX = x + sprite.control.mouseAimX;
+      const aimY = y + sprite.control.mouseAimY;
+
+      // The collision COM rests near the feet; draw the figure anchored so its
+      // hips sit above the contact point (FOOT_LIFT puts the body over the COM).
+      drawGostek(g, {
+        comX: x,
+        comY: y - FOOT_LIFT,
+        aimX,
+        aimY,
+        vx,
+        vy,
+        onGround: sprite.onGround,
+        phase,
+        team: i === this.playerIndex ? 1 : 2,
+        alpha: sprite.deadMeat ? 0.45 : 1,
+        dead: sprite.deadMeat,
+      });
     }
   }
 

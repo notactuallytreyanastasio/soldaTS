@@ -27,7 +27,9 @@ import { EntityRenderer } from '../render/entityRender';
 import { InputController } from '../input/input';
 import { Hud, type HudState } from '../ui/hud';
 import { START_HEALTH } from '../ui/helpers';
+import { Crosshair } from '../render/fx';
 import { Game } from './game';
+import { buildArena, ARENA_SPAWNS } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 
 // ---------------------------------------------------------------------------
@@ -165,17 +167,21 @@ async function main(): Promise<void> {
   // (offline, missing asset, parse error) fall back to the synthetic scene.
   const mapUrl = pickMapUrl();
   let map: PmsMap;
+  let spawns: readonly { x: number; y: number }[];
   try {
     map = await fetchAndLoadMap(mapUrl);
+    const sp = map.spawnpoints.filter((s) => s.active).map((s) => ({ x: s.x, y: s.y }));
+    spawns = sp.length > 0 ? sp : ARENA_SPAWNS;
     // eslint-disable-next-line no-console
     console.info(`loaded map '${map.mapName}' from ${mapUrl}`);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.warn(
-      `could not load '${mapUrl}', using synthetic map instead:`,
+      `could not load '${mapUrl}', using the built-in arena instead:`,
       err instanceof Error ? err.message : err,
     );
-    map = buildSyntheticMap();
+    map = buildArena();
+    spawns = ARENA_SPAWNS;
   }
   // ----------------------------------------------------------------------
 
@@ -183,20 +189,22 @@ async function main(): Promise<void> {
   const mesh = buildMapMesh(map);
   renderer.setMap(mesh);
 
-  // --- Game: sim world + local player ----------------------------------
-  // Spawn the player at the map's first spawnpoint. A fixed seed keeps the run
-  // deterministic across reloads (handy while developing).
-  const spawn = pickSpawn(map);
-  const game = new Game({ seed: 1, spawn });
-  // Attach the sim collision map so the player collides with the floor instead
-  // of free-falling. buildPolyMap consumes the structural subset of PmsMap.
+  // --- Game: sim world + local player + bots ---------------------------
+  // A fixed seed keeps the run deterministic across reloads (handy in dev).
+  const game = new Game({ seed: 1, spawns, botCount: 3 });
+  // Attach the sim collision map so sprites collide with the floor.
   game.loadMap(map);
 
   // --- Entity renderer: lives inside the camera/world container --------
   // Adding to renderer.world means entity graphics share the map's pan/zoom
   // transform, so world coordinates line up with the map mesh.
   const entityRenderer = new EntityRenderer();
+  entityRenderer.playerIndex = game.playerIndex;
   renderer.world.addChild(entityRenderer.container);
+
+  // Crosshair at the aim point (in the world container, follows the camera).
+  const crosshair = new Crosshair();
+  renderer.world.addChild(crosshair);
 
   // --- HUD --------------------------------------------------------------
   // The HUD lives on the app stage (screen-fixed), NOT renderer.world, so it
@@ -273,6 +281,9 @@ async function main(): Promise<void> {
 
     // 2. Apply control to the player sprite (the sim reads it during stepWorld).
     player.control = control;
+
+    // Crosshair at the aim point (world coords = COM + relative aim vector).
+    crosshair.moveTo(px + control.mouseAimX, py + control.mouseAimY);
 
     // 3. Advance the simulation by real elapsed time (fixed-step internally).
     game.tick(dt);
