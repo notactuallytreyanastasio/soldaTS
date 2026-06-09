@@ -166,14 +166,18 @@ export function applyControl(
   // While the window is active AND Up is still held, apply the jump force. Sets
   // up variable jump height: releasing Up cuts the jump short (sets ticks to 0).
   if (sprite.jumpTicksLeft > 0 && control.up) {
+    // DESIGN OVERRIDE (node 100): Pascal's side-jump vertical is only
+    // JUMPDIRSPEED/1.2 (0.25) vs 0.66 for a standing jump — a running player
+    // (i.e. always, in practice) couldn't clear basic terrain. Side-jumps
+    // keep 90% of the straight jump's vertical, plus the horizontal kick.
     if (control.right && !control.left) {
       // PORT: Control.pas:1820-1821 — JumpSide to the right.
       spriteParts.forceX[num] = JUMPDIRSPEED;
-      spriteParts.forceY[num] = f(-JUMPDIRSPEED / 1.2);
+      spriteParts.forceY[num] = f(-0.9 * JUMPSPEED);
     } else if (control.left && !control.right) {
       // PORT: Control.pas:1868-1869 — JumpSide to the left.
       spriteParts.forceX[num] = f(-JUMPDIRSPEED);
-      spriteParts.forceY[num] = f(-JUMPDIRSPEED / 1.2);
+      spriteParts.forceY[num] = f(-0.9 * JUMPSPEED);
     } else {
       // PORT: Control.pas:1894 — straight Jump.
       spriteParts.forceY[num] = f(-JUMPSPEED);
@@ -203,9 +207,13 @@ export function applyControl(
   // right (Control.pas:1916-1941)
   if (control.right && !control.left) {
     if (sprite.onGround) {
-      // Control.pas:1936-1937
+      // Control.pas:1936-1937. DESIGN OVERRIDE (node 100): most-upward-wins —
+      // a plain assignment here clobbered the jet's ground thrust (-0.25 with
+      // -0.0197, below gravity), making a running takeoff impossible.
       spriteParts.forceX[num] = RUNSPEED;
-      spriteParts.forceY[num] = f(-RUNSPEEDUP);
+      spriteParts.forceY[num] = f(
+        Math.min(spriteParts.forceY[num] ?? 0, -RUNSPEEDUP),
+      );
     } else {
       // Control.pas:1940. DESIGN OVERRIDE (node 94): while the jet thrusts,
       // air control is halved so the boost goes UP, not sideways.
@@ -217,9 +225,12 @@ export function applyControl(
   // left (Control.pas:1943-1968)
   if (control.left && !control.right) {
     if (sprite.onGround) {
-      // Control.pas:1963-1964
+      // Control.pas:1963-1964. DESIGN OVERRIDE (node 100): most-upward-wins,
+      // see the right branch.
       spriteParts.forceX[num] = f(-RUNSPEED);
-      spriteParts.forceY[num] = f(-RUNSPEEDUP);
+      spriteParts.forceY[num] = f(
+        Math.min(spriteParts.forceY[num] ?? 0, -RUNSPEEDUP),
+      );
     } else {
       // Control.pas:1967. DESIGN OVERRIDE (node 94): see the right branch.
       spriteParts.forceX[num] = f(-(jetting ? JET_AIR_DRIFT : FLYSPEED));
@@ -237,8 +248,9 @@ export function applyControl(
  *
  *   - active only while `control.jetpack` is held AND fuel (`jetsCount`) > 0
  *     (Control.pas:324);
- *   - on ground (Control.pas:326-328): Forces.Y := -2.5 * JETSPEED (a single
- *     assignment — it OVERWRITES any jump force this tick, matching Pascal);
+ *   - on ground (Control.pas:326-328): Pascal assigns Forces.Y := -2.5 *
+ *     JETSPEED; we take the MOST UPWARD of the existing force and the jet
+ *     kick instead (design override, node 100 — see the branch comment);
  *   - in air, not prone (Control.pas:330-334): Forces.Y -= JETSPEED (accumulates
  *     against the gravity the Euler step will add);
  *   - fuel decrements by one each thrusting tick (Control.pas:373, Dec).
@@ -261,8 +273,14 @@ export function applyJetpack(
   const num = sprite.num;
 
   if (sprite.onGround) {
-    // PORT: Control.pas:327-328 — Forces.Y := -2.5 * JETSPEED (assignment).
-    spriteParts.forceY[num] = f(-JET_GROUND_THRUST);
+    // PORT: Control.pas:327-328 — Forces.Y := -2.5 * JETSPEED. DESIGN
+    // OVERRIDE (node 100): Pascal assigns, which let the weaker jet kick
+    // (-0.25) STOMP a same-tick jump force (-0.66) — holding the jet nerfed
+    // your jump. Most-upward-wins instead: jump and jet combine into
+    // whichever lifts harder.
+    spriteParts.forceY[num] = f(
+      Math.min(spriteParts.forceY[num] ?? 0, -JET_GROUND_THRUST),
+    );
   } else if (sprite.position !== POS_PRONE) {
     // PORT: Control.pas:333-334 — Forces.Y := Forces.Y - JETSPEED.
     spriteParts.forceY[num] = f((spriteParts.forceY[num] ?? 0) - JET_THRUST);

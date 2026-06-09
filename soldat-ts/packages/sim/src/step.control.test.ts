@@ -99,6 +99,67 @@ describe('stepWorld applies control on the map path', () => {
     expect(climb).toBeGreaterThan(drift * 1.5); // UP wins over sideways
   });
 
+  // DESIGN OVERRIDE regressions (node 100): "boots still wrong" round.
+  // All three bugs were later force assignments clobbering a stronger upward
+  // force on the same tick.
+
+  it('holding the jet does NOT nerf a jump (most-upward-wins)', () => {
+    const jumpPeak = (jetpack: boolean): number => {
+      const { w, p, s } = landedPlayer();
+      const ground = p.posY[1]!;
+      let peak = ground;
+      for (let i = 0; i < 120; i++) {
+        s.control = { ...s.control, up: true, jetpack };
+        stepWorld(w, { spriteRadius: 0 });
+        peak = Math.min(peak, p.posY[1]!);
+      }
+      return ground - peak;
+    };
+    // The jet ground-kick (-0.25) used to overwrite the jump force (-0.66).
+    expect(jumpPeak(true)).toBeGreaterThanOrEqual(jumpPeak(false));
+  });
+
+  it('can take off while running (movement no longer clobbers jet lift)', () => {
+    const { w, p, s } = landedPlayer();
+    const ground = p.posY[1]!;
+    let peak = ground;
+    for (let i = 0; i < 90; i++) {
+      s.control = { ...s.control, right: true, jetpack: true };
+      stepWorld(w, { spriteRadius: 0 });
+      peak = Math.min(peak, p.posY[1]!);
+    }
+    // forceY = -RUNSPEEDUP (0.0197 < gravity) used to pin the runner down.
+    expect(ground - peak).toBeGreaterThan(40);
+  });
+
+  it('a running jump clears like a standing jump (side-jump keeps 90% vertical)', () => {
+    const sideJumpPeak = (): number => {
+      const { w, p, s } = landedPlayer();
+      const ground = p.posY[1]!;
+      let peak = ground;
+      for (let i = 0; i < 120; i++) {
+        s.control = { ...s.control, up: true, right: true };
+        stepWorld(w, { spriteRadius: 0 });
+        peak = Math.min(peak, p.posY[1]!);
+      }
+      return ground - peak;
+    };
+    const straightJumpPeak = (): number => {
+      const { w, p, s } = landedPlayer();
+      const ground = p.posY[1]!;
+      let peak = ground;
+      for (let i = 0; i < 120; i++) {
+        s.control = { ...s.control, up: true };
+        stepWorld(w, { spriteRadius: 0 });
+        peak = Math.min(peak, p.posY[1]!);
+      }
+      return ground - peak;
+    };
+    // Pascal side-jump vertical (0.25 vs 0.66) reached ~1/3 the height —
+    // "I can't jump over basic land obstacles".
+    expect(sideJumpPeak()).toBeGreaterThan(straightJumpPeak() * 0.7);
+  });
+
   it('air control is restored once the fuel runs dry', () => {
     const { w, p, s } = landedPlayer();
     s.jetsCount = 0;
