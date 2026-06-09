@@ -183,6 +183,11 @@ export class PolyMap {
   /** Encoded-sector -> 1-based polygon index list. */
   private readonly sectors: ReadonlyMap<number, readonly number[]>;
 
+  /** True when a usable sector grid exists; false → brute-force all polys. */
+  private readonly hasGrid: boolean;
+  /** 1-based indices of every polygon (the no-grid candidate set). */
+  private readonly allIndices: readonly number[];
+
   constructor(args: {
     polys: readonly CollisionPoly[];
     sectorsDivision: number;
@@ -193,6 +198,27 @@ export class PolyMap {
     this.sectorsDivision = args.sectorsDivision;
     this.sectorsNum = args.sectorsNum;
     this.sectors = args.sectors;
+    // A map without a valid sector grid (e.g. small/synthetic maps) still needs
+    // collision: fall back to testing every polygon. Real .PMS maps always have
+    // a grid, so this only affects gridless maps and keeps their behaviour.
+    this.hasGrid =
+      args.sectorsNum > 0 && args.sectorsDivision > 0 && args.sectors.size > 0;
+    this.allIndices = args.polys.map((_, i) => i + 1);
+  }
+
+  /**
+   * Candidate 1-based polygon indices near `p`: the sector's polygons when a
+   * grid exists, otherwise every polygon (gridless fallback).
+   */
+  private candidatePolys(p: Vec2): readonly number[] {
+    if (!this.hasGrid) {
+      return this.allIndices;
+    }
+    const { kx, ky } = this.sectorIndex(p);
+    if (!this.sectorInBounds(kx, ky)) {
+      return EMPTY_SECTOR;
+    }
+    return this.sectorPolys(kx, ky);
   }
 
   /** Encode a (kx, ky) cell into a single number key. */
@@ -422,12 +448,7 @@ export class PolyMap {
     pos: Vec2,
     accept: (polyType: number, polyIndex: number) => boolean,
   ): MapCollision | null {
-    const { kx, ky } = this.sectorIndex(pos);
-    if (!this.sectorInBounds(kx, ky)) {
-      return null;
-    }
-
-    const indices = this.sectorPolys(kx, ky);
+    const indices = this.candidatePolys(pos);
     for (const w of indices) {
       const polyIndex = w - 1; // .PMS stores 1-based; polys[] is 0-based.
       const poly = this.polys[polyIndex];
@@ -495,12 +516,7 @@ export class PolyMap {
     radius: number,
     accept: (polyType: number, polyIndex: number) => boolean,
   ): MapCollision | null {
-    const { kx, ky } = this.sectorIndex(center);
-    if (!this.sectorInBounds(kx, ky)) {
-      return null;
-    }
-
-    const indices = this.sectorPolys(kx, ky);
+    const indices = this.candidatePolys(center);
     for (const w of indices) {
       const polyIndex = w - 1;
       const poly = this.polys[polyIndex];
