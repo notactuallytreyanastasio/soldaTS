@@ -196,31 +196,44 @@ export function parseSpectate(
 }
 
 /**
- * Duel mode (?duel or ?duel=classic,pilot): TWO simultaneous bot matches side
- * by side, one per AI engine, each a fully independent game in its own
- * iframe (own renderer, own sim, own telemetry). The cheapest possible "turn
- * on 2 games at once and watch each of them play" — and honest isolation:
- * neither match can perturb the other.
+ * Duel mode: SEVERAL simultaneous bot matches, one per AI engine, each a
+ * fully independent game in its own iframe (own renderer, own sim, own
+ * telemetry) — honest isolation, no match can perturb another.
+ *
+ *   ?duel                          → classic vs pilot, side by side
+ *   ?duel=pilot,classic            → any two engines (order = position)
+ *   ?duel=classic,pilot,pilot,...  → up to 6 in a grid (repeats fine —
+ *                                    pilot-vs-pilot mirrors are legal)
  */
+const DUEL_MAX_GAMES = 6;
+
 export function parseDuel(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
-): [string, string] | null {
+): string[] | null {
   const params = new URLSearchParams(search);
   if (!params.has('duel')) return null;
   const raw = params.get('duel') ?? '';
-  const [a, b] = raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
-  return [a ?? 'classic', b ?? 'pilot'];
+  const engines = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .slice(0, DUEL_MAX_GAMES);
+  return engines.length >= 2 ? engines : ['classic', 'pilot'];
 }
 
-/** Build the duel split view: two labelled iframes, each a spectate match. */
-function showDuel(engines: [string, string]): void {
+/** Build the duel view: a grid of labelled iframes, each a spectate match. */
+function showDuel(engines: readonly string[]): void {
   document.body.style.cssText = 'margin:0;background:#0a0c10';
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;width:100vw;height:100vh;gap:2px';
+  // 2 per row: flex-wrap keeps pairs side by side and stacks further rows.
+  const basis = engines.length > 1 ? 'calc(50% - 1px)' : '100%';
+  row.style.cssText =
+    'display:flex;flex-wrap:wrap;width:100vw;height:100vh;gap:2px;align-content:stretch';
   for (const engine of engines) {
     const col = document.createElement('div');
     col.style.cssText =
-      'flex:1;display:flex;flex-direction:column;min-width:0;position:relative';
+      `flex:1 1 ${basis};display:flex;flex-direction:column;min-width:0;position:relative;` +
+      `min-height:${engines.length > 2 ? 'calc(50% - 1px)' : '100%'}`;
     const label = document.createElement('div');
     label.textContent = `ENGINE: ${engine.toUpperCase()}`;
     label.style.cssText = [
@@ -578,12 +591,17 @@ async function main(): Promise<void> {
   }
 
   // --- Wheel-zoom centred on the cursor (kept from the map viewer) ------
+  // Proportional to the actual scroll delta (a fixed 10% per EVENT made
+  // trackpads — which fire dozens of small-delta events per gesture —
+  // wildly oversensitive). One mouse-wheel notch (|deltaY| ≈ 100) is now a
+  // gentle ~4%; the per-event clamp keeps violent flicks civilised.
   canvas.addEventListener(
     'wheel',
     (e: WheelEvent) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
-      const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+      const clamped = Math.max(-160, Math.min(160, e.deltaY));
+      const factor = Math.exp(-clamped * 0.0004);
       renderer.zoomAt(factor, e.clientX - rect.left, e.clientY - rect.top);
     },
     { passive: false },
