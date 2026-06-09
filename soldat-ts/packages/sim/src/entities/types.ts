@@ -72,6 +72,10 @@ export interface Sprite {
   jetsCountReal: number; // PORT: Sprites.pas:122 — Single
   jetsCount: number; // PORT: Sprites.pas:123 — SmallInt
   jetsCountPrev: number; // PORT: Sprites.pas:123 — SmallInt
+  // Jump-force window (ticks remaining). Stands in for the Jump LegsAnimation
+  // frames 9-14 over which Control.pas applies -JUMPSPEED; the animation system
+  // is not ported, so a tick counter drives the sustained jump impulse.
+  jumpTicksLeft: number;
   wearHelmet: number; // PORT: Sprites.pas:124 — Byte
   hasCigar: number; // PORT: Sprites.pas:125 — Byte
   canMercy: boolean; // PORT: Sprites.pas:126

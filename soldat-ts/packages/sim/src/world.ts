@@ -88,6 +88,7 @@ function emptySprite(): Sprite {
     jetsCountReal: 0,
     jetsCount: 0,
     jetsCountPrev: 0,
+    jumpTicksLeft: 0,
     wearHelmet: 0,
     hasCigar: 0,
     canMercy: false,

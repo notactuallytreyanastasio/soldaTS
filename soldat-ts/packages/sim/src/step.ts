@@ -33,7 +33,7 @@
  */
 import type { World } from './world';
 import type { BulletGun } from './entities/bullet';
-import { updateSpriteMovement, collideSpriteAgainstMap } from './entities/sprite';
+import { updateSpriteMovement, updateSpriteMovementMap } from './entities/sprite';
 import { updateBullet } from './entities/bullet';
 import { updateSpark } from './entities/spark';
 import { updateThing } from './entities/thing';
@@ -123,8 +123,9 @@ export function stepWorld(world: World, opts?: StepOptions): void {
       continue;
     }
     if (hasMap) {
-      world.spriteParts?.doEulerTimeStepFor(sprite.num);
-      collideSpriteAgainstMap(world, j, spriteRadius);
+      // Full map movement: integrate -> multi-point collide -> clamp -> apply
+      // control (so input/jump actually drive the sprite). PORT: the M3 driver.
+      updateSpriteMovementMap(world, j, spriteRadius);
     } else {
       updateSpriteMovement(world, j, floorY);
     }

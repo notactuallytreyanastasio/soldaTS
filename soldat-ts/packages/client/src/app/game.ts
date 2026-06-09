@@ -93,6 +93,10 @@ export class Game {
     player.direction = 1;
     player.health = 150; // PORT: STARTHEALTH (Sprites.pas) — full health on spawn.
     player.visible = 1;
+    // Jet fuel — Soldat seeds JetsCount from Map.StartJet at spawn. The synthetic
+    // dev map has none, so give a usable default ("rocket boots" work offline).
+    player.jetsCount = 250;
+    player.jetsCountReal = 250;
   }
 
   /**

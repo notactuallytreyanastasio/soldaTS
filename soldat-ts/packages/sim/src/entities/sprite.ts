@@ -68,6 +68,11 @@ import { isBouncy, isIce } from '../map/polymap';
 // PORT: shared/mechanics/Sprites.pas:51 — MAX_VELOCITY = 11;
 export const MAX_VELOCITY = 11 as const;
 
+// Ticks over which the jump force is applied — our stand-in for the Jump
+// animation frames 9-14 (Control.pas:1891-1894) since the animation system is
+// not ported. Tuned for a Soldat-like jump arc.
+export const JUMP_TICKS = 9 as const;
+
 // PORT: shared/mechanics/Sprites.pas:59-61 — POS_STAND/CROUCH/PRONE.
 export const POS_STAND = 1 as const;
 export const POS_CROUCH = 2 as const;
@@ -142,7 +147,17 @@ export function applyControl(
   // the floor, OnGround drops to false (the leg collision points no longer
   // contact), and the impulse naturally stops — matching the net Pascal path.
   // -----------------------------------------------------------------------
-  if (control.up && sprite.onGround) {
+  // Start a jump when Up is pressed on the ground (Control.pas:1884-1894 starts
+  // the Jump animation). The force is then applied for JUMP_TICKS ticks — our
+  // stand-in for the Jump animation's frames 9-14 over which Pascal applies
+  // -JUMPSPEED each frame (Control.pas:1894). Without this window the player
+  // leaves the ground after a single tick → a "baby jump".
+  if (control.up && sprite.onGround && sprite.jumpTicksLeft === 0) {
+    sprite.jumpTicksLeft = JUMP_TICKS;
+  }
+  // While the window is active AND Up is still held, apply the jump force. Sets
+  // up variable jump height: releasing Up cuts the jump short (sets ticks to 0).
+  if (sprite.jumpTicksLeft > 0 && control.up) {
     if (control.right && !control.left) {
       // PORT: Control.pas:1820-1821 — JumpSide to the right.
       spriteParts.forceX[num] = JUMPDIRSPEED;
@@ -155,10 +170,13 @@ export function applyControl(
       // PORT: Control.pas:1894 — straight Jump.
       spriteParts.forceY[num] = f(-JUMPSPEED);
     }
+    sprite.jumpTicksLeft -= 1;
     // Jetpack may still add on top of the jump (Control.pas:324 runs separately).
     applyJetpack(sprite, control, spriteParts);
     return;
   }
+  // Up released or window exhausted: end the jump.
+  sprite.jumpTicksLeft = 0;
 
   // Jetpack thrust (independent of the run/jump else-if chain in Pascal —
   // Control.pas:324 is its own block running before the movement anims).
