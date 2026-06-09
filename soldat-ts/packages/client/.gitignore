@@ -1,7 +1,10 @@
 dist/
 node_modules/
+*.tsbuildinfo
+# Soldat assets (fetched via `pnpm assets`, not committed)
 public/gfx/
 public/sfx/
 public/objects/
 public/textures/
+public/interface-gfx/
 public/maps/*.pms
