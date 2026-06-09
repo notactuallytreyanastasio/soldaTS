@@ -315,7 +315,7 @@ async function main(): Promise<void> {
     const py = parts !== null ? (parts.posY[game.playerIndex] ?? 0) : 0;
     const playerScreenX = px * zoom + renderer.camera.x;
     const playerScreenY = py * zoom + renderer.camera.y;
-    const control = input.readControl(playerScreenX, playerScreenY);
+    const control = input.readControl(playerScreenX, playerScreenY, now);
 
     // 2. Apply control to the player sprite (the sim reads it during stepWorld).
     player.control = control;
