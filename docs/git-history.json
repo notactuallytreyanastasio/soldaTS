@@ -1,5 +1,21 @@
 [
   {
+    "hash": "30d084a9aed8d0f9df5697618afc486ded3d4fae",
+    "short_hash": "30d084a",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:29:07-04:00",
+    "message": "feat(client): match telemetry — versioned JSON schema + analyzer for gameplay math\n\nMakes bot matches machine-parseable (soldat-match-telemetry/1): per-half-\nsecond sprite samples (pos/vel/hp/jet fuel/jetting/firing/airborne), every\nshot (Game.onShot), every damaging hit (new sim World.onDamage observer —\nnotification-only, determinism preserved), every kill with killer/victim\npositions + distance. Derived stats computed in pure tested functions:\nper-bot hit rates, jet-use %, airtime %, speed, vertical spread, kills/min,\nkill-distance percentiles, grid-binned death clusters.\n\nSpectate-only wiring: window.__match.dump() for CDP/agents, T key downloads\nthe JSON, tools/analyze-match.mjs renders a report. Normal play unaffected.\n\nProven end-to-end on a 2-min headless ctf_Ash match: 36 deaths (18/min),\naggregate hit rate 21.1%, kill-distance median 81px (p25 53 / p75 130 —\nknife-fight range), jet use 1.7-3.8% per bot. The numbers confirm and\nsharpen the spectate judge's verdict: pacing too hot, bots don't fly,\nfights are point-blank. 386 tests green (6 new).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "1ebc4050fca52e84b52ceda6868ce41097f71e16",
+    "short_hash": "1ebc405",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:20:19-04:00",
+    "message": "feat(client): spectate mode — bot-vs-bot matches with broadcast director camera\n\n?spectate (or ?spectate=N, 2-12 bots, default 6): a self-sustaining bot\ndeathmatch with no human soldier, an action camera, and a live scoreboard —\nbuilt to watch and judge the gameplay.\n\n- Kill attribution: sim Sprite.lastHitBy (set on every damaging hit) +\n  Game.onKill fired exactly once on the death edge; suicides/unattributed\n  excluded from tallies\n- Director (new director.ts, pure tested core): scores subjects by kill\n  heat > firing > enemy proximity; 3.5s min dwell + hysteresis stops\n  whiplash; dead subject cuts immediately, preferring its killer; arrows/N/P\n  cycle bots manually, A/0 returns to auto; lerped broadcast pan with\n  snap-cuts past 1500px\n- HUD goes live in spectate: followed bot's name/vitals/ammo, FFA\n  leader/runner-up scores, real kill feed\n- Bot sustainment (spectate-gated): alpha=255 so bots can SEE each other —\n  discovered normal-mode bots are pacifists today (findTarget skips\n  alpha!==255 and nothing ever set alpha; promoting the fix to play mode is\n  a deliberate follow-up) — plus absolute->relative bot aim conversion,\n  real .PMS waypoint adoption, deterministic roam fallback with stuck\n  jump/jet pulses\n- Normal play byte-for-byte unchanged (every change spectate-gated;\n  browser-regression verified)\n\nVerified: 380/380 tests (26 new: director rules, kill board, 10k-tick match\nsustainment, play-mode regression, sim lastHitBy); two 90s headless-Chrome\nsoaks (synthetic arena + ctf_Ash) with zero input — kills strictly\naccumulating (29 and 57), all bots scoring, camera tracking live bots,\nmanual override cycling, normal mode regression-checked.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
     "hash": "66ea796fad565cd46513a7bffb804a76955d7c6a",
     "short_hash": "66ea796",
     "author": "Robert Grayson",

@@ -169,6 +169,24 @@ Ground vertical forces now combine via most-upward-wins; 3 regression tests pin 
 
 ---
 
+## Turn 9 — Bot spectator mode (workflow) + match telemetry
+
+**Robert:**
+
+> do a workflow and get this game to the point we can watch the bots play against each other to judge the gameplay
+
+> to make all this parseable as a backend what kind of magic do we need to do for you? I want you to see the math of how they are flying asbout etc, percentage hit rates, clusterings of deaths, etc
+
+**Claude:**
+
+**Spectate mode** (`1ebc405`, 9-agent workflow: recon → 2-lens design + judge → implement → 3 verifiers → gameplay judge): `?spectate` (or `?spectate=N`) runs a self-sustaining bot deathmatch with no human soldier, a broadcast director camera (kill heat > firing > proximity scoring, 3.5s dwell, killer-cut on death, arrows cycle / A returns to auto), and a live HUD (followed bot's vitals, FFA scores, real kill feed). Kill attribution via new sim `Sprite.lastHitBy` + `Game.onKill`. The workflow's recon claim that "bots already fight" turned out FALSE — bots were pacifists all along (`findTarget` skips sprites with `alpha !== 255` and nothing ever set alpha); fixed behind the spectate gate. Browser-verified with two 90s zero-input soaks. 380 tests.
+
+The built-in **gameplay judge** watched 3.7 minutes and reported: pacing hot (16 kills/min, median 3.1s between deaths — too fast to read duels), bots barely use jets (1–4% of alive time — "the VERY vertical game reads as a walking game"), engagements knife-range (median 157px — spray/bloom never expresses). Top suggested levers: lower the bot jet threshold in `bot.ts`, raise `FIRE_INTERVAL` 6→9-10, open up bot engagement bands.
+
+**Match telemetry** (`30d084a`) — the answer to "what magic do we need": no backend, just (1) a versioned JSON schema (`soldat-match-telemetry/1`) recorded in-client — half-second sprite samples, every shot/hit/kill with positions — via a new notification-only sim `World.onDamage` observer; (2) `window.__match.dump()` exposed in spectate (CDP-pullable) + T-key download; (3) `tools/analyze-match.mjs` rendering the math. Proven on a live 2-minute match: **18 deaths/min, 21.1% aggregate hit rate, kill-distance median 81px (p25 53/p75 130), jet use 1.7–3.8%**, death clusters mapped. 386 tests.
+
+---
+
 ## Decision-graph nodes created this session
 
 | Node | Type | Title |
