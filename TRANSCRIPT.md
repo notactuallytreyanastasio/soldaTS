@@ -145,6 +145,30 @@ Launched a background agent (running in parallel with the jet work) that researc
 
 ---
 
+## Turn 8 — Boots still wrong + jumping obstacles + aim assist
+
+**Robert:**
+
+> were still getting boots wrong
+
+> and I cant jump over basic land obstacles
+
+> we should also implement some light aim assist
+
+**Claude:**
+
+The boots and the jump complaint turned out to be the same family of bug — three places where a later force assignment clobbered a stronger upward force on the same sim tick (faithful to Pascal's assignment order, wrong for this game):
+
+1. **Jump + jet nerfed the jump**: the jet's ground-kick (−0.25) overwrote the jump force (−0.66) — holding Shift while jumping gave a weak hop.
+2. **Running takeoff was impossible**: holding A/D on the ground overwrote jet lift with −0.0197, below gravity — you could never lift off while running.
+3. **Running jumps were stunted**: Pascal's side-jump vertical is 0.25 vs 0.66 standing (~⅓ the height) — and you're always running when you meet an obstacle, hence "can't jump over basic land obstacles". Side-jumps now keep 90% of the straight jump's vertical plus the horizontal kick.
+
+Ground vertical forces now combine via most-upward-wins; 3 regression tests pin each bug. Committed as `7001744` (347 tests).
+
+**Aim assist** (decision node 106 — fire-time bend, never crosshair magnetism): player shots already within ~9° of a live enemy (700px range) bend up to ~2.9° onto the angularly-closest one. Player only — assisted bots are aimbots. Applied before spread so spray bloom still punishes held fire, and the crosshair never moves: invisible help for coarse keyboard aim, not aim hijacking. Pure helper + 7 unit tests, including the ±π seam when aiming left. Committed as `66ea796` (354 tests).
+
+---
+
 ## Decision-graph nodes created this session
 
 | Node | Type | Title |
@@ -165,6 +189,9 @@ Launched a background agent (running in parallel with the jet work) that researc
 | 94 | decision | Tune jets in the sim core with explicit DESIGN OVERRIDE markers |
 | 95 / 98 | action / outcome | Vertical jets implemented and committed (344 tests) |
 | 96 / 97 / 99 | goal / action / outcome | README rewrite + porting diary *(action+outcome by fanned-out agent)* |
+| 100 / 103 | action / outcome | Boots/jump force-clobbering fixes (347 tests) |
+| 101 | goal | Jumps must clear basic land obstacles |
+| 102 / 104–108 | goal → options → decision → action → outcome | Light aim assist (fire-time bend, player-only) |
 
 ## Commits this session
 
@@ -176,3 +203,5 @@ Launched a background agent (running in parallel with the jet work) that researc
 | `f5d6006` | docs: TRANSCRIPT.md + decision-graph export |
 | `f5d3c9a` | feat(sim): vertical rocket boots — 1.8× up-thrust, damped drift, big tank + ground regen |
 | `e5c0924` | docs: rewrite README for the TS port — architecture, game today, porting diary |
+| `7001744` | fix(sim): boots/jump force clobbering — most-upward-wins + 90% side-jump vertical |
+| `66ea796` | feat(client): light aim assist — bend near-miss player shots onto targets |

@@ -1088,6 +1088,105 @@
       "created_at": "2026-06-09T14:56:57.628198-04:00",
       "updated_at": "2026-06-09T14:56:57.628198-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 100,
+      "change_id": "3561aa5f-6951-4220-bef6-9c234faec2a5",
+      "node_type": "action",
+      "title": "Fix jet force-overwrite bugs: jump+jet nerf, running takeoff impossible",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:29:20.286247-04:00",
+      "updated_at": "2026-06-09T15:29:20.286247-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 101,
+      "change_id": "2e67c091-74ce-4946-b99a-1db511a39391",
+      "node_type": "goal",
+      "title": "Jumps must clear basic land obstacles",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:30:01.572189-04:00",
+      "updated_at": "2026-06-09T15:30:01.572189-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"and I cant jump over basic land obstacles\"}"
+    },
+    {
+      "id": 102,
+      "change_id": "4e9abc5c-174b-4cb9-9119-3977f2efd6e1",
+      "node_type": "goal",
+      "title": "Light aim assist for the player",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:30:01.863235-04:00",
+      "updated_at": "2026-06-09T15:30:01.863235-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"we should also implement some light aim assist\"}"
+    },
+    {
+      "id": 103,
+      "change_id": "ac157f99-cf69-40cc-b071-646afdc47858",
+      "node_type": "outcome",
+      "title": "Boots/jump fixed: jump+jet combine, running takeoff works, side-jumps clear obstacles (347 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:31:39.082070-04:00",
+      "updated_at": "2026-06-09T15:31:39.082070-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7001744\",\"confidence\":95}"
+    },
+    {
+      "id": 104,
+      "change_id": "1dd7921d-8d1a-49dc-89f1-b5793c6ea3c3",
+      "node_type": "option",
+      "title": "Bend bullets at fire time (crosshair stays honest)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:33:08.384139-04:00",
+      "updated_at": "2026-06-09T15:33:08.384139-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 105,
+      "change_id": "248ed3b7-6c39-444c-b71b-2fd3ebe034d4",
+      "node_type": "option",
+      "title": "Bend the aim input itself (crosshair magnetism)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:33:08.533236-04:00",
+      "updated_at": "2026-06-09T15:33:08.533236-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 106,
+      "change_id": "7294a2d4-53bb-47f0-be34-983f5b1d7c9e",
+      "node_type": "decision",
+      "title": "Fire-time bend: assist the shot, never move the player's crosshair",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:33:08.681427-04:00",
+      "updated_at": "2026-06-09T15:33:08.681427-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 107,
+      "change_id": "9a2e205a-a361-496c-a29b-ed41831af62d",
+      "node_type": "action",
+      "title": "Implement applyAimAssist: 9-degree cone, 2.9-degree max bend, 700px range, player-only, pre-spread",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:33:08.827652-04:00",
+      "updated_at": "2026-06-09T15:33:08.827652-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 108,
+      "change_id": "31507f55-b640-4709-92a2-299c6d129ca6",
+      "node_type": "outcome",
+      "title": "Aim assist live: fire-time bend, player-only, 354 tests green",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T15:33:19.963140-04:00",
+      "updated_at": "2026-06-09T15:33:19.963140-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"66ea796\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -2487,6 +2586,105 @@
       "weight": 1.0,
       "rationale": "Result of README rewrite",
       "created_at": "2026-06-09T14:57:05.021024-04:00"
+    },
+    {
+      "id": 134,
+      "from_node_id": 98,
+      "to_node_id": 100,
+      "from_change_id": "91c7eb36-1158-4e75-83ac-de8899e130ae",
+      "to_change_id": "3561aa5f-6951-4220-bef6-9c234faec2a5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Playtest feedback: boots still wrong after tuning pass",
+      "created_at": "2026-06-09T15:29:20.427495-04:00"
+    },
+    {
+      "id": 135,
+      "from_node_id": 101,
+      "to_node_id": 100,
+      "from_change_id": "2e67c091-74ce-4946-b99a-1db511a39391",
+      "to_change_id": "3561aa5f-6951-4220-bef6-9c234faec2a5",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Same root cause family: directional input nerfs vertical impulse",
+      "created_at": "2026-06-09T15:30:01.714872-04:00"
+    },
+    {
+      "id": 136,
+      "from_node_id": 100,
+      "to_node_id": 103,
+      "from_change_id": "3561aa5f-6951-4220-bef6-9c234faec2a5",
+      "to_change_id": "ac157f99-cf69-40cc-b071-646afdc47858",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Fixes verified by regression tests; committed",
+      "created_at": "2026-06-09T15:31:39.223797-04:00"
+    },
+    {
+      "id": 137,
+      "from_node_id": 102,
+      "to_node_id": 104,
+      "from_change_id": "4e9abc5c-174b-4cb9-9119-3977f2efd6e1",
+      "to_change_id": "1dd7921d-8d1a-49dc-89f1-b5793c6ea3c3",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-06-09T15:33:08.969612-04:00"
+    },
+    {
+      "id": 138,
+      "from_node_id": 102,
+      "to_node_id": 105,
+      "from_change_id": "4e9abc5c-174b-4cb9-9119-3977f2efd6e1",
+      "to_change_id": "248ed3b7-6c39-444c-b71b-2fd3ebe034d4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Option",
+      "created_at": "2026-06-09T15:33:09.111381-04:00"
+    },
+    {
+      "id": 139,
+      "from_node_id": 104,
+      "to_node_id": 106,
+      "from_change_id": "1dd7921d-8d1a-49dc-89f1-b5793c6ea3c3",
+      "to_change_id": "7294a2d4-53bb-47f0-be34-983f5b1d7c9e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Chosen: invisible help, honest crosshair",
+      "created_at": "2026-06-09T15:33:09.254739-04:00"
+    },
+    {
+      "id": 140,
+      "from_node_id": 105,
+      "to_node_id": 106,
+      "from_change_id": "248ed3b7-6c39-444c-b71b-2fd3ebe034d4",
+      "to_change_id": "7294a2d4-53bb-47f0-be34-983f5b1d7c9e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Rejected: visible aim hijacking feels bad with persistent keyboard aim",
+      "created_at": "2026-06-09T15:33:09.398296-04:00"
+    },
+    {
+      "id": 141,
+      "from_node_id": 106,
+      "to_node_id": 107,
+      "from_change_id": "7294a2d4-53bb-47f0-be34-983f5b1d7c9e",
+      "to_change_id": "9a2e205a-a361-496c-a29b-ed41831af62d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T15:33:09.539939-04:00"
+    },
+    {
+      "id": 142,
+      "from_node_id": 107,
+      "to_node_id": 108,
+      "from_change_id": "9a2e205a-a361-496c-a29b-ed41831af62d",
+      "to_change_id": "31507f55-b640-4709-92a2-299c6d129ca6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implemented and committed",
+      "created_at": "2026-06-09T15:33:20.101985-04:00"
     }
   ]
 }

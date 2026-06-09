@@ -1,5 +1,21 @@
 [
   {
+    "hash": "66ea796fad565cd46513a7bffb804a76955d7c6a",
+    "short_hash": "66ea796",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T15:33:19-04:00",
+    "message": "feat(client): light aim assist — bend near-miss player shots onto targets\n\nPlayer shots already pointed within ~9° of a live enemy (700px range) bend\nup to ~2.9° onto the angularly-closest one at fire time. Player ONLY (bots\nwould become aimbots), applied BEFORE spread so spray bloom still punishes\nheld fire, and the crosshair is never moved — the assist is invisible help\nfor coarse keyboard aim, not aim hijacking (decision node 106).\n\napplyAimAssist is a pure exported helper; 7 unit tests cover snap-within-\nbend, cap-at-max-bend, cone/range rejection, closest-of-several, and the\n±PI seam when aiming left. 354 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "70017445e018a14a66c50009ad57c6ccc13cfd47",
+    "short_hash": "7001744",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T15:31:38-04:00",
+    "message": "fix(sim): boots/jump force clobbering — most-upward-wins + 90% side-jump vertical\n\nThree bugs, one shape: a later force assignment stomping a stronger upward\nforce on the same tick (faithful to Pascal's assignment order, wrong for us):\n- Jump + jet: jet ground-kick (-0.25) OVERWROTE the jump force (-0.66) —\n  holding Shift while jumping nerfed the jump to a hop\n- Running takeoff: ground movement overwrote jet lift with -RUNSPEEDUP\n  (0.0197, below gravity 0.06) — you could never lift off while running\n- Running jump: Pascal side-jump vertical is 0.25 vs 0.66 standing — ~1/3\n  the height, i.e. 'I cant jump over basic land obstacles'. Side-jumps now\n  keep 90% of the straight jump's vertical plus the horizontal kick\n\nGround forceY now combines via most-upward-wins (min of negatives) in the\nmovement branches and the jet kick; all marked DESIGN OVERRIDE (node 100).\n3 new regression tests (jump-with-jet >= jump, running takeoff climbs,\nside-jump > 0.7x straight jump). 347 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
     "hash": "f5d3c9ad9f0836c1bb386efd304eb30e40518307",
     "short_hash": "f5d3c9a",
     "author": "Robert Grayson",
