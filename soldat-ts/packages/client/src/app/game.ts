@@ -37,6 +37,21 @@ const RESPAWN_TICKS = 180;
 /** Muzzle stand-off so a fresh bullet doesn't instantly collide with the shooter. */
 const MUZZLE_OFFSET = 14;
 
+// --- The ONE gun -----------------------------------------------------------
+// Everyone shares a single automatic rifle. The whole game balances around it:
+// spray control (accuracy blooms as you hold fire), quick reactions (fast but
+// not instant TTK + dodgeable projectiles), and terrain protection (bullets are
+// blocked by geometry; reloading forces you behind cover). Tune here.
+const FIRE_INTERVAL = 6; // ticks between shots (~10/s auto)
+const MAG_SIZE = 30; // rounds per magazine
+const RELOAD_TICKS = 95; // ~1.6 s reload — be behind cover
+const SPREAD_BASE = 0.015; // rad — a standing tap is near-pinpoint
+const SPREAD_HEAT_PER_SHOT = 0.012; // bloom added per sustained shot
+const SPREAD_HEAT_MAX = 0.16; // max bloom from spraying
+const SPREAD_HEAT_DECAY = 0.05; // bloom recovered per tick when not firing
+const SPREAD_MOVE = 0.06; // extra spread while moving fast (stand still to be accurate)
+const MOVE_SPREAD_SPEED = 3; // |vx| above which the move penalty applies
+
 interface BotEntry {
   readonly index: number;
   readonly brain: BotState;
@@ -74,6 +89,12 @@ export class Game {
   private readonly nextFireTick: number[] = [];
   /** Per-sprite respawn countdown (ticks); 0 = alive. */
   private readonly respawnIn: number[] = [];
+  /** Per-sprite rounds left in the magazine. */
+  private readonly ammo: number[] = [];
+  /** Per-sprite tick the current reload completes (0 = not reloading). */
+  private readonly reloadUntil: number[] = [];
+  /** Per-sprite spray bloom (radians) — grows while firing, decays at rest. */
+  private readonly sprayHeat: number[] = [];
 
   constructor(opts: GameOptions = {}) {
     this.world = createWorld();
@@ -147,6 +168,23 @@ export class Game {
     };
     this.nextFireTick[index] = 0;
     this.respawnIn[index] = 0;
+    this.ammo[index] = MAG_SIZE;
+    this.reloadUntil[index] = 0;
+    this.sprayHeat[index] = 0;
+  }
+
+  /** Local player's rounds left (for the HUD). */
+  playerAmmo(): number {
+    return this.ammo[this.playerIndex] ?? 0;
+  }
+
+  /** Whether the local player is mid-reload (for the HUD). */
+  playerReloading(): boolean {
+    return this.world.mainTickCounter < (this.reloadUntil[this.playerIndex] ?? 0);
+  }
+
+  magSize(): number {
+    return MAG_SIZE;
   }
 
   loadMap(source: PolyMapSource): void {
@@ -208,14 +246,46 @@ export class Game {
     this.respawnUpkeep();
   }
 
-  /** Spawn a bullet for `index` if it is holding fire and off cooldown. */
+  /**
+   * Per-tick weapon upkeep for one sprite: handle reload, spray-heat decay, and
+   * fire a bullet (with spread) when fire is held, off cooldown, and loaded.
+   */
   private tryFire(index: number, clock: number): void {
     const s = this.world.sprites[index];
     const parts = this.world.spriteParts;
-    if (s === undefined || parts === null || s.deadMeat || !s.active) return;
-    if (!s.control.fire) return;
+    if (s === undefined || parts === null) return;
+
+    const reloadingUntil = this.reloadUntil[index] ?? 0;
+    const reloading = clock < reloadingUntil;
+    if (reloading) {
+      // Reload completes exactly at reloadUntil.
+      if (clock === reloadingUntil - 1) {
+        this.ammo[index] = MAG_SIZE;
+      }
+    }
+    if (s.deadMeat || !s.active) return;
+
+    // Manual reload (R) when not full and not already reloading.
+    if (s.control.reload && !reloading && (this.ammo[index] ?? 0) < MAG_SIZE) {
+      this.reloadUntil[index] = clock + RELOAD_TICKS;
+      return;
+    }
+
+    if (!s.control.fire) {
+      // Not firing → spray bloom recovers.
+      this.sprayHeat[index] = Math.max(0, (this.sprayHeat[index] ?? 0) - SPREAD_HEAT_DECAY);
+      return;
+    }
+    if (reloading) return;
     if (clock < (this.nextFireTick[index] ?? 0)) return;
 
+    // Empty magazine → auto-reload.
+    if ((this.ammo[index] ?? 0) <= 0) {
+      this.reloadUntil[index] = clock + RELOAD_TICKS;
+      return;
+    }
+
+    // Aim direction (unit), from the relative aim vector.
     let ax = s.control.mouseAimX;
     let ay = s.control.mouseAimY;
     const len = Math.hypot(ax, ay);
@@ -226,18 +296,31 @@ export class Game {
       ax /= len;
       ay /= len;
     }
+
+    // Spread = base + spray bloom + a movement penalty (stand still to be precise).
+    const vx = parts.velocityX[index] ?? 0;
+    const moving = Math.abs(vx) > MOVE_SPREAD_SPEED ? SPREAD_MOVE : 0;
+    const spread = SPREAD_BASE + (this.sprayHeat[index] ?? 0) + moving;
+    const jitter = (this.world.rng.next() * 2 - 1) * spread;
+    const ang = Math.atan2(ay, ax) + jitter;
+    const dx = Math.cos(ang);
+    const dy = Math.sin(ang);
+
     const speed = this.gun.bulletSpeed;
-    const px = (parts.posX[index] ?? 0) + ax * MUZZLE_OFFSET;
-    const py = (parts.posY[index] ?? 0) + ay * MUZZLE_OFFSET;
+    const px = (parts.posX[index] ?? 0) + dx * MUZZLE_OFFSET;
+    const py = (parts.posY[index] ?? 0) + dy * MUZZLE_OFFSET;
     spawnBullet(this.world, {
       pos: vec2(px, py),
-      velocity: vec2(ax * speed, ay * speed),
+      velocity: vec2(dx * speed, dy * speed),
       owner: index,
       hitMultiply: this.gun.hitMultiply,
       gun: this.gun,
     });
-    s.direction = ax >= 0 ? 1 : -1;
-    this.nextFireTick[index] = clock + Math.max(1, this.gun.fireInterval);
+
+    s.direction = dx >= 0 ? 1 : -1;
+    this.ammo[index] = (this.ammo[index] ?? 0) - 1;
+    this.sprayHeat[index] = Math.min(SPREAD_HEAT_MAX, (this.sprayHeat[index] ?? 0) + SPREAD_HEAT_PER_SHOT);
+    this.nextFireTick[index] = clock + FIRE_INTERVAL;
   }
 
   /** Start respawn timers for the freshly dead; respawn when they elapse. */
