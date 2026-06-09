@@ -10,7 +10,9 @@
     "typecheck": "tsc --build --force",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:strict": "STRICT_F32=1 vitest run"
+    "test:strict": "STRICT_F32=1 vitest run",
+    "play": "pnpm --filter @soldat/client dev",
+    "dev": "pnpm --filter @soldat/client dev"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
