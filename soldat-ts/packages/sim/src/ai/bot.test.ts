@@ -22,6 +22,7 @@ import {
   updateBot,
   createBotState,
   checkDistance,
+  simpleDecision,
   DIST_TOO_CLOSE,
   DIST_VERY_CLOSE,
   DIST_FAR,
@@ -188,5 +189,33 @@ describe('updateBot — guards', () => {
 
     expect(a.control.fire).toBe(false);
     expect(brain.targetNum).toBe(0);
+  });
+});
+
+// DESIGN OVERRIDE (node 124): aerial combat layer in simpleDecision.
+describe('aerial jet behavior', () => {
+  it('jets when the target holds any meaningful height advantage', () => {
+    // Target 80px above the bot (y is down) — well under the faithful
+    // DIST_ROCK_THROW=180 gate that kept bots grounded.
+    const { world, a } = makeWorld({ x: 0, y: 0 }, { x: 100, y: -80 });
+    const brain = createBotState({ targetNum: 2 });
+    simpleDecision(world, 1, brain);
+    expect(a.control.jetpack).toBe(true);
+  });
+
+  it('does not chase height when already above the target', () => {
+    // Self high, target far below and beyond burst range (no fuel either).
+    const { world, a } = makeWorld({ x: 0, y: -200 }, { x: 600, y: 0 });
+    const brain = createBotState({ targetNum: 2 });
+    simpleDecision(world, 1, brain);
+    expect(a.control.jetpack).toBe(false);
+  });
+
+  it('an armed jet burst holds the jet and counts down', () => {
+    const { world, a } = makeWorld({ x: 0, y: 0 }, { x: 100, y: 0 });
+    const brain = createBotState({ targetNum: 2, jetBurstTicks: 3 });
+    simpleDecision(world, 1, brain);
+    expect(a.control.jetpack).toBe(true);
+    expect(brain.jetBurstTicks).toBe(2);
   });
 });

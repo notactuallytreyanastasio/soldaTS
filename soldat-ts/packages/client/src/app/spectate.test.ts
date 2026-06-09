@@ -77,13 +77,19 @@ describe('Game spectate mode', () => {
       }
     }
 
-    // The match produced kills, every one attributed to a DIFFERENT bot.
+    // The match produced kills attributed within the bot roster. Suicides ARE
+    // legal physics since the aerial-combat pass (node 124): bullets are
+    // ballistic, so a bot that fires upward and keeps climbing can meet its
+    // own falling round. They must stay a small minority of deaths, and real
+    // bot-vs-bot kills must dominate.
     expect(kills.length).toBeGreaterThan(0);
+    const suicides = kills.filter((k) => k.killer === k.victim);
     for (const k of kills) {
       expect(botIndices).toContain(k.victim);
       expect(botIndices).toContain(k.killer);
-      expect(k.killer).not.toBe(k.victim);
     }
+    expect(kills.length - suicides.length).toBeGreaterThan(0);
+    expect(suicides.length).toBeLessThanOrEqual(kills.length * 0.25);
     // Everyone died at least once got respawned (no pending stragglers beyond
     // their deadline was already asserted in the loop).
 

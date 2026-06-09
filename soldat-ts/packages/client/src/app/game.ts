@@ -60,6 +60,10 @@ const MOVE_SPREAD_SPEED = 3; // |vx| above which the move penalty applies
 // The thrust direction itself is tuned in @soldat/sim (JET_THRUST/JET_AIR_DRIFT).
 export const JET_FUEL_MAX = 700; // ticks of burn (~11.7 s of continuous thrust)
 const JET_REGEN_PER_TICK = 3; // refuel rate on the ground (empty→full ~3.9 s)
+// Coasting in the air trickles fuel back at 1/tick — exactly the burn rate, so
+// a 50% thrust duty cycle hovers forever but climbing still spends the tank.
+// This is what makes sustained aerial dogfights possible (goal node 124).
+const JET_AIR_REGEN_PER_TICK = 1;
 
 // --- Aim assist (player only — bots would become aimbots) -------------------
 // LIGHT magnetism (goal node 102): keyboard aim is coarse, so shots already
@@ -106,12 +110,14 @@ export function applyAimAssist(
 // --- Spectate-only wander tuning ---------------------------------------------
 // With no visible target and no waypoint graph, updateBot leaves a bot's
 // controls fully cleared — it stands perfectly still forever. In spectate mode
-// (where nobody is around to come find it) bots instead roam toward a
-// periodically re-rolled x goal so bot-vs-bot matches stay active.
-const ROAM_MARGIN = 200; // px beyond the spawn-point span bots may roam
-const ROAM_REACHED = 20; // px — close enough to the roam goal to stop
+// (where nobody is around to come find it) bots instead FLY toward a randomly
+// chosen spawn pad. Spawn points are the roam goals on purpose: they sit on
+// reachable interior platforms, so wanderers never march into a wall corner
+// and pogo there (the original x-only roam did exactly that — user-reported).
+const ROAM_REACHED = 40; // px — close enough (horizontally) to the goal pad
 const ROAM_MIN_TICKS = 120; // re-roll the goal every 120–240 ticks (2–4 s)
 const ROAM_VAR_TICKS = 120;
+const ROAM_JET_ABOVE = 60; // fly when the goal is this much higher (y smaller)
 const STUCK_SPEED = 0.3; // |vx| below this counts as "not moving"
 const STUCK_TRIGGER = 45; // ticks of not moving before a jump/jet pulse
 const STUCK_PULSE = 20; // ticks the up/jet pulse is held
@@ -122,6 +128,7 @@ interface BotEntry {
   readonly brain: BotState;
   // Spectate-only wander state (unused in normal play).
   roamX: number;
+  roamY: number;
   retargetAtTick: number;
   stuckTicks: number;
 }
@@ -223,6 +230,7 @@ export class Game {
         index,
         brain: createBotState({ accuracy: 9 }),
         roamX: this.spawnFor(index).x,
+        roamY: this.spawnFor(index).y,
         retargetAtTick: 0,
         stuckTicks: 0,
       });
@@ -391,12 +399,13 @@ export class Game {
     // Physics + bullets + things.
     stepWorld(this.world);
 
-    // Jet refuel: standing on the ground with the burner off tops the tank
-    // back up (player and bots alike).
+    // Jet refuel: burner off regenerates fuel — fast on the ground, a trickle
+    // while coasting in the air (player and bots alike).
     for (const s of this.world.sprites) {
       if (s.deadMeat || !s.active) continue;
-      if (s.onGround && !s.control.jetpack && s.jetsCount < JET_FUEL_MAX) {
-        s.jetsCount = Math.min(s.jetsCount + JET_REGEN_PER_TICK, JET_FUEL_MAX);
+      if (!s.control.jetpack && s.jetsCount < JET_FUEL_MAX) {
+        const regen = s.onGround ? JET_REGEN_PER_TICK : JET_AIR_REGEN_PER_TICK;
+        s.jetsCount = Math.min(s.jetsCount + regen, JET_FUEL_MAX);
       }
     }
 
@@ -415,9 +424,10 @@ export class Game {
    * tick — freeControls intentionally keeps the last aim).
    *
    * (b) WANDER — with no visible target and no usable waypoint graph the AI
-   * leaves every control cleared and the bot freezes. Roam toward a
-   * periodically re-rolled x goal (world.rng — never Math.random, the sim
-   * must stay deterministic) and pulse jump/jets when stuck against geometry.
+   * leaves every control cleared and the bot freezes. Fly toward a
+   * periodically re-rolled spawn-pad goal (world.rng — never Math.random, the
+   * sim must stay deterministic), jetting when the goal is above; when stuck
+   * against geometry, pulse jump/jets AND pick a new destination.
    */
   private botSustainment(
     bot: BotEntry,
@@ -452,27 +462,26 @@ export class Game {
     }
 
     const clock = this.world.mainTickCounter;
-    if (clock >= bot.retargetAtTick) {
-      let minX = Infinity;
-      let maxX = -Infinity;
-      for (const sp of this.spawns) {
-        if (sp.x < minX) minX = sp.x;
-        if (sp.x > maxX) maxX = sp.x;
-      }
-      if (!Number.isFinite(minX)) {
-        minX = 0;
-        maxX = 0;
-      }
-      const lo = minX - ROAM_MARGIN;
-      const hi = maxX + ROAM_MARGIN;
-      bot.roamX = lo + this.world.rng.next() * (hi - lo);
+    const arrived = Math.abs(px - bot.roamX) <= ROAM_REACHED;
+    if (clock >= bot.retargetAtTick || arrived) {
+      // Roam goal = a random spawn pad: always interior, always reachable.
+      const goal =
+        this.spawns[this.world.rng.nextInt(Math.max(1, this.spawns.length))];
+      bot.roamX = goal?.x ?? 0;
+      bot.roamY = goal?.y ?? 0;
       bot.retargetAtTick =
         clock + ROAM_MIN_TICKS + Math.floor(this.world.rng.next() * ROAM_VAR_TICKS);
     }
     if (px < bot.roamX - ROAM_REACHED) s.control.right = true;
     else if (px > bot.roamX + ROAM_REACHED) s.control.left = true;
+    // FLY to elevated goals: this is the aerial game — wanderers cross the
+    // arena through the air, not by pacing the floor under their target pad.
+    if (bot.roamY < py - ROAM_JET_ABOVE && s.jetsCount > STUCK_JET_MIN_FUEL) {
+      s.control.jetpack = true;
+    }
 
-    // Stuck against a wall/ledge → pulse jump (and jets, fuel permitting).
+    // Stuck against a wall/ledge → pulse jump+jet AND re-roll the goal so the
+    // bot leaves instead of grinding the same corner forever.
     const vx = parts.velocityX[bot.index] ?? 0;
     if ((s.control.left || s.control.right) && Math.abs(vx) < STUCK_SPEED) {
       bot.stuckTicks += 1;
@@ -482,7 +491,10 @@ export class Game {
     if (bot.stuckTicks > STUCK_TRIGGER) {
       s.control.up = true;
       s.control.jetpack = s.jetsCount > STUCK_JET_MIN_FUEL;
-      if (bot.stuckTicks > STUCK_TRIGGER + STUCK_PULSE) bot.stuckTicks = 0;
+      if (bot.stuckTicks > STUCK_TRIGGER + STUCK_PULSE) {
+        bot.stuckTicks = 0;
+        bot.retargetAtTick = 0; // force a new destination next tick
+      }
     }
   }
 

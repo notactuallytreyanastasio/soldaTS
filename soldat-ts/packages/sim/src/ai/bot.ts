@@ -121,6 +121,14 @@ export interface BotState {
    */
   camper: number;
 
+  /**
+   * DESIGN OVERRIDE (node 124, no Pascal provenance): remaining ticks of the
+   * current jet burst. The aerial-combat layer rolls multi-tick jet holds so
+   * bots dogfight in the air instead of trading from the floor; a 1-tick
+   * rng tap would barely lift them.
+   */
+  jetBurstTicks: number;
+
   // --- TODO: fields to fold in when their AI.pas branches are ported ---
   // friend: string;            // Brain.Friend — don't target this name (AI.pas:549)
   // pissedOff: number;         // Brain.PissedOff — retaliation target (AI.pas:612)
@@ -144,6 +152,7 @@ export function createBotState(
     accuracy: 12,
     weaponSpeed: 18,
     camper: 0,
+    jetBurstTicks: 0,
     ...overrides,
   };
 }
@@ -342,9 +351,23 @@ export function simpleDecision(
   }
 
   // PORT: AI.pas:317-321 — Y-distance: rise with jetpack if target is above.
-  const distY = checkDistance(m.y, t.y);
-  if (distY >= DIST_ROCK_THROW && m.y > t.y) {
+  // DESIGN OVERRIDE (node 124): the faithful gate (only jet when the target is
+  // a full DIST_ROCK_THROW=180px overhead) is why bots fought on the floor —
+  // jet use measured 1.7-3.8% of alive time. This game is aerial: chase ANY
+  // height advantage, and roll multi-tick jet BURSTS during engagements so
+  // close fights leave the ground entirely.
+  if (m.y > t.y + 40) {
     control.jetpack = true;
+  }
+  if (brain.jetBurstTicks > 0) {
+    brain.jetBurstTicks -= 1;
+    control.jetpack = true;
+  } else if (
+    self.jetsCount > 250 && // keep a reserve — don't strand a dry tank mid-air
+    distX <= DIST_FAR &&
+    world.rng.nextInt(75) === 0 // a burst every ~1.25s of close combat
+  ) {
+    brain.jetBurstTicks = 25 + world.rng.nextInt(20); // 0.4-0.75 s of thrust
   }
 
   // PORT: AI.pas:361-368 — frozen/stat: lock movement, keep firing. DEFERRED

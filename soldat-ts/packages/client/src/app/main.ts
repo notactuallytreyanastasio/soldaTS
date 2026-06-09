@@ -164,22 +164,27 @@ function pickSpawn(map: PmsMap): { x: number; y: number } {
 }
 
 // ---------------------------------------------------------------------------
-// Spectate mode (?spectate or ?spectate=8): a bot-vs-bot match with no human
-// soldier — the action camera follows the most interesting bot, the HUD shows
-// live kill counts + feed, and zero input is required. Normal play (?spectate
-// absent) is completely unaffected.
+// Spectate mode — THE DEFAULT: the game opens on a bot-vs-bot aerial match
+// with no human soldier. The action camera follows the most interesting bot,
+// the HUD shows live kill counts + feed, and zero input is required.
+// `?play` opts into fighting yourself; `?spectate=8` picks the bot count.
 // ---------------------------------------------------------------------------
 
 const SPECTATE_QUERY_PARAM = 'spectate';
+const PLAY_QUERY_PARAM = 'play';
 const SPECTATE_DEFAULT_BOTS = 6;
 const SPECTATE_MAX_BOTS = 12;
 
-/** Parse ?spectate[=n] following the pickMapUrl pattern (loadMap.ts). */
+/**
+ * Mode selection. SPECTATE IS THE DEFAULT (goal node 124): the game opens on
+ * a bot-vs-bot aerial match. `?play` opts into playing yourself;
+ * `?spectate=n` still picks the bot count.
+ */
 export function parseSpectate(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): { spectate: boolean; botCount: number } {
   const params = new URLSearchParams(search);
-  if (!params.has(SPECTATE_QUERY_PARAM)) {
+  if (params.has(PLAY_QUERY_PARAM)) {
     return { spectate: false, botCount: 3 };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
@@ -191,7 +196,7 @@ export function parseSpectate(
 /** Fixed bottom-left hint so a spectator knows the camera keys. */
 function showSpectateHint(): void {
   const hint = document.createElement('div');
-  hint.textContent = 'SPECTATE — ←/→ follow · A auto';
+  hint.textContent = 'SPECTATE — ←/→ follow · A auto · add ?play to the URL to fight';
   hint.style.cssText = [
     'position:fixed',
     'left:12px',
@@ -221,23 +226,34 @@ async function main(): Promise<void> {
   // --- Real .PMS loading, with synthetic fallback -----------------------
   // Try to fetch a real map from /maps/ (URL chosen via ?map=); on any failure
   // (offline, missing asset, parse error) fall back to the synthetic scene.
-  const mapUrl = pickMapUrl();
+  // Mode decides the DEFAULT map: spectate (the startup default) opens on the
+  // built-in Skyreach aerial arena — the jetpack-dogfight level the bot match
+  // is tuned for — unless ?map= explicitly asks for a stock map. Play mode
+  // keeps the stock-map default.
+  const { spectate, botCount } = parseSpectate();
+  const explicitMap = new URLSearchParams(window.location.search).has('map');
   let map: PmsMap;
   let spawns: readonly { x: number; y: number }[];
-  try {
-    map = await fetchAndLoadMap(mapUrl);
-    const sp = map.spawnpoints.filter((s) => s.active).map((s) => ({ x: s.x, y: s.y }));
-    spawns = sp.length > 0 ? sp : ARENA_SPAWNS;
-    // eslint-disable-next-line no-console
-    console.info(`loaded map '${map.mapName}' from ${mapUrl}`);
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.warn(
-      `could not load '${mapUrl}', using the built-in arena instead:`,
-      err instanceof Error ? err.message : err,
-    );
+  if (spectate && !explicitMap) {
     map = buildArena();
     spawns = ARENA_SPAWNS;
+  } else {
+    const mapUrl = pickMapUrl();
+    try {
+      map = await fetchAndLoadMap(mapUrl);
+      const sp = map.spawnpoints.filter((s) => s.active).map((s) => ({ x: s.x, y: s.y }));
+      spawns = sp.length > 0 ? sp : ARENA_SPAWNS;
+      // eslint-disable-next-line no-console
+      console.info(`loaded map '${map.mapName}' from ${mapUrl}`);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `could not load '${mapUrl}', using the built-in arena instead:`,
+        err instanceof Error ? err.message : err,
+      );
+      map = buildArena();
+      spawns = ARENA_SPAWNS;
+    }
   }
   // ----------------------------------------------------------------------
 
@@ -260,7 +276,6 @@ async function main(): Promise<void> {
 
   // --- Game: sim world + local player + bots ---------------------------
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
-  const { spectate, botCount } = parseSpectate();
   const game = new Game({ seed: 1, spawns, botCount, spectate });
   // Attach the sim collision map so sprites collide with the floor (and, in
   // spectate mode, the map's bot waypoints so targetless bots patrol).

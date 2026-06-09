@@ -41,3 +41,25 @@ describe('buildArena', () => {
     expect(ARENA_SPAWNS.length).toBeGreaterThanOrEqual(4);
   });
 });
+
+// Skyreach aerial-arena shape (goal node 124): the level must be big and
+// vertical, with most spawns up in the air, or the jetpack-combat focus is
+// hollow.
+describe('Skyreach aerial layout', () => {
+  const map = buildArena();
+
+  it('spans a wide and tall airspace', () => {
+    const xs = map.polygons.flatMap((p) => p.vertices.map((v) => v.x));
+    const ys = map.polygons.flatMap((p) => p.vertices.map((v) => v.y));
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThanOrEqual(2400);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(900);
+  });
+
+  it('puts most spawns well above the ground floor', () => {
+    const groundTop = Math.max(
+      ...map.polygons.flatMap((p) => p.vertices.map((v) => v.y)),
+    );
+    const airborne = ARENA_SPAWNS.filter((s) => groundTop - s.y > 250);
+    expect(airborne.length).toBeGreaterThanOrEqual(ARENA_SPAWNS.length * 0.7);
+  });
+});
