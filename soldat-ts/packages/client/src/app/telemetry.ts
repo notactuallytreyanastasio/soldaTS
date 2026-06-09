@@ -55,6 +55,8 @@ export interface MatchDump {
     map: string;
     botCount: number;
     spectate: boolean;
+    /** Bot-AI engine id driving this match (adapter, decision node 136). */
+    engine: string;
     tickHz: 60;
     sampleEveryTicks: number;
     names: Record<number, string>;
@@ -243,6 +245,7 @@ export class MatchRecorder {
       map,
       botCount,
       spectate,
+      engine: game.aiEngineId,
       tickHz: 60,
       sampleEveryTicks: SAMPLE_EVERY_TICKS,
       names,

@@ -16,16 +16,14 @@ import {
   spawnBullet,
   getGun,
   WeaponIndex,
-  createBotState,
-  updateBot,
   buildWaypoints,
   type World,
   type PolyMap,
   type WaypointGraph,
   type PmsWaypoint,
-  type BotState,
   type Gun,
 } from '@soldat/sim';
+import { createEngine, type BotBrain, type BotEngineContext } from '../ai';
 
 type PolyMapSource = Parameters<typeof buildPolyMap>[0];
 
@@ -107,30 +105,10 @@ export function applyAimAssist(
   return { x: Math.cos(bent), y: Math.sin(bent) };
 }
 
-// --- Spectate-only wander tuning ---------------------------------------------
-// With no visible target and no waypoint graph, updateBot leaves a bot's
-// controls fully cleared — it stands perfectly still forever. In spectate mode
-// (where nobody is around to come find it) bots instead FLY toward a randomly
-// chosen spawn pad. Spawn points are the roam goals on purpose: they sit on
-// reachable interior platforms, so wanderers never march into a wall corner
-// and pogo there (the original x-only roam did exactly that — user-reported).
-const ROAM_REACHED = 40; // px — close enough (horizontally) to the goal pad
-const ROAM_MIN_TICKS = 120; // re-roll the goal every 120–240 ticks (2–4 s)
-const ROAM_VAR_TICKS = 120;
-const ROAM_JET_ABOVE = 60; // fly when the goal is this much higher (y smaller)
-const STUCK_SPEED = 0.3; // |vx| below this counts as "not moving"
-const STUCK_TRIGGER = 45; // ticks of not moving before a jump/jet pulse
-const STUCK_PULSE = 20; // ticks the up/jet pulse is held
-const STUCK_JET_MIN_FUEL = 100; // only burn jets when the tank has a reserve
-
 interface BotEntry {
   readonly index: number;
-  readonly brain: BotState;
-  // Spectate-only wander state (unused in normal play).
-  roamX: number;
-  roamY: number;
-  retargetAtTick: number;
-  stuckTicks: number;
+  /** The bot's brain, behind the engine adapter (decision node 136). */
+  readonly brain: BotBrain;
 }
 
 export interface GameOptions {
@@ -148,6 +126,12 @@ export interface GameOptions {
    * input. Default false; normal play is completely unaffected.
    */
   spectate?: boolean;
+  /**
+   * Bot-AI engine id ('classic' | 'pilot' | any registered engine). Unknown
+   * ids fall back to classic. Default 'classic'. (`| undefined` so callers
+   * can pass a parsed-from-URL value under exactOptionalPropertyTypes.)
+   */
+  aiEngine?: string | undefined;
 }
 
 /** A renderable view of a bullet (matches fx.BulletView). */
@@ -201,6 +185,10 @@ export class Game {
   private readonly reloadUntil: number[] = [];
   /** Per-sprite spray bloom (radians) — grows while firing, decays at rest. */
   private readonly sprayHeat: number[] = [];
+  /** Context handed to every bot brain (graph resolves live via getter). */
+  private readonly engineCtx: BotEngineContext;
+  /** Resolved bot-AI engine id (for HUD labels / telemetry). */
+  readonly aiEngineId: string;
 
   constructor(opts: GameOptions = {}) {
     this.world = createWorld();
@@ -210,9 +198,24 @@ export class Game {
     this.spawns = opts.spawns ?? [{ x: 0, y: 0 }];
     // No waypoints in the sandbox arena → an empty graph. Bots still perceive,
     // aim and fire at the nearest enemy; navigation is a no-op (they hold
-    // ground — spectate mode layers a wander fallback over this, see simTick).
+    // ground — engines layer their own fallbacks, see ../ai/).
     this.graph = buildWaypoints({ waypoints: [] });
     this.gun = getGun(WeaponIndex.AK74, false);
+
+    // The brain context: a narrow window onto the world plus the client-owned
+    // weapon state. `graph` is a getter because loadMap may rebuild it.
+    const self = this;
+    this.engineCtx = {
+      world: this.world,
+      get graph(): WaypointGraph {
+        return self.graph;
+      },
+      spawns: this.spawns,
+      spectate: this.spectate,
+      ammoOf: (i: number): number => this.ammoOf(i),
+      reloadingOf: (i: number): boolean => this.reloadingOf(i),
+      magSize: MAG_SIZE,
+    };
 
     // Player. In spectate mode slot 1 is never spawned: an inactive sprite is
     // skipped by bot perception (findTarget), bullet collision, and the
@@ -221,19 +224,14 @@ export class Game {
       this.spawnSprite(this.playerIndex, this.spawnFor(0));
     }
 
-    // Bots.
+    // Bots, each driven by a brain from the selected engine.
+    const engine = createEngine(opts.aiEngine);
+    this.aiEngineId = engine.id;
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
       const index = this.playerIndex + 1 + b;
       this.spawnSprite(index, this.spawnFor(index));
-      this.bots.push({
-        index,
-        brain: createBotState({ accuracy: 9 }),
-        roamX: this.spawnFor(index).x,
-        roamY: this.spawnFor(index).y,
-        retargetAtTick: 0,
-        stuckTicks: 0,
-      });
+      this.bots.push({ index, brain: engine.createBrain() });
     }
   }
 
@@ -379,16 +377,11 @@ export class Game {
 
   /** One fixed 60 Hz tick: bot AI -> firing -> physics -> respawn upkeep. */
   private simTick(): void {
-    // Bots think (sets their control: movement aim + fire).
+    // Bots think (each brain writes its bot's control: movement, aim, fire).
     for (const bot of this.bots) {
       const s = this.world.sprites[bot.index];
       if (s === undefined || s.deadMeat) continue;
-      const aimXBefore = s.control.mouseAimX;
-      const aimYBefore = s.control.mouseAimY;
-      updateBot(this.world, bot.index, bot.brain, this.graph);
-      if (this.spectate) {
-        this.botSustainment(bot, s, aimXBefore, aimYBefore);
-      }
+      bot.brain.tick(bot.index, this.engineCtx);
     }
 
     // Firing: anyone holding fire whose weapon is off cooldown spawns a bullet.
@@ -411,91 +404,6 @@ export class Game {
 
     // Death / respawn upkeep.
     this.respawnUpkeep();
-  }
-
-  /**
-   * Spectate-only per-tick bot upkeep, run right after updateBot:
-   *
-   * (a) AIM FIX — the ported AI (simpleDecision / navigateWaypoints) writes
-   * ABSOLUTE world coords into control.mouseAimX/Y (the Pascal convention),
-   * but this client's tryFire and the renderer treat mouseAim as a RELATIVE
-   * direction vector from the shooter. Convert when the AI wrote an aim this
-   * tick (an unconverted value left in place is already relative from a prior
-   * tick — freeControls intentionally keeps the last aim).
-   *
-   * (b) WANDER — with no visible target and no usable waypoint graph the AI
-   * leaves every control cleared and the bot freezes. Fly toward a
-   * periodically re-rolled spawn-pad goal (world.rng — never Math.random, the
-   * sim must stay deterministic), jetting when the goal is above; when stuck
-   * against geometry, pulse jump/jets AND pick a new destination.
-   */
-  private botSustainment(
-    bot: BotEntry,
-    s: World['sprites'][number],
-    aimXBefore: number,
-    aimYBefore: number,
-  ): void {
-    const parts = this.world.spriteParts;
-    if (parts === null) return;
-    const px = parts.posX[bot.index] ?? 0;
-    const py = parts.posY[bot.index] ?? 0;
-
-    // (a) Absolute → relative aim. targetNum > 0 guarantees simpleDecision
-    // wrote both aim fields (even if the value happens to match); otherwise a
-    // changed aim means navigateWaypoints faced a waypoint.
-    const wroteAim =
-      bot.brain.targetNum > 0 ||
-      s.control.mouseAimX !== aimXBefore ||
-      s.control.mouseAimY !== aimYBefore;
-    if (wroteAim) {
-      s.control.mouseAimX = Math.round(s.control.mouseAimX - px);
-      s.control.mouseAimY = Math.round(s.control.mouseAimY - py);
-    }
-
-    // (b) Wander when the AI produced no intent at all this tick (no target →
-    // no fire; empty/unreachable graph → no movement).
-    const idle =
-      !s.control.fire && !s.control.left && !s.control.right && !s.control.up;
-    if (!idle) {
-      bot.stuckTicks = 0;
-      return;
-    }
-
-    const clock = this.world.mainTickCounter;
-    const arrived = Math.abs(px - bot.roamX) <= ROAM_REACHED;
-    if (clock >= bot.retargetAtTick || arrived) {
-      // Roam goal = a random spawn pad: always interior, always reachable.
-      const goal =
-        this.spawns[this.world.rng.nextInt(Math.max(1, this.spawns.length))];
-      bot.roamX = goal?.x ?? 0;
-      bot.roamY = goal?.y ?? 0;
-      bot.retargetAtTick =
-        clock + ROAM_MIN_TICKS + Math.floor(this.world.rng.next() * ROAM_VAR_TICKS);
-    }
-    if (px < bot.roamX - ROAM_REACHED) s.control.right = true;
-    else if (px > bot.roamX + ROAM_REACHED) s.control.left = true;
-    // FLY to elevated goals: this is the aerial game — wanderers cross the
-    // arena through the air, not by pacing the floor under their target pad.
-    if (bot.roamY < py - ROAM_JET_ABOVE && s.jetsCount > STUCK_JET_MIN_FUEL) {
-      s.control.jetpack = true;
-    }
-
-    // Stuck against a wall/ledge → pulse jump+jet AND re-roll the goal so the
-    // bot leaves instead of grinding the same corner forever.
-    const vx = parts.velocityX[bot.index] ?? 0;
-    if ((s.control.left || s.control.right) && Math.abs(vx) < STUCK_SPEED) {
-      bot.stuckTicks += 1;
-    } else {
-      bot.stuckTicks = 0;
-    }
-    if (bot.stuckTicks > STUCK_TRIGGER) {
-      s.control.up = true;
-      s.control.jetpack = s.jetsCount > STUCK_JET_MIN_FUEL;
-      if (bot.stuckTicks > STUCK_TRIGGER + STUCK_PULSE) {
-        bot.stuckTicks = 0;
-        bot.retargetAtTick = 0; // force a new destination next tick
-      }
-    }
   }
 
   /**

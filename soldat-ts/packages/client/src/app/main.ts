@@ -178,25 +178,78 @@ const SPECTATE_MAX_BOTS = 12;
 /**
  * Mode selection. SPECTATE IS THE DEFAULT (goal node 124): the game opens on
  * a bot-vs-bot aerial match. `?play` opts into playing yourself;
- * `?spectate=n` still picks the bot count.
+ * `?spectate=n` still picks the bot count; `?ai=<engine>` picks the bot
+ * brain (decision node 136).
  */
 export function parseSpectate(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
-): { spectate: boolean; botCount: number } {
+): { spectate: boolean; botCount: number; aiEngine: string | undefined } {
   const params = new URLSearchParams(search);
+  const aiEngine = params.get('ai') ?? undefined;
   if (params.has(PLAY_QUERY_PARAM)) {
-    return { spectate: false, botCount: 3 };
+    return { spectate: false, botCount: 3, aiEngine };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
   const botCount =
     Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
-  return { spectate: true, botCount };
+  return { spectate: true, botCount, aiEngine };
+}
+
+/**
+ * Duel mode (?duel or ?duel=classic,pilot): TWO simultaneous bot matches side
+ * by side, one per AI engine, each a fully independent game in its own
+ * iframe (own renderer, own sim, own telemetry). The cheapest possible "turn
+ * on 2 games at once and watch each of them play" — and honest isolation:
+ * neither match can perturb the other.
+ */
+export function parseDuel(
+  search: string = typeof window !== 'undefined' ? window.location.search : '',
+): [string, string] | null {
+  const params = new URLSearchParams(search);
+  if (!params.has('duel')) return null;
+  const raw = params.get('duel') ?? '';
+  const [a, b] = raw.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+  return [a ?? 'classic', b ?? 'pilot'];
+}
+
+/** Build the duel split view: two labelled iframes, each a spectate match. */
+function showDuel(engines: [string, string]): void {
+  document.body.style.cssText = 'margin:0;background:#0a0c10';
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;width:100vw;height:100vh;gap:2px';
+  for (const engine of engines) {
+    const col = document.createElement('div');
+    col.style.cssText =
+      'flex:1;display:flex;flex-direction:column;min-width:0;position:relative';
+    const label = document.createElement('div');
+    label.textContent = `ENGINE: ${engine.toUpperCase()}`;
+    label.style.cssText = [
+      'position:absolute',
+      'top:8px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'z-index:10',
+      'color:#fff',
+      'font:bold 14px ui-monospace,monospace',
+      'letter-spacing:0.2em',
+      'background:rgba(10,12,16,0.6)',
+      'padding:4px 12px',
+      'border-radius:4px',
+      'pointer-events:none',
+    ].join(';');
+    const frame = document.createElement('iframe');
+    frame.src = `${window.location.pathname}?spectate&ai=${encodeURIComponent(engine)}`;
+    frame.style.cssText = 'flex:1;border:0;width:100%;height:100%';
+    col.append(label, frame);
+    row.appendChild(col);
+  }
+  document.body.appendChild(row);
 }
 
 /** Fixed bottom-left hint so a spectator knows the camera keys. */
-function showSpectateHint(): void {
+function showSpectateHint(engineLabel: string): void {
   const hint = document.createElement('div');
-  hint.textContent = 'SPECTATE — ←/→ follow · A auto · add ?play to the URL to fight';
+  hint.textContent = `SPECTATE [${engineLabel}] — ←/→ follow · A auto · ?play to fight · ?duel to race engines`;
   hint.style.cssText = [
     'position:fixed',
     'left:12px',
@@ -215,6 +268,14 @@ function showSpectateHint(): void {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  // Duel mode: hand the page over to two side-by-side matches and stop —
+  // each iframe boots its own full game through this same entry point.
+  const duel = parseDuel();
+  if (duel !== null) {
+    showDuel(duel);
+    return;
+  }
+
   const mount = document.getElementById('app');
   if (mount === null) {
     throw new Error('#app element not found');
@@ -230,7 +291,7 @@ async function main(): Promise<void> {
   // built-in Skyreach aerial arena — the jetpack-dogfight level the bot match
   // is tuned for — unless ?map= explicitly asks for a stock map. Play mode
   // keeps the stock-map default.
-  const { spectate, botCount } = parseSpectate();
+  const { spectate, botCount, aiEngine } = parseSpectate();
   const explicitMap = new URLSearchParams(window.location.search).has('map');
   let map: PmsMap;
   let spawns: readonly { x: number; y: number }[];
@@ -276,7 +337,7 @@ async function main(): Promise<void> {
 
   // --- Game: sim world + local player + bots ---------------------------
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
-  const game = new Game({ seed: 1, spawns, botCount, spectate });
+  const game = new Game({ seed: 1, spawns, botCount, spectate, aiEngine });
   // Attach the sim collision map so sprites collide with the floor (and, in
   // spectate mode, the map's bot waypoints so targetless bots patrol).
   game.loadMap(map);
@@ -391,7 +452,7 @@ async function main(): Promise<void> {
     showControlsScreen();
   }
   if (spectate) {
-    showSpectateHint();
+    showSpectateHint(game.aiEngineId);
   }
 
   const player = game.world.sprites[game.playerIndex];
