@@ -106,53 +106,59 @@ const PLATFORM_THICKNESS = 24;
 const WALL_THICKNESS = 32;
 
 /**
- * "Skyreach" — a big AERIAL arena (goal node 124): jetpack dogfights are the
- * point, so most of the playable space is open sky. The arena spans x in
- * [-1400, 1400] and almost 1000px of altitude: a thin ground floor at y=560,
- * tall walls, and five tiers of small floating pads (y 430 → -360). Pads are
- * deliberately narrow — perches to reload/refuel on, not floors to fight on;
- * getting anywhere means flying.
+ * "Skyreach" — a big AERIAL arena (goal node 124, iterated by node 127):
+ * jetpack dogfights are the point, so most of the playable space is open sky.
+ * The arena spans x in [-1400, 1400] and ~1100px of altitude, SEALED at the
+ * top — bots hovering on the fuel trickle drifted ever upward until matches
+ * left the map, so a ceiling slab now bounds the airspace.
+ *
+ * The pad layout is deliberately IRREGULAR (node 127 "less uniform"): no two
+ * pads share a height, widths vary 130-300px, and density is asymmetric — a
+ * stacked western face, an open eastern bowl, one central high island. Pads
+ * are perches to reload/refuel on, not floors to fight on; getting anywhere
+ * means flying.
  */
+const CEILING_Y = GROUND_TOP - 1080; // top edge of the airspace (y=-520)
+
 const PLATFORMS: readonly Platform[] = [
   // Ground floor — the fallback net, not the battlefield.
   { x: -1400, y: GROUND_TOP, w: 2800, h: 140, color: COLOR_GROUND },
+  // Side walls, ceiling to ground: the airspace is a closed box.
+  { x: -1400, y: CEILING_Y, w: WALL_THICKNESS, h: 1080, color: COLOR_WALL },
+  { x: 1400 - WALL_THICKNESS, y: CEILING_Y, w: WALL_THICKNESS, h: 1080, color: COLOR_WALL },
+  // Ceiling slab — the height limit.
+  { x: -1400, y: CEILING_Y - 40, w: 2800, h: 40, color: COLOR_WALL },
 
-  // Side walls, rising the full height of the airspace.
-  { x: -1400, y: GROUND_TOP - 1020, w: WALL_THICKNESS, h: 1020, color: COLOR_WALL },
-  { x: 1400 - WALL_THICKNESS, y: GROUND_TOP - 1020, w: WALL_THICKNESS, h: 1020, color: COLOR_WALL },
+  // Western face — dense, stacked, climbs like a cliff. [4..8]
+  { x: -1180, y: 470, w: 300, h: 28, color: COLOR_PLATFORM },
+  { x: -620, y: 330, w: 150, h: 20, color: COLOR_PLATFORM },
+  { x: -880, y: 150, w: 200, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
+  { x: -1230, y: -40, w: 170, h: 20, color: COLOR_PLATFORM },
+  { x: -420, y: -130, w: 130, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
 
-  // Tier 1 — low pads (y=430).
-  { x: -1100, y: GROUND_TOP - 130, w: 240, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: -350, y: GROUND_TOP - 130, w: 200, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 300, y: GROUND_TOP - 130, w: 220, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 950, y: GROUND_TOP - 130, w: 240, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
+  // Center — a wide mid bench, a small step, one high island. [9..11]
+  { x: -150, y: 240, w: 260, h: 32, color: COLOR_PLATFORM },
+  { x: 80, y: 30, w: 140, h: 20, color: COLOR_PLATFORM },
+  { x: -100, y: -310, w: 180, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
 
-  // Tier 2 — mid pads (y=320).
-  { x: -750, y: GROUND_TOP - 240, w: 180, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: -50, y: GROUND_TOP - 240, w: 200, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 650, y: GROUND_TOP - 240, w: 180, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
+  // Eastern bowl — sparse and open, long sightlines. [12..15]
+  { x: 330, y: 380, w: 220, h: 28, color: COLOR_PLATFORM },
+  { x: 560, y: 140, w: 130, h: 20, color: COLOR_PLATFORM },
+  { x: 900, y: 260, w: 280, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
+  { x: 1120, y: -90, w: 160, h: 20, color: COLOR_PLATFORM },
 
-  // Tier 3 — high pads (y=120).
-  { x: -1050, y: GROUND_TOP - 440, w: 160, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: -350, y: GROUND_TOP - 440, w: 170, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 350, y: GROUND_TOP - 440, w: 170, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 1000, y: GROUND_TOP - 440, w: 160, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-
-  // Tier 4 — sky pads (y=-80).
-  { x: -650, y: GROUND_TOP - 640, w: 140, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 100, y: GROUND_TOP - 640, w: 150, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 750, y: GROUND_TOP - 640, w: 140, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-
-  // Tier 5 — apex perches (y=-280).
-  { x: -250, y: GROUND_TOP - 840, w: 160, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
-  { x: 450, y: GROUND_TOP - 840, w: 140, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
+  // Apex perches, tight under the ceiling. [16..18]
+  { x: 640, y: -260, w: 140, h: PLATFORM_THICKNESS, color: COLOR_PLATFORM },
+  { x: 300, y: -440, w: 170, h: 20, color: COLOR_PLATFORM },
+  { x: -700, y: -420, w: 150, h: 20, color: COLOR_PLATFORM },
 ];
 
 /**
- * Indices into {@link PLATFORMS} that carry spawns — biased to the mid/high
- * tiers so fights START in the air.
+ * Indices into {@link PLATFORMS} that carry spawns — spread across the
+ * western face, center, bowl, and apex so fights START in the air and arrive
+ * from uneven angles.
  */
-const SPAWN_PLATFORMS: readonly number[] = [4, 5, 7, 8, 9, 11, 12, 14, 15, 17];
+const SPAWN_PLATFORMS: readonly number[] = [4, 5, 6, 8, 9, 11, 12, 14, 16, 18];
 
 /** Vertical offset placing a spawn just above a surface (player half-height-ish). */
 const SPAWN_LIFT = 40;
