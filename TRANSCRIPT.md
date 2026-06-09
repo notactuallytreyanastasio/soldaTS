@@ -187,6 +187,43 @@ The built-in **gameplay judge** watched 3.7 minutes and reported: pacing hot (16
 
 ---
 
+## Turn 10 — Aerial by default
+
+**Robert:**
+
+> now the game should default to having the bots go at it in spectator mode when the game starts, in a bigger more aerlial level, and be very jetpack combat from the air focused
+
+> and commitw here we are now
+
+**Claude:**
+
+Shipped `1745336`: the game now opens straight into a bot-vs-bot aerial match (`?play` to fight, `?spectate=N` for bot count). New **Skyreach** arena (2800×~1000px, five tiers of narrow floating pads, spawns in the air); aerial bot AI (chase *any* height advantage instead of the faithful 180px gate, plus rng-rolled multi-tick jet bursts in close combat); an air fuel trickle (coast regen = burn rate, so 50% thrust duty sustains a dogfight); 2D wander goals. Telemetry before/after: **jet use 1.7–3.8% → 47–56% of alive time, kill distance median 81 → 169px, vertical spread ~500px**. A fun side-discovery: with ballistic bullets and climbing shooters, suicides became physically possible (your own falling round can meet you on the way up).
+
+## Turn 11 — Live-watch fixes: corners, ceiling, uniformity
+
+**Robert:**
+
+> the little guys all just kind of get stuck in corners jumping up more
+
+> there needs to be a heigh limit on the map lol
+
+> make the board less uniform
+
+> commit here its resembling something interesting
+
+**Claude:**
+
+All three observations confirmed in telemetry and fixed:
+
+- **Corners**: the x-only wander rolled goals out to the wall margins with no vertical intent — bots marched into corners and pogo-jumped. Roam goals are now random spawn *pads* (always interior, always reachable), bots fly to elevated goals, and a stuck bot re-rolls its destination instead of grinding the same wall.
+- **Height limit**: the air-fuel trickle made infinite hovering possible and matches drifted skyward (mean altitude −164 → −361 over 2 min, above the apex pads). The airspace is now a sealed box — ceiling slab + full-height walls. Verified: altitude holds −140..−226.
+- **Less uniform**: Skyreach v2 has no two pads at the same height (15 distinct elevations), widths 130–300px, asymmetric density — dense stacked western face, wide central bench with a lone high island, sparse open eastern bowl, tight apex perches.
+- Also discovered the "default" map was silently ctf_Ash (`pickMapUrl` fetches it without `?map=`); spectate now defaults to Skyreach.
+
+Committed as `1745336` + `8ba891a`, telemetry-verified each step. Also logged Robert's first-principles bot-design prompt (CS:Source optimized play translated to 2D + vertical) as observation node 130 — the seed for the next-generation bot brain.
+
+---
+
 ## Decision-graph nodes created this session
 
 | Node | Type | Title |

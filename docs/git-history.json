@@ -1,5 +1,21 @@
 [
   {
+    "hash": "8ba891acd1d23ef416ab94d9748c4976af1bb26e",
+    "short_hash": "8ba891a",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:55:12-04:00",
+    "message": "feat(client): Skyreach v2 — ceiling slab + irregular asymmetric pad layout\n\nHeight limit: bots hovering on the air-fuel trickle drifted upward until the\nmatch left the map (telemetry: mean altitude -164 -> -361 over 2 min, above\nthe apex pads). The airspace is now a sealed box — walls run ceiling to\nground, ceiling slab caps it. Verified: mean altitude holds -140..-226.\n\nLess uniform: no two pads share a height (15 distinct y values), widths vary\n130-300px, density is asymmetric — dense stacked western face, wide central\nbench + lone high island, sparse open eastern bowl, tight apex perches under\nthe ceiling. Spawns spread across all four regions.\n\n391 tests green; 90s telemetry soak + screenshot: 5 bots mid-air dogfighting,\njet use 39-54%, fight contained under the ceiling.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "17453366783da87b16d3759f4abb9f609d28bd5f",
+    "short_hash": "1745336",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:51:26-04:00",
+    "message": "feat: aerial-by-default — Skyreach arena, flying bots, spectate on startup\n\nThe game now opens on a bot-vs-bot AERIAL match (no params); ?play opts into\nfighting, ?spectate=N still sets bot count, ?map= still picks stock maps.\n\n- Skyreach: new default arena, 2800x~1000px — thin ground, tall walls, five\n  tiers of narrow floating pads (perches, not floors); spawns biased to the\n  mid/high tiers so fights start in the air\n- Aerial bot AI (sim, DESIGN OVERRIDE node 124): chase ANY height advantage\n  (was: only when target 180px overhead) + rng-rolled 25-45-tick jet BURSTS\n  during engagements, fuel-reserve gated\n- Air fuel trickle: coasting regenerates 1/tick (burn rate), so a 50% thrust\n  duty cycle sustains a dogfight; ground regen stays 3/tick\n- Spectate wander is now 2D: roam goals are random spawn pads (interior,\n  reachable), bots FLY to elevated goals, and a stuck bot re-rolls its\n  destination instead of pogo-ing in a corner (user-reported)\n- Suicides are legal physics now (ballistic bullets fall back onto climbing\n  shooters) — kill board already handled them; sustainment test updated\n\nTelemetry before/after (2-min headless matches): jet use 1.7-3.8% -> 47-56%\nof alive time, kill distance median 81 -> 169px, vertical spread ~500px,\nairTime ~99%. 391 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
     "hash": "30d084a9aed8d0f9df5697618afc486ded3d4fae",
     "short_hash": "30d084a",
     "author": "Robert Grayson",

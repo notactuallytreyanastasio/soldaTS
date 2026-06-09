@@ -1352,6 +1352,83 @@
       "created_at": "2026-06-09T16:29:07.909752-04:00",
       "updated_at": "2026-06-09T16:29:07.909752-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"30d084a\",\"confidence\":95}"
+    },
+    {
+      "id": 124,
+      "change_id": "e7a207d0-6213-40bd-9f7c-eab1f5b0232b",
+      "node_type": "goal",
+      "title": "Default = spectate bot match in a big aerial level, jetpack-combat focused",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T16:35:11.751721-04:00",
+      "updated_at": "2026-06-09T16:35:11.751721-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"now the game should default to having the bots go at it in spectator mode when the game starts, in a bigger more aerlial level, and be very jetpack combat from the air focused\"}"
+    },
+    {
+      "id": 125,
+      "change_id": "9d0d3720-3526-4519-b90e-df2072b5b238",
+      "node_type": "action",
+      "title": "Implement Skyreach arena + aerial bot AI (jet bursts, low threshold) + air fuel trickle + spectate-by-default (?play opt-out)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T16:36:47.784369-04:00",
+      "updated_at": "2026-06-09T16:36:47.784369-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 126,
+      "change_id": "79e6fb9f-f186-469a-8a07-d7493e41d6eb",
+      "node_type": "outcome",
+      "title": "Aerial default live: jet use 47-56% (was 2-4%), kill dist 169px (was 81), Skyreach default map (391 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T16:51:26.574525-04:00",
+      "updated_at": "2026-06-09T16:51:26.574525-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"1745336\",\"confidence\":95}"
+    },
+    {
+      "id": 127,
+      "change_id": "20819a5b-fa7e-4ab9-8798-bfaf1b326861",
+      "node_type": "goal",
+      "title": "Cap the arena with a ceiling; make the board less uniform",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T16:51:57.452518-04:00",
+      "updated_at": "2026-06-09T16:51:57.452518-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"there needs to be a heigh limit on the map lol\\nmake the board less uniform\"}"
+    },
+    {
+      "id": 128,
+      "change_id": "64a71141-274f-48a1-8b02-d976779be096",
+      "node_type": "action",
+      "title": "Skyreach v2: ceiling slab + irregular asymmetric pad layout",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T16:51:57.742837-04:00",
+      "updated_at": "2026-06-09T16:51:57.742837-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 129,
+      "change_id": "3429b94a-5581-46ed-8ef6-ea8ce50467ff",
+      "node_type": "outcome",
+      "title": "Skyreach v2 live: altitude contained (-140..-226 vs runaway -361), irregular 15-height layout (391 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T16:55:12.379090-04:00",
+      "updated_at": "2026-06-09T16:55:12.379090-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"8ba891a\",\"confidence\":95}"
+    },
+    {
+      "id": 130,
+      "change_id": "418ef399-261c-4de6-9a17-8899111704e7",
+      "node_type": "observation",
+      "title": "First-principles bot design seed: CS-pro play translated to 2D+vertical",
+      "description": "User prompt (verbatim): 'think about building bots in a 2d shooter game from first principles -- imagine taking the optimized play of a counter strike source player but wawtching from the top down in 2 dimensions and assuming the vertical play'. Design direction: replace reactive Pascal distance-bands with a pilot brain built on: (1) positioning-beats-aim — height advantage is THE angle, fight from chosen ground via position scoring (height, cover, escape, fuel); (2) memory over omniscience — last-seen tracking, ballistic flight prediction, pre-aiming lanes; (3) engagement discipline — ENGAGE/REPOSITION/RELOAD-COVER states, disengage on bad trades, mag state is tactical state; (4) movement-as-dodge — jet jukes with erratic acceleration directly counter the constant-velocity lead-aim model; (5) fire discipline — tap at range (bloom recovery), spray close; (6) fuel as economy — tank state drives aggression. Telemetry closes the tuning loop (hit-rate-while-jinking, height-advantage-at-kill, fuel-at-death).",
+      "status": "pending",
+      "created_at": "2026-06-09T16:55:52.387906-04:00",
+      "updated_at": "2026-06-09T16:55:52.387906-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
     }
   ],
   "edges": [
@@ -3026,6 +3103,72 @@
       "weight": 1.0,
       "rationale": "Implemented, committed, and demonstrated on a real match",
       "created_at": "2026-06-09T16:29:08.051817-04:00"
+    },
+    {
+      "id": 159,
+      "from_node_id": 124,
+      "to_node_id": 125,
+      "from_change_id": "e7a207d0-6213-40bd-9f7c-eab1f5b0232b",
+      "to_change_id": "9d0d3720-3526-4519-b90e-df2072b5b238",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T16:36:47.925827-04:00"
+    },
+    {
+      "id": 160,
+      "from_node_id": 125,
+      "to_node_id": 126,
+      "from_change_id": "9d0d3720-3526-4519-b90e-df2072b5b238",
+      "to_change_id": "79e6fb9f-f186-469a-8a07-d7493e41d6eb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed; telemetry-verified transformation",
+      "created_at": "2026-06-09T16:51:26.714316-04:00"
+    },
+    {
+      "id": 161,
+      "from_node_id": 124,
+      "to_node_id": 127,
+      "from_change_id": "e7a207d0-6213-40bd-9f7c-eab1f5b0232b",
+      "to_change_id": "20819a5b-fa7e-4ab9-8798-bfaf1b326861",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Skyreach iteration from live watching",
+      "created_at": "2026-06-09T16:51:57.594952-04:00"
+    },
+    {
+      "id": 162,
+      "from_node_id": 127,
+      "to_node_id": 128,
+      "from_change_id": "20819a5b-fa7e-4ab9-8798-bfaf1b326861",
+      "to_change_id": "64a71141-274f-48a1-8b02-d976779be096",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T16:51:57.884353-04:00"
+    },
+    {
+      "id": 163,
+      "from_node_id": 128,
+      "to_node_id": 129,
+      "from_change_id": "64a71141-274f-48a1-8b02-d976779be096",
+      "to_change_id": "3429b94a-5581-46ed-8ef6-ea8ce50467ff",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed; telemetry-verified containment",
+      "created_at": "2026-06-09T16:55:12.518496-04:00"
+    },
+    {
+      "id": 164,
+      "from_node_id": 124,
+      "to_node_id": 130,
+      "from_change_id": "e7a207d0-6213-40bd-9f7c-eab1f5b0232b",
+      "to_change_id": "418ef399-261c-4de6-9a17-8899111704e7",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Bot redesign direction emerging from watching aerial matches",
+      "created_at": "2026-06-09T16:55:52.535076-04:00"
     }
   ]
 }
