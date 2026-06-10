@@ -36,7 +36,8 @@ USAGE (from soldat-ts/):
 
 OPTIONS:
   --teams "<a> vs <b>"   engines for red (a) and blue (b); also accepts a,b
-                         (default: pilot vs reaper)
+                         (omitted: LEAGUE — round-robin over ALL registered
+                         engines, 2 matches per pairing)
   --tweak-a KEY=NUM      brain-config override for team a (repeatable)
   --tweak-b KEY=NUM      brain-config override for team b (repeatable)
   --sweep <a|b>:KEY=v1,v2,...
@@ -111,7 +112,7 @@ function main(): void {
   let variant: string;
   try {
     const teams = parseTeams(values.teams, positionals);
-    for (const id of teams) {
+    for (const id of teams ?? []) {
       if (!engineIds().includes(id)) {
         throw new Error(`unknown engine '${id}' (registered: ${engineIds().join(', ')})`);
       }
@@ -122,18 +123,40 @@ function main(): void {
         `unknown variant '${variant}' (known: ${VARIANTS.map((v) => v.name).join(', ')})`,
       );
     }
-    plans = buildRunPlans({
-      teams,
+    const shared = {
       tweakA: parseTweaks(values['tweak-a']),
       tweakB: parseTweaks(values['tweak-b']),
       sweep: parseSweep(values.sweep),
-      matches: intArg(values.matches, 'matches', 4),
       seedBase: intArg(values.seed, 'seed', 1337),
       botCount: intArg(values.bots, 'bots', 6),
       variant,
       roundSeconds: intArg(values.round, 'round', 120),
       wildcard: parseWildcard(values.wildcard),
-    });
+    };
+    if (teams !== null) {
+      plans = buildRunPlans({ ...shared, teams, matches: intArg(values.matches, 'matches', 4) });
+    } else {
+      // LEAGUE: no teams asked for → round-robin the whole registered roster
+      // (every brain plays every other brain; 2 matches per pairing unless
+      // --matches overrides). 'classic' included — the roster is the roster.
+      const roster = engineIds();
+      const matches = intArg(values.matches, 'matches', 2);
+      if (shared.sweep !== null) {
+        throw new Error('--sweep needs explicit --teams (a sweep targets one pairing)');
+      }
+      plans = [];
+      for (let i = 0; i < roster.length; i++) {
+        for (let j = i + 1; j < roster.length; j++) {
+          plans.push(
+            ...buildRunPlans({ ...shared, teams: [roster[i]!, roster[j]!], matches }),
+          );
+        }
+      }
+      console.log(
+        `LEAGUE — no --teams given: round-robin over ${roster.length} engines ` +
+          `(${roster.join(', ')}) · ${plans.length} pairings · ${matches} match(es) each`,
+      );
+    }
   } catch (err) {
     console.error(`arena: ${err instanceof Error ? err.message : String(err)}`);
     console.error(`Run 'pnpm arena --help' for usage.`);

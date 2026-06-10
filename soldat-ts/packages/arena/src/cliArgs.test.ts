@@ -17,8 +17,8 @@ describe('parseTeams', () => {
     expect(parseTeams('pilot,reaper', [])).toEqual(['pilot', 'reaper']);
   });
 
-  it('defaults to pilot vs reaper', () => {
-    expect(parseTeams(undefined, [])).toEqual(['pilot', 'reaper']);
+  it('returns null when no teams are given (league mode)', () => {
+    expect(parseTeams(undefined, [])).toBeNull(); // league mode — roster round-robin
   });
 
   it('rejects mirror matches', () => {

@@ -15,11 +15,14 @@ const TEAMS_USAGE =
 export function parseTeams(
   teamsOpt: string | undefined,
   positionals: readonly string[],
-): [string, string] {
+): [string, string] | null {
   let a: string | undefined;
   let b: string | undefined;
   if (teamsOpt === undefined && positionals.length === 0) {
-    return ['pilot', 'reaper'];
+    // No teams asked for → LEAGUE mode: the caller round-robins the WHOLE
+    // registered roster. (The old default was a hardcoded pilot-vs-reaper
+    // pairing from before the arms race grew seven more brains.)
+    return null;
   }
   const joined = [teamsOpt ?? '', ...positionals].join(' ').trim();
   const vsMatch = /^(\S+)\s+vs\s+(\S+)$/.exec(joined);
