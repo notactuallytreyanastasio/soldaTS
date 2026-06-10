@@ -62,7 +62,8 @@ training loops cheap.
 | Daemon | Start | What it does |
 |--------|-------|--------------|
 | Game client | `pnpm play` | :5173 — play, spectate, replay watch URLs |
-| **Arena Live monitor** | `cd arena-live && nohup node watch.mjs > watcher.log 2>&1 & disown` | :8901 — stock-ticker dashboard: scrolling tape, LIVE hero, decay-scored Big Board (3 h half-life — idle kills fade), rank history (HELD/PEAK, bump feed), belt-lineage strip, D3 analytics desk (accuracy×lethality scatter, rank race, engine-vs-engine heatmap, shotgun impact), infinite-scroll fight feed, ☀/🌙 theme. Everything click-to-watch. |
+| **Arena Live monitor** | `cd arena-live && nohup node watch.mjs > watcher.log 2>&1 & disown` | :8901 — serves BOTH dashboards and rebuilds them in a child process when inputs change. `/` is THE FLOOR (stock ticker): scrolling tape, LIVE hero, decay-scored Big Board (3 h half-life — idle kills fade), rank history (HELD/PEAK, bump feed), belt-lineage strip, D3 analytics desk (accuracy×lethality scatter, rank race, engine-vs-engine heatmap, shotgun impact), infinite-scroll fight feed, ☀/🌙 theme. Everything click-to-watch. |
+| **The Desk** (same watcher) | `open http://localhost:8901/desk.html` | :8901/desk.html — THE SKYREACH DESK, the story-first front page: season bell countdown + belt/claim banner, an auto-written lead story (priority: season end > title bout > belt change > 2 h upset > win streak, templated headlines), THE CLIMB (learned engines' rank-over-time vs the ghosted field, evolve weight-ship pins), rivalry cards from the h2h matrix, tonight's card (live fight + commissioner countdown + grinder pass progress), gun meter with gun-of-the-hour. Polls its own slim `desk-data.json` (~2 MB; the full `data.json` is >100 MB and not pollable). Cross-links with the floor; shares the theme. |
 | **The Commissioner** | `cd arena-live && nohup node commissioner.mjs > commissioner.log 2>&1 & disown` | Every 10 min: if the same config still holds board #1, it summons *fresh blood* (the least-recently-fought card) for a forced title defense. Results land as normal datasets; a champion that stops winning bleeds decayed score automatically. |
 
 Stop with `pkill -f "node watch.mjs"` / `pkill -f "node commissioner.mjs"`.
@@ -70,6 +71,10 @@ Stop with `pkill -f "node watch.mjs"` / `pkill -f "node commissioner.mjs"`.
 ![Arena Live, light theme: the Big Board by decayed score, the commissioner's latest crucible, the season ladder](img/readme-ticker.png)
 
 ![The same floor after dark](img/readme-ticker-dark.png)
+
+![THE SKYREACH DESK (:8901/desk.html), night edition: auto-written lead story, the learned bots' climb chart, rivalries, tonight's card, gun meter](img/16-skyreach-desk-dark.png)
+
+![The desk's morning edition on paper — same data, second editorial position](img/17-skyreach-desk-light.png)
 
 ---
 

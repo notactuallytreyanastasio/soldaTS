@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
+import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -25,9 +26,12 @@ const WATCH_PATHS = [
   path.join(REPO_ROOT, '.deciduous', 'deciduous.db'),
   path.join(REPO_ROOT, 'docs', 'graph-data.json'),
   path.join(HERE, 'index.template.html'),
+  path.join(HERE, 'desk.template.html'),
   path.join(HERE, 'build.mjs'),
   path.join(HERE, 'crucibles.jsonl'),
   path.join(HERE, 'commissioner-state.json'),
+  path.join(HERE, 'season-state.json'),
+  path.join(HERE, 'league-state.json'),
 ];
 
 const POLL_MS = 5000;
@@ -63,39 +67,38 @@ function signature() {
   return parts.join('|');
 }
 
-// build.mjs is hot-reloaded on mtime change: a static import would pin the
-// module-cache version from watcher startup, so edits to the builder would
-// rebuild with STALE code forever (watching build.mjs while importing it
-// statically was a silent lie — the brains-browser rollout hit exactly this).
-let buildFn = null;
-let buildMtime = 0;
-async function loadBuild() {
-  const st = fs.statSync(path.join(HERE, 'build.mjs'));
-  if (buildFn === null || st.mtimeMs !== buildMtime) {
-    const mod = await import(`./build.mjs?v=${st.mtimeMs}`);
-    buildFn = mod.build;
-    if (buildMtime !== 0) log('build.mjs changed — hot-reloaded builder');
-    buildMtime = st.mtimeMs;
-  }
-  return buildFn;
-}
-
+// The build runs in a CHILD PROCESS, not in this one. Two hard lessons led
+// here: (1) a static import pinned stale builder code (the brains-browser
+// rollout), and a query-string dynamic re-import leaked module copies;
+// (2) far worse, build() is synchronous and grew past 10s as the corpus
+// crossed 1,500 datasets — run in-process it froze this same event loop
+// that serves HTTP, so with the grinder triggering a rebuild every few
+// seconds the pages could wait 15s+ for a 2 MB fetch and rendered EMPTY.
+// A child gets fresh code every run and the server never blocks.
 let building = false;
-async function rebuild(reason) {
-  if (building) return;
+function rebuild(reason) {
+  if (building) return Promise.resolve();
   building = true;
   const t0 = Date.now();
-  try {
-    const build = await loadBuild();
-    const d = build();
-    log(`rebuilt (${reason}) in ${Date.now() - t0}ms — ${d.fights.length} fights, ` +
-        `${d.warRoom.nodes.length} graph nodes, ${d.warnings.length} warnings`);
-  } catch (e) {
-    log(`REBUILD FAILED (${reason}): ${e.stack ?? e.message}`);
-    // leave the previous site/ in place — stale beats dead
-  } finally {
-    building = false;
-  }
+  return new Promise((resolve) => {
+    execFile(process.execPath, [path.join(HERE, 'build.mjs')], {
+      cwd: HERE,
+      timeout: 180_000,
+      maxBuffer: 16 * 1024 * 1024,
+    }, (err, stdout, stderr) => {
+      if (err) {
+        log(`REBUILD FAILED (${reason}): ${err.message.split('\n')[0]}`);
+        const tail = String(stderr).trim().split('\n').slice(-3).join(' | ');
+        if (tail) log(`  builder stderr: ${tail}`);
+        // leave the previous site/ in place — stale beats dead
+      } else {
+        const summary = String(stdout).trim().replace(/^\[arena-live\] built: /, '');
+        log(`rebuilt (${reason}) in ${Date.now() - t0}ms — ${summary}`);
+      }
+      building = false;
+      resolve();
+    });
+  });
 }
 
 // --- static server -----------------------------------------------------------

@@ -12,9 +12,12 @@ You can use it in about five minutes:
   pick any brain from the menu and fight it yourself.
 - **Run the league**: `pnpm arena` pits every brain against every other
   brain (~2 minutes) and writes the datasets.
-- **Watch the sport**: the live dashboard (`arena-live/`, port 8901) has a
-  ladder, a decay-scored leaderboard, analytics, and click-to-watch
-  replays. A commissioner daemon forces title defenses on its own.
+- **Watch the sport**: the live site (`arena-live/`, port 8901) is two
+  dashboards. THE FLOOR (`/`) is the stock ticker: tape, decay-scored
+  leaderboard, analytics, click-to-watch replays. THE DESK (`/desk.html`)
+  is the sports section: an auto-written lead story, the learned bots'
+  climb chart, rivalry cards, tonight's card. A commissioner daemon
+  forces title defenses on its own.
 - **Set Claude loose**: open Claude Code in this repo and CLAUDE.md makes
   it a coach. It will check who holds the belt and challenge, and it can
   tune a card, author a new doctrine, or train a model on the ~35M-row
@@ -1083,6 +1086,61 @@ ready: seed evolution from DISCIPLE's weights, a hit-rate term in fitness, a rea
 overnight budget. The bottom of the leaderboard is now occupied by things that can
 climb.
 
+## Part 26: The Desk — stories, not prices
+
+A day of running the sport settled an argument about dashboards. The stock
+ticker answers *what's the price*: who is #1, at what decayed score, trending
+which way. But every time something actually interesting happened — BELMONTE
+staking a 2–1 claim on a vacant belt, the wolf owning the hydra 29–4 while the
+hydra wore a belt anyway, a behavior-cloned net climbing past hand-written
+veterans — the ticker showed it as a one-row flicker. The prices were boring.
+The *stories* were the product. So the arena got a second front page.
+
+THE SKYREACH DESK (`arena-live/site/desk.html`, same watcher, same data) is a
+sports section. The masthead carries the season clock — Season 2's bell
+counting down live, the belt's status (VACANT, with whatever title-bout claim
+is freshest), last season's winner. Below it, a lead story that *writes
+itself*: a priority ladder (season just ended → title-bout result → belt
+change → biggest two-hour upset by board-score gap → longest live win streak)
+picks the most newsworthy fact on the wire, and a templated headline generator
+sets it in 58-point serif so consecutive builds don't read identical.
+"NO CORONATION TONIGHT — BELMONTE REPELS ESCA'S TITLE BID." The commissioner
+stages a title bout every thirty seconds, so the front page rewrites itself
+about as fast as a real sports desk on deadline.
+
+The marquee chart is THE CLIMB: rank-over-time for the two learned engines,
+drawn bold over the entire hand-written field ghosted in grey — the one plot
+that shows machine learning happening *inside a sports league*, with the
+evolve trainer's weight-ship gates pinned to the time axis. RIVALRIES distills
+the head-to-head matrix into cards a back page would run ("TOTAL OWNERSHIP:
+HYDRA OVER PILOT", "WOLF × SHRIKE: COIN-FLIP SERIES"), each one click-to-watch
+their latest meeting. TONIGHT'S CARD holds the live fight, the commissioner's
+next-action countdown, and the league grinder's progress through its 91-pairing
+pass. A gun meter tallies the killing by weapon and crowns a gun of the hour.
+Every number on the page is a door into the replay that produced it.
+
+![THE SKYREACH DESK, night edition: the auto-written lead, the learned bots' climb over the ghosted field, rivalries, tonight's card](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/img/16-skyreach-desk-dark.png)
+
+Shipping it surfaced the day's last systems lesson. The desk launched against
+the same `data.json` the ticker polls — which had quietly crossed **100 MB**,
+because the grinder writes a fight every thirty seconds and every fight ships
+its kill-by-kill timeline. Worse, the watcher rebuilt that JSON synchronously
+on the same event loop that serves HTTP, so with rebuilds taking ten seconds
+and triggering every five, a 2 MB fetch could wait fifteen seconds behind the
+builder and the front page rendered as empty column rules. Two fixes, both
+old ideas: the desk gets its own slim feed (`desk-data.json`, ~2 MB, watch
+URLs but no timelines), and the build moved into a child process so the server
+never blocks. Fetch time went from 15 seconds to 4 milliseconds. A newspaper
+that takes longer to open than to write is not a newspaper.
+
+![The same desk as the morning edition, on paper](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/img/17-skyreach-desk-light.png)
+
+The two pages cross-link in their mastheads — 📈 THE FLOOR for prices,
+📰 THE DESK for news — and share a theme. One data pipeline, two editorial
+positions. The ticker is for the coaches; the desk is for everyone who just
+wants to know what happened in the arena today, which, increasingly, is a
+question with a real answer.
+
 ## Closing
 
 Twenty-year-old games survive on feel, and feel doesn't live in any single
@@ -1139,5 +1197,7 @@ historical commits resurrected in git worktrees, and the three AI-arena shots (P
 recorded matches re-run deterministically from their watch URLs (Part 23's with
 `&wildcard=shotgun` on the query string), and the two ticker shots are the live site
 at that morning's state, before and after the title change. Parts 24-25 ran too fast
-for screenshots; the evidence is the datasets. The screenshot tool is
+for screenshots; the evidence is the datasets. The two desk shots (Part 26) are the
+live site the evening of June 10, mid-Season-2, lead story as the editor chose it —
+reload and it will have moved on. The screenshot tool is
 `tools/screenshot.mjs`.*

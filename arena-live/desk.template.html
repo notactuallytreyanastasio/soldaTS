@@ -241,7 +241,7 @@
   <div class="presses" id="presses"></div>
 </main>
 <div id="d3tip"></div>
-<footer>THE SKYREACH DESK · second dashboard of the Claude Arena · refetches data.json every 5s · replays need <span class="num">pnpm play</span> on :5173 · <a href="index.html">back to the floor 📈</a></footer>
+<footer>THE SKYREACH DESK · second dashboard of the Claude Arena · refetches desk-data.json (slim feed) every 5s · replays need <span class="num">pnpm play</span> on :5173 · <a href="index.html">back to the floor 📈</a></footer>
 <script>
 'use strict';
 // ============================ shared helpers ===================================
@@ -325,10 +325,10 @@ const idOfSide = (s) => {
   const sig = Object.keys(t).sort().map((k) => `${k}=${t[k]}`).join(',') || 'stock';
   return `${String(s.coach).toUpperCase()}|${s.engine}|${sig}`;
 };
-const watchOf = (d, dataset) => {
-  const f = (d.fights || []).find((x) => x.dirName === dataset);
-  return f && f.matches[0] ? f.matches[0].watchUrl : '';
-};
+// slim feed (desk-data.json) carries watchUrl on the fight itself; the full
+// data.json nests it in matches[0] — accept either shape.
+const fightWatch = (f) => f ? (f.watchUrl ?? (f.matches && f.matches[0] ? f.matches[0].watchUrl : '')) : '';
+const watchOf = (d, dataset) => fightWatch((d.fights || []).find((x) => x.dirName === dataset));
 
 /** Belt status from LADDER.md + the title-bout record in crucibles.jsonl. */
 function beltStatus(d) {
@@ -480,7 +480,7 @@ function leadStory(d) {
         `FORM GUIDE, SHREDDED — ${up.wSide.coach} OVER ${up.lSide.coach} ${sc}`,
       ], id),
       stand: `${up.lSide.coach}'s ${up.lSide.engine} came in carrying a decayed score of ${Number(up.lRow.score).toFixed(2)} against ${up.wSide.coach}'s ${Number(up.wRow.score).toFixed(2)} — a ${up.gap.toFixed(1)}-point class gap on the board — and lost the series anyway, ${sc} at arena #${up.f.arenaSeed} ${ago(up.f.createdAt)}.`,
-      watch: up.f.matches[0] ? up.f.matches[0].watchUrl : '', ts: up.f.createdAt,
+      watch: fightWatch(up.f), ts: up.f.createdAt,
       why: `biggest 2h upset (board gap ${up.gap.toFixed(1)})`,
     };
   }
@@ -513,7 +513,7 @@ function leadStory(d) {
     kicker: 'AROUND THE GROUNDS', id: 'fb:' + f.dirName,
     headline: `${f.sides[0].coach} ${sc} ${f.sides[1].coach} AT ARENA #${f.arenaSeed}`,
     stand: `Quiet hour at the desk — the freshest tape has ${f.sides[0].coach}'s ${f.sides[0].engine} against ${f.sides[1].coach}'s ${f.sides[1].engine}, ${ago(f.createdAt)}.`,
-    watch: f.matches[0] ? f.matches[0].watchUrl : '', ts: f.createdAt, why: 'fallback — freshest fight',
+    watch: fightWatch(f), ts: f.createdAt, why: 'fallback — freshest fight',
   };
 }
 
@@ -687,13 +687,13 @@ function latestMeeting(d, a, b) {
   for (const f of d.fights || []) {
     const ea = f.sides[0].engine, eb = f.sides[1].engine;
     if ((ea === a && eb === b) || (ea === b && eb === a)) {
-      return { url: f.matches[0] ? f.matches[0].watchUrl : '', at: f.createdAt };
+      return { url: fightWatch(f), at: f.createdAt };
     }
   }
   return null;
 }
 function rivalriesHtml(d) {
-  const h2h = (d.analytics && d.analytics.h2h) || {};
+  const h2h = d.h2h || (d.analytics && d.analytics.h2h) || {};
   const engines = Object.keys(h2h).sort();
   const pairs = [];
   for (let i = 0; i < engines.length; i++) {
@@ -764,7 +764,7 @@ function tonightHtml(d) {
     const f = (d.fights || [])[0];
     if (f) {
       const st = f.standings;
-      liveBox = `<div class="livebox" data-watch="${attr(f.matches[0] ? f.matches[0].watchUrl : '')}">
+      liveBox = `<div class="livebox" data-watch="${attr(fightWatch(f))}">
         <div class="tag dim">FRESHEST TAPE · ${esc(ago(f.createdAt))}</div>
         <div class="names"><span class="who cred">${esc(f.sides[0].coach)}</span>
           <span class="score">${st ? `${st.red.wins}–${st.blue.wins}` : '?'}</span>
@@ -817,10 +817,14 @@ function gunMeterHtml(d) {
     const isHot = hour.top && hour.top.weapon === w && hour.top.kills > 0;
     const hourKills = hour.tally[w] ?? 0;
     const top = b.rows[0];
-    let url = '';
-    outer: for (const f of d.fights || []) {
-      for (const m of f.matches || []) {
-        if (m.timeline && m.timeline.some((k) => (k.weapon ?? 'AK74') === w)) { url = m.watchUrl; break outer; }
+    // slim feed precomputes per-gun lastUrl; full data.json falls back to
+    // scanning the timelines client-side.
+    let url = b.lastUrl || '';
+    if (!url) {
+      outer: for (const f of d.fights || []) {
+        for (const m of f.matches || []) {
+          if (m.timeline && m.timeline.some((k) => (k.weapon ?? 'AK74') === w)) { url = m.watchUrl; break outer; }
+        }
       }
     }
     return `<div class="gcell${isHot ? ' hot' : ''}"${url ? ` data-watch="${attr(url)}" style="cursor:pointer" title="watch the latest ${meta.name} kill"` : ''}>
@@ -873,14 +877,21 @@ document.getElementById('themeBtn').textContent =
   currentTheme() === 'light' ? '🌙 NIGHT DESK' : '☀ MORNING EDITION';
 
 let lastGenerated = null;
+let fetching = false; // the watcher can stall serving during rebuilds — never stack fetches
 async function tick() {
+  if (fetching) return;
+  fetching = true;
   try {
-    const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    // desk-data.json is the slim feed (no kill timelines) — the full
+    // data.json crossed 100 MB and cannot be polled every 5s.
+    const res = await fetch('desk-data.json?t=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const d = await res.json();
     if (d.generatedAt !== lastGenerated) { lastGenerated = d.generatedAt; render(d); }
   } catch (e) {
     document.getElementById('edition').textContent = 'wire down: ' + e.message + ' (retrying)';
+  } finally {
+    fetching = false;
   }
 }
 tick();

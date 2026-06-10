@@ -1072,6 +1072,57 @@ export function build() {
   } catch (e) {
     warn(`desk.html emit failed: ${e.message}`);
   }
+  // Slim feed for the desk: the full data.json crossed 100 MB (per-kill
+  // timelines on every fight) and takes >10s to serve while the synchronous
+  // rebuild blocks this process's event loop — a 5s poll of it never lands.
+  // The desk only needs headline-grade fields, so it gets its own ~1 MB feed.
+  try {
+    // newest fight with a kill by each weapon — keeps the desk's gun-meter
+    // click-throughs alive without shipping the timelines themselves.
+    const gunLastUrl = {};
+    for (const f of fights) { // already sorted newest first
+      for (const m of f.matches) {
+        for (const k of m.timeline ?? []) {
+          const w = k.weapon ?? 'AK74';
+          if (!(w in gunLastUrl)) gunLastUrl[w] = m.watchUrl;
+        }
+      }
+      if (Object.keys(gunLastUrl).length >= 3) break;
+    }
+    const deskData = {
+      generatedAt: data.generatedAt,
+      live: data.live,
+      ladderMarkdown,
+      board,
+      rankHistory,
+      h2h: analytics ? analytics.h2h : null,
+      beltLineage,
+      crucibles: data.crucibles,
+      commissioner: data.commissioner,
+      gunBoards: gunBoards
+        ? Object.fromEntries(Object.entries(gunBoards).map(([k, v]) =>
+            [k, typeof v === 'object' && v !== null && Array.isArray(v.rows)
+              ? { total: v.total, rows: v.rows.slice(0, 1), lastUrl: gunLastUrl[k] ?? null } : v]))
+        : null,
+      desk,
+      warnings: data.warnings,
+      // fights without timelines/bots: just enough for the upset scanner,
+      // rivalry latest-meeting lookups, and click-to-watch links.
+      fights: fights.map((f) => ({
+        dirName: f.dirName,
+        createdAt: f.createdAt,
+        arenaSeed: f.arenaSeed,
+        sides: f.sides.map((s) => ({ coach: s.coach, engine: s.engine, tweaks: s.tweaks })),
+        standings: f.standings,
+        watchUrl: f.matches[0] ? f.matches[0].watchUrl : '',
+      })),
+    };
+    const dtmp = path.join(SITE_DIR, '.desk-data.json.tmp');
+    fs.writeFileSync(dtmp, JSON.stringify(deskData));
+    fs.renameSync(dtmp, path.join(SITE_DIR, 'desk-data.json'));
+  } catch (e) {
+    warn(`desk-data.json emit failed: ${e.message}`);
+  }
   return data;
 }
 
