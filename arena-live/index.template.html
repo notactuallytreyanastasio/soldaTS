@@ -195,6 +195,11 @@
   details.fold summary:hover { color: var(--text); }
   .spark { vertical-align: middle; }
 
+  /* ---- gun boards --------------------------------------------------------- */
+  .gunboards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .gunboard h3 { margin: 0 0 6px; font-size: 11px; letter-spacing: 2px; color: var(--gold); text-transform: uppercase; }
+  .gunboard table.board td, .gunboard table.board th { padding: 3px 6px; font-size: 12px; }
+
   /* ---- time & sales (fight feed) ----------------------------------------- */
   .fight { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; background: var(--panel); overflow: hidden; }
   .fight-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 8px 12px; background: var(--panel2); border-bottom: 1px solid var(--line); cursor: pointer; }
@@ -777,6 +782,35 @@ function rankHistoryHtml(d) {
       <div><div class="dim" style="font-size:10px;letter-spacing:2px;margin-bottom:4px">TIMELINES — configs with real history (≥${MIN_SERIES} series), top 16</div>${rowsHtml}</div>
     </div>
     <div class="dim" style="font-size:10px;margin-top:6px">history.jsonl: ${hist.length} snapshots since ${clockOf(hist[0].ts)} · a snapshot is taken whenever the board ordering changes</div></div>`;
+}
+
+// ---- gun boards (per-weapon kill leaderboards) -----------------------------------
+const GUN_META = {
+  AK74:    { icon: '🔫', name: 'AK-74',    note: 'the shared rifle — every stock kill' },
+  SPAS12:  { icon: '💥', name: 'SPAS-12',  note: 'wildcard shotgun — 6-pellet fan' },
+  BARRETT: { icon: '🎯', name: 'Barrett',  note: 'wildcard one-shot rifle' },
+};
+function gunBoardsHtml(d) {
+  const g = d.gunBoards;
+  if (!g) return '';
+  const order = ['AK74', 'SPAS12', 'BARRETT'].filter((w) => g[w] && g[w].rows.length);
+  if (!order.length) return '';
+  const tables = order.map((w) => {
+    const meta = GUN_META[w] || { icon: '·', name: w, note: '' };
+    const b = g[w];
+    const rows = b.rows.map((r, i) =>
+      `<tr><td class="dim">#${i + 1}</td>` +
+      `<td class="sym">${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:10px"> ${esc(r.engine)}</span></td>` +
+      `<td data-fk="gun-${esc(w)}-${esc(r.coach)}-${esc(r.engine)}"><b>${r.kills}</b></td>` +
+      `<td class="dim">${((r.kills / Math.max(1, b.total)) * 100).toFixed(1)}%</td></tr>`).join('');
+    return `<div class="gunboard">
+      <h3>${meta.icon} ${esc(meta.name)} <span class="dim" style="font-size:10px;letter-spacing:0">${b.total.toLocaleString()} kills · ${esc(meta.note)}</span></h3>
+      <table class="board"><tr><th>#</th><th>coach</th><th>kills</th><th>share</th></tr>${rows}</table>
+    </div>`;
+  }).join('');
+  return `<div class="panel"><h2>🔪 Gun Boards — kills by weapon</h2>
+    <div class="gunboards">${tables}</div>
+    <div class="dim" style="font-size:10px;margin-top:6px">stock-era kills count as AK-74 (one-gun matches); wildcard kills use the event weapon tags · top 12 per gun</div></div>`;
 }
 
 // ---- time & sales (fight feed) ---------------------------------------------------
@@ -1377,6 +1411,7 @@ function render(d) {
   const feed = d.fights.slice(0, feedShown);
   document.getElementById('main').innerHTML =
     boardHtml(d) +
+    gunBoardsHtml(d) +
     rankHistoryHtml(d) +
     analyticsShellHtml(d) +
     brainsHtml(d) +
