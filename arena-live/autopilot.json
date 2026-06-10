@@ -1,0 +1,18 @@
+{
+  "enabled": true,
+  "daemons": {
+    "client": true,
+    "watcher": true,
+    "commissioner": true,
+    "grinder": true
+  },
+  "trainer": {
+    "enabled": true,
+    "intervalHours": 4,
+    "teacher": "auto",
+    "evolveGenerations": 200,
+    "evolveJobs": 8
+  },
+  "pullServerData": true,
+  "publishLoopMinutes": 0
+}

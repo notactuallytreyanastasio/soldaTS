@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- THE AUTOPILOT (goal 428) — boot-persistent keeper for the arena.
+     Install:   make autopilot-install     (cp to ~/Library/LaunchAgents + bootstrap)
+     Uninstall: make autopilot-uninstall
+     Status:    make autopilot-status
+     The job stays loaded forever; the REAL on/off switch is `enabled` in
+     arena-live/autopilot.json (http://localhost:8901/config.html). While
+     disabled the keeper just idles at one log line. -->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.soldat.autopilot</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/robertgrayson/.asdf/shims/node</string>
+    <string>/Users/robertgrayson/code/soldat_remastered/soldat/tools/autopilot.mjs</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/robertgrayson/code/soldat_remastered/soldat</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>15</integer>
+
+  <!-- autopilot.mjs writes its own timestamped tools/autopilot.log; these
+       catch hard crashes (node startup failures) only. -->
+  <key>StandardOutPath</key>
+  <string>/Users/robertgrayson/code/soldat_remastered/soldat/tools/autopilot.launchd.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/robertgrayson/code/soldat_remastered/soldat/tools/autopilot.launchd.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/robertgrayson/.asdf/shims:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>/Users/robertgrayson</string>
+  </dict>
+</dict>
+</plist>

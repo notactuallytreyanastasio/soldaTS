@@ -1077,7 +1077,24 @@ export function build() {
 
   fs.mkdirSync(SITE_DIR, { recursive: true });
   const tmp = path.join(SITE_DIR, '.data.json.tmp');
-  fs.writeFileSync(tmp, JSON.stringify(data, null, 1));
+  // The corpus crossed V8's max string length (~512 MiB) on 2026-06-10:
+  // JSON.stringify of the whole feed now throws RangeError. Write the fights
+  // array (99% of the bytes) element-by-element instead — each fight is small,
+  // only the concatenation was not. Compact (no indent) buys another ~30%.
+  {
+    const { fights: allFights, ...rest } = data;
+    const fd = fs.openSync(tmp, 'w');
+    try {
+      const head = JSON.stringify(rest);
+      fs.writeSync(fd, head.slice(0, -1) + ',"fights":[');
+      for (let i = 0; i < allFights.length; i++) {
+        fs.writeSync(fd, (i > 0 ? ',' : '') + JSON.stringify(allFights[i]));
+      }
+      fs.writeSync(fd, ']}');
+    } finally {
+      fs.closeSync(fd);
+    }
+  }
   fs.renameSync(tmp, path.join(SITE_DIR, 'data.json'));
   // When the watch base is overridden (live VPS deploy) the replays open right
   // next to the page — fix the footer copy that otherwise tells visitors to
@@ -1096,6 +1113,15 @@ export function build() {
     fs.writeFileSync(path.join(SITE_DIR, 'desk.html'), liveFooter(readText(path.join(HERE, 'desk.template.html'))) ?? FALLBACK_DESK);
   } catch (e) {
     warn(`desk.html emit failed: ${e.message}`);
+  }
+  // The autopilot config screen. The page is plain static and safe to publish:
+  // its controls only work over watch.mjs's localhost-only API (the page
+  // locks itself out when the API answers 403 — e.g. the public deployment).
+  try {
+    const cfgHtml = readText(path.join(HERE, 'config.template.html'));
+    if (cfgHtml != null) fs.writeFileSync(path.join(SITE_DIR, 'config.html'), cfgHtml);
+  } catch (e) {
+    warn(`config.html emit failed: ${e.message}`);
   }
   // Slim feed for the desk: the full data.json crossed 100 MB (per-kill
   // timelines on every fight) and takes >10s to serve while the synchronous

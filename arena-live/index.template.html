@@ -109,6 +109,13 @@
     border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; letter-spacing: 1px;
   }
   #deskLink:hover { border-color: var(--gold); text-decoration: none; }
+  /* the autopilot config gear — shown on localhost only (its API refuses
+     everyone else anyway; no point advertising it on the public deployment) */
+  #cfgLink {
+    background: var(--panel2); color: var(--gold); border: 1px solid var(--line);
+    border-radius: 6px; font: 12px var(--mono); padding: 2px 8px; letter-spacing: 1px;
+  }
+  #cfgLink:hover { border-color: var(--gold); text-decoration: none; }
 
   /* ---- price-change flash (any cell whose value changed between refreshes) */
   @keyframes flashfade { from { background-color: var(--fc); } to { background-color: transparent; } }
@@ -325,6 +332,7 @@
   <h1>⚔ ARENA LIVE</h1>
   <span class="live">● LIVE</span>
   <a id="deskLink" href="desk.html" title="THE DESK — the story-first front page">📰 DESK</a>
+  <a id="cfgLink" href="config.html" title="AUTOPILOT — boot service + training config (localhost only)" style="display:none">⚙</a>
   <button id="themeBtn" title="toggle light/dark">☀ / 🌙</button>
   <span class="meta" id="meta">loading…</span>
 </header>
@@ -380,6 +388,12 @@ function applyTheme(t, persist) {
   document.documentElement.setAttribute('data-theme', t);
 })();
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// The ⚙ autopilot config link only makes sense where its API answers —
+// watch.mjs refuses non-localhost callers, so hide it everywhere else.
+if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
+  document.getElementById('cfgLink').style.display = '';
+}
 
 // Ticker symbol: first letter + consonants (then vowels) of the rest, 5 chars.
 function sym(name) {

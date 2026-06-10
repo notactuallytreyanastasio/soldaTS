@@ -64,3 +64,14 @@
 {"gen":59,"meanFitness":-0.818,"bestFitness":5.375,"vsChampionWinRate":null,"opponents":"neural-past-40,neural-past-50","arenaSeeds":[41,0],"sigma":0.005973,"lr":0.01,"secs":10.1}
 {"gen":60,"meanFitness":-66.703,"bestFitness":-56.375,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005973,"lr":0.01,"secs":9.3}
 {"gen":60,"gate":"gen 60 mean vs imitation baseline 2-1 (7-4, 3-3, 1-0)","shipped":true}
+{"gen":61,"meanFitness":-64.477,"bestFitness":-53.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005973,"lr":0.01,"secs":7.9}
+{"gen":62,"meanFitness":-0.078,"bestFitness":2.75,"vsChampionWinRate":null,"opponents":"neural-past-30,neural-past-40","arenaSeeds":[11,23],"sigma":0.005973,"lr":0.01,"secs":6.5}
+{"gen":63,"meanFitness":0.432,"bestFitness":4,"vsChampionWinRate":null,"opponents":"neural-past-50,neural-past-60","arenaSeeds":[23,41],"sigma":0.005973,"lr":0.01,"secs":6.8}
+{"gen":64,"meanFitness":-75.042,"bestFitness":-64.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005973,"lr":0.01,"secs":7.3}
+{"gen":65,"meanFitness":-64.536,"bestFitness":-57.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005973,"lr":0.01,"secs":7.8}
+{"gen":66,"meanFitness":-0.245,"bestFitness":4.125,"vsChampionWinRate":null,"opponents":"neural-past-30,neural-past-40","arenaSeeds":[5,11],"sigma":0.005973,"lr":0.01,"secs":6.9}
+{"gen":67,"meanFitness":-0.56,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-50,neural-past-60","arenaSeeds":[11,23],"sigma":0.005973,"lr":0.01,"secs":6.4}
+{"gen":68,"meanFitness":-75.357,"bestFitness":-64.625,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005973,"lr":0.01,"secs":6.5}
+{"gen":69,"meanFitness":-69.802,"bestFitness":-52.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005973,"lr":0.01,"secs":7.1}
+{"gen":70,"meanFitness":0.195,"bestFitness":4,"vsChampionWinRate":null,"opponents":"neural-past-30,neural-past-40","arenaSeeds":[0,5],"sigma":0.005973,"lr":0.01,"secs":6.1}
+{"gen":70,"gate":"gen 70 mean vs imitation baseline 0-3 (3-4, 3-4, 1-3)","shipped":false}

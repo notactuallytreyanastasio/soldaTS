@@ -1,7 +1,8 @@
 # Soldat TS — fresh-clone driver. `make` lists targets.
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help setup up down status test league train evolve fight
+.PHONY: help setup up down status test league train evolve fight \
+	autopilot-install autopilot-uninstall autopilot-status
 
 LIVE     := arena-live
 PLAY_LOG := /tmp/soldat-play.log
@@ -72,3 +73,25 @@ evolve: ## evolutionary tuning (60 gens, 8 jobs)
 fight: ## make fight A=fights/x.json B=fights/y.json [ARENA=n]
 	@test -n "$(A)" && test -n "$(B)" || { echo "usage: make fight A=fights/x.json B=fights/y.json [ARENA=n]"; exit 1; }
 	pnpm arena fight $(A) $(B) --matches 3 $(if $(ARENA),--arena $(ARENA),)
+
+# --- THE AUTOPILOT (goal 428): boot-persistent keeper, gated by the config ----
+# The launchd job stays loaded forever; the real on/off switch is `enabled`
+# in arena-live/autopilot.json — http://localhost:8901/config.html.
+AP_PLIST := $(HOME)/Library/LaunchAgents/com.soldat.autopilot.plist
+
+autopilot-install: ## install + start the boot-time autopilot (launchd)
+	cp deploy/com.soldat.autopilot.plist $(AP_PLIST)
+	@launchctl bootout gui/$$(id -u)/com.soldat.autopilot 2>/dev/null || true
+	launchctl bootstrap gui/$$(id -u) $(AP_PLIST)
+	@echo "autopilot installed + running at boot — toggle it: http://localhost:8901/config.html"
+
+autopilot-uninstall: ## stop + remove the boot-time autopilot
+	@launchctl bootout gui/$$(id -u)/com.soldat.autopilot 2>/dev/null || true
+	rm -f $(AP_PLIST)
+	@echo "autopilot uninstalled (daemons it started keep running — 'make down' stops them)"
+
+autopilot-status: ## launchd state + keeper log tail
+	@launchctl print gui/$$(id -u)/com.soldat.autopilot 2>/dev/null \
+		| grep -E "state|pid|last exit" || echo "autopilot: NOT LOADED (make autopilot-install)"
+	@echo "--- tools/autopilot.log (last 5) ---"
+	@tail -5 tools/autopilot.log 2>/dev/null || echo "(no log yet)"

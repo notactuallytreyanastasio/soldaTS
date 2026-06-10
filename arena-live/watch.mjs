@@ -101,6 +101,125 @@ function rebuild(reason) {
   });
 }
 
+// --- autopilot config API ------------------------------------------------------
+// GET  /api/autopilot          -> { config, running, pid, lastCycle }
+// POST /api/autopilot          -> write arena-live/autopilot.json (sanitized)
+// GET  /api/autopilot-log?lines=50 -> tail of tools/autopilot.log (text/plain)
+// SECURITY: the public Hetzner deployment runs this same watch.mjs, so every
+// autopilot endpoint is LOCALHOST-ONLY — visitors must not reconfigure (or
+// even inspect) the box's autopilot. config.html itself is static and shows a
+// "localhost only" notice when these endpoints refuse.
+
+const AUTOPILOT_CONFIG = path.join(HERE, 'autopilot.json');
+const AUTOPILOT_LOG = path.join(TS_ROOT, 'tools', 'autopilot.log');
+const AUTOPILOT_LEDGER = path.join(TS_ROOT, 'tools', 'autopilot-ledger.jsonl');
+const AUTOPILOT_PID = path.join(TS_ROOT, 'tools', 'autopilot.pid');
+
+function isLocalhost(req) {
+  const a = req.socket?.remoteAddress;
+  return a === '127.0.0.1' || a === '::1' || a === '::ffff:127.0.0.1';
+}
+
+const sendJson = (res, code, obj) => {
+  res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+  res.end(JSON.stringify(obj));
+};
+
+const bool = (v, def) => (typeof v === 'boolean' ? v : def);
+const num = (v, def, lo, hi) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : def;
+};
+
+/** Sanitize a posted config down to the known shape — unknown keys dropped,
+ *  types coerced, numbers clamped. Garbage in, defaults out. */
+function sanitizeAutopilotConfig(raw, prev) {
+  const p = prev ?? {};
+  const pd = p.daemons ?? {};
+  const pt = p.trainer ?? {};
+  const d = raw?.daemons ?? {};
+  const t = raw?.trainer ?? {};
+  return {
+    enabled: bool(raw?.enabled, bool(p.enabled, false)),
+    daemons: {
+      client: bool(d.client, bool(pd.client, true)),
+      watcher: bool(d.watcher, bool(pd.watcher, true)),
+      commissioner: bool(d.commissioner, bool(pd.commissioner, true)),
+      grinder: bool(d.grinder, bool(pd.grinder, true)),
+    },
+    trainer: {
+      enabled: bool(t.enabled, bool(pt.enabled, true)),
+      intervalHours: num(t.intervalHours, pt.intervalHours ?? 4, 0.01, 168),
+      teacher: typeof t.teacher === 'string' && /^[a-z0-9-]{1,32}$/.test(t.teacher) ? t.teacher : (pt.teacher ?? 'auto'),
+      evolveGenerations: num(t.evolveGenerations, pt.evolveGenerations ?? 200, 0, 100000),
+      evolveJobs: num(t.evolveJobs, pt.evolveJobs ?? 8, 1, 32),
+    },
+    pullServerData: bool(raw?.pullServerData, bool(p.pullServerData, true)),
+    publishLoopMinutes: num(raw?.publishLoopMinutes, p.publishLoopMinutes ?? 0, 0, 1440),
+  };
+}
+
+function autopilotStatus() {
+  let config = null;
+  try { config = JSON.parse(fs.readFileSync(AUTOPILOT_CONFIG, 'utf8')); } catch {}
+  let pid = null;
+  let running = false;
+  try {
+    pid = Number(fs.readFileSync(AUTOPILOT_PID, 'utf8').trim()) || null;
+    if (pid) { process.kill(pid, 0); running = true; }
+  } catch { running = false; }
+  let lastCycle = null;
+  try {
+    const lines = fs.readFileSync(AUTOPILOT_LEDGER, 'utf8').trim().split('\n');
+    lastCycle = JSON.parse(lines[lines.length - 1]);
+  } catch {}
+  return { config, running, pid, lastCycle };
+}
+
+function handleAutopilotApi(req, res, urlPath, query) {
+  if (!isLocalhost(req)) {
+    sendJson(res, 403, { error: 'autopilot API is localhost-only' });
+    return;
+  }
+  if (urlPath === '/api/autopilot-log' && req.method === 'GET') {
+    const lines = Math.min(1000, Math.max(1, Number(query.get('lines')) || 50));
+    let text = '';
+    try {
+      const all = fs.readFileSync(AUTOPILOT_LOG, 'utf8').split('\n');
+      text = all.slice(-lines - 1).join('\n');
+    } catch { text = '(no autopilot log yet — is the keeper installed? make autopilot-install)'; }
+    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
+    res.end(text);
+    return;
+  }
+  if (urlPath === '/api/autopilot' && req.method === 'GET') {
+    sendJson(res, 200, autopilotStatus());
+    return;
+  }
+  if (urlPath === '/api/autopilot' && req.method === 'POST') {
+    let body = '';
+    let dead = false;
+    req.on('data', (c) => {
+      body += c;
+      if (body.length > 65536 && !dead) { dead = true; sendJson(res, 413, { error: 'body too large' }); req.destroy(); }
+    });
+    req.on('end', () => {
+      if (dead) return;
+      try {
+        const prev = (() => { try { return JSON.parse(fs.readFileSync(AUTOPILOT_CONFIG, 'utf8')); } catch { return null; } })();
+        const cfg = sanitizeAutopilotConfig(JSON.parse(body), prev);
+        fs.writeFileSync(AUTOPILOT_CONFIG, JSON.stringify(cfg, null, 2) + '\n');
+        log(`autopilot config written (enabled=${cfg.enabled}) by ${req.socket.remoteAddress}`);
+        sendJson(res, 200, { ok: true, config: cfg });
+      } catch (e) {
+        sendJson(res, 400, { error: `bad config: ${e.message}` });
+      }
+    });
+    return;
+  }
+  sendJson(res, 404, { error: 'unknown autopilot endpoint' });
+}
+
 // --- static server -----------------------------------------------------------
 
 const MIME = {
@@ -114,7 +233,12 @@ const MIME = {
 
 function handler(req, res) {
   try {
-    let urlPath = decodeURIComponent((req.url ?? '/').split('?')[0]);
+    const [rawPath, rawQuery] = (req.url ?? '/').split('?');
+    let urlPath = decodeURIComponent(rawPath);
+    if (urlPath.startsWith('/api/autopilot')) {
+      handleAutopilotApi(req, res, urlPath, new URLSearchParams(rawQuery ?? ''));
+      return;
+    }
     if (urlPath === '/') urlPath = '/index.html';
     const file = path.normalize(path.join(SITE_DIR, urlPath));
     if (!file.startsWith(SITE_DIR + path.sep) && file !== SITE_DIR) {

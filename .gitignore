@@ -63,3 +63,9 @@ packages/protocol/node_modules/
 
 datasets/
 arena-live/site/data.json
+
+# autopilot runtime state (the ledger tools/autopilot-ledger.jsonl IS tracked)
+tools/autopilot.log
+tools/autopilot.launchd.log
+tools/autopilot.pid
+arena-live/publish.log

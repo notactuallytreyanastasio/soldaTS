@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AUTOPILOT — arena boot service config</title>
+<style>
+  /* Same theme system as the floor/desk: all colors route through vars,
+     :root[data-theme] set from localStorage / prefers-color-scheme. */
+  :root, :root[data-theme="dark"] {
+    --bg: #04060a; --head-bg: #070a10; --panel: #0a0e16; --panel2: #0f1521;
+    --line: #1c2536; --text: #d6dbe6; --dim: #6b7690;
+    --gold: #f5c542; --up: #19d67c; --down: #ff4d4d; --blue: #5da9ff;
+    --warn-bg: #2a1d10; --warn-border: #5a3d1a; --warn-text: #e8b06a;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  :root[data-theme="light"] {
+    --bg: #efe9db; --head-bg: #f7f2e4; --panel: #f9f5ea; --panel2: #efe8d5;
+    --line: #cfc3a6; --text: #2b2722; --dim: #84785f;
+    --gold: #8f6e0e; --up: #14743f; --down: #b3362a; --blue: #1f5fa8;
+    --warn-bg: #f3e2bd; --warn-border: #c9a35a; --warn-text: #6b4d12;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 13px/1.5 var(--mono); }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  header { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding: 8px 16px 6px; border-bottom: 1px solid var(--line); background: var(--head-bg); }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: 4px; color: var(--gold); }
+  header .meta { color: var(--dim); font-size: 11px; margin-left: auto; }
+  #themeBtn, .navlink { background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; cursor: pointer; letter-spacing: 1px; }
+  #themeBtn:hover, .navlink:hover { border-color: var(--gold); color: var(--gold); text-decoration: none; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 14px 16px 60px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 12px 14px; margin-bottom: 14px; }
+  .panel h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: 2px; color: var(--gold); }
+  .row { display: flex; align-items: center; gap: 10px; padding: 5px 0; flex-wrap: wrap; }
+  .row label { min-width: 220px; }
+  .row .hint { color: var(--dim); font-size: 11px; }
+  input[type="number"], input[type="text"] { background: var(--panel2); color: var(--text);
+    border: 1px solid var(--line); border-radius: 5px; font: 13px var(--mono); padding: 3px 8px; width: 110px; }
+  input[type="checkbox"] { transform: scale(1.25); accent-color: var(--gold); }
+  .master { font-size: 15px; letter-spacing: 1px; }
+  .state { font-weight: bold; letter-spacing: 2px; }
+  .state.on { color: var(--up); } .state.off { color: var(--down); }
+  button.save { background: var(--gold); color: #1a1402; border: 0; border-radius: 6px;
+    font: bold 13px var(--mono); letter-spacing: 2px; padding: 8px 26px; cursor: pointer; }
+  button.save:hover { filter: brightness(1.1); }
+  .saveline { color: var(--dim); margin-left: 12px; }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+  pre { background: var(--panel2); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px; overflow-x: auto; font-size: 11px; max-height: 320px; overflow-y: auto;
+    white-space: pre-wrap; word-break: break-all; }
+  .dim { color: var(--dim); }
+  .kv b { color: var(--gold); }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚙ AUTOPILOT</h1>
+  <span id="runState" class="state off">…</span>
+  <a class="navlink" href="index.html">⚔ FLOOR</a>
+  <a class="navlink" href="desk.html">📰 DESK</a>
+  <button id="themeBtn" title="toggle light/dark">☀ / 🌙</button>
+  <span class="meta">boot service: keeps daemons up + bots training · make autopilot-status</span>
+</header>
+<div class="wrap">
+  <div id="warn" class="warn" style="display:none"></div>
+
+  <div class="panel">
+    <h2>MASTER SWITCH</h2>
+    <div class="row master">
+      <label for="enabled"><input type="checkbox" id="enabled"> AUTOPILOT ENABLED</label>
+      <span class="hint">off = the launchd job idles; on = daemons kept alive + training cycles run.
+        Boot persistence itself is installed/removed with <code>make autopilot-install</code> /
+        <code>make autopilot-uninstall</code>.</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>DAEMON KEEPER</h2>
+    <div class="row"><label><input type="checkbox" id="d_client"> game client</label><span class="hint">pnpm play · :5173</span></div>
+    <div class="row"><label><input type="checkbox" id="d_watcher"> watcher (this site)</label><span class="hint">watch.mjs · :8901</span></div>
+    <div class="row"><label><input type="checkbox" id="d_commissioner"> commissioner</label><span class="hint">crucibles / title bouts / seasons</span></div>
+    <div class="row"><label><input type="checkbox" id="d_grinder"> league grinder</label><span class="hint">~120 matches/hr of fresh training data</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>TRAINING LOOP</h2>
+    <div class="row"><label><input type="checkbox" id="t_enabled"> training enabled</label>
+      <span class="hint">pull server data → retrain disciple → gate → evolve neural → ledger</span></div>
+    <div class="row"><label for="t_interval">interval (hours)</label><input type="number" id="t_interval" min="0.01" step="0.5">
+      <span class="hint">a new cycle starts this long after the previous one finished</span></div>
+    <div class="row"><label for="t_teacher">teacher</label><input type="text" id="t_teacher">
+      <span class="hint">"auto" = top hand-written engine on the live board (fallback cuadrilla)</span></div>
+    <div class="row"><label for="t_gens">evolve generations</label><input type="number" id="t_gens" min="0" step="10">
+      <span class="hint">0 = skip the evolve step</span></div>
+    <div class="row"><label for="t_jobs">evolve jobs</label><input type="number" id="t_jobs" min="1" max="32">
+      <span class="hint">parallel match workers</span></div>
+    <div class="row"><label><input type="checkbox" id="pull"> pull server datasets</label>
+      <span class="hint">rsync --ignore-existing from the Hetzner arena before each cycle</span></div>
+    <div class="row"><label for="publoop">publish loop (minutes)</label><input type="number" id="publoop" min="0">
+      <span class="hint">0 = off; &gt;0 republishes bobbby.online/arena on that cadence</span></div>
+  </div>
+
+  <div class="row" style="padding:0 0 14px">
+    <button class="save" id="save">SAVE</button>
+    <span class="saveline" id="saveline"></span>
+  </div>
+
+  <div class="panel">
+    <h2>LAST TRAINING CYCLE</h2>
+    <div id="lastCycle" class="kv dim">loading…</div>
+  </div>
+
+  <div class="panel">
+    <h2>AUTOPILOT LOG <span class="dim" style="letter-spacing:0">(tools/autopilot.log, last 50 — refreshes every 5s)</span></h2>
+    <pre id="logTail">loading…</pre>
+  </div>
+</div>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ---- theme (same contract as the floor/desk) ---------------------------------
+function applyTheme(t, persist) {
+  document.documentElement.setAttribute('data-theme', t);
+  if (persist) { try { localStorage.setItem('arena-theme', t); } catch {} }
+  $('themeBtn').textContent = t === 'light' ? '🌙 dark' : '☀ light';
+}
+(function () {
+  let t = null;
+  try { t = localStorage.getItem('arena-theme'); } catch {}
+  if (t !== 'light' && t !== 'dark') {
+    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  applyTheme(t, false);
+})();
+$('themeBtn').addEventListener('click', () =>
+  applyTheme((document.documentElement.getAttribute('data-theme') || 'dark') === 'light' ? 'dark' : 'light', true));
+
+// ---- config load/save ----------------------------------------------------------
+let locked = false; // true when the API refuses (public deployment / not localhost)
+function fillForm(c) {
+  if (!c) return;
+  $('enabled').checked = !!c.enabled;
+  const d = c.daemons ?? {};
+  $('d_client').checked = d.client !== false;
+  $('d_watcher').checked = d.watcher !== false;
+  $('d_commissioner').checked = d.commissioner !== false;
+  $('d_grinder').checked = d.grinder !== false;
+  const t = c.trainer ?? {};
+  $('t_enabled').checked = t.enabled !== false;
+  $('t_interval').value = t.intervalHours ?? 4;
+  $('t_teacher').value = t.teacher ?? 'auto';
+  $('t_gens').value = t.evolveGenerations ?? 200;
+  $('t_jobs').value = t.evolveJobs ?? 8;
+  $('pull').checked = c.pullServerData !== false;
+  $('publoop').value = c.publishLoopMinutes ?? 0;
+}
+function formConfig() {
+  return {
+    enabled: $('enabled').checked,
+    daemons: {
+      client: $('d_client').checked,
+      watcher: $('d_watcher').checked,
+      commissioner: $('d_commissioner').checked,
+      grinder: $('d_grinder').checked,
+    },
+    trainer: {
+      enabled: $('t_enabled').checked,
+      intervalHours: Number($('t_interval').value) || 4,
+      teacher: $('t_teacher').value.trim() || 'auto',
+      evolveGenerations: Number($('t_gens').value) || 0,
+      evolveJobs: Number($('t_jobs').value) || 8,
+    },
+    pullServerData: $('pull').checked,
+    publishLoopMinutes: Number($('publoop').value) || 0,
+  };
+}
+function renderStatus(s) {
+  const on = s.running && s.config && s.config.enabled;
+  $('runState').textContent = s.running
+    ? (s.config && s.config.enabled ? '● KEEPER RUNNING + ENGAGED' : '● KEEPER RUNNING (idle: disabled)')
+    : '○ KEEPER NOT RUNNING';
+  $('runState').className = 'state ' + (on ? 'on' : 'off');
+  if (!s.running) {
+    $('warn').style.display = '';
+    $('warn').textContent = 'The autopilot keeper process is not running. Install it once with: make autopilot-install (boot-persistent), or run it by hand: node tools/autopilot.mjs';
+  }
+  const lc = s.lastCycle;
+  $('lastCycle').innerHTML = lc
+    ? `<b>${esc(lc.at)}</b> · teacher ${esc(lc.teacher ?? '?')} · ` +
+      `gate ${lc.gate ? esc(lc.gate.method) + ' → ' + (lc.gate.ship ? '<span style="color:var(--up)">SHIPPED</span>' : '<span style="color:var(--down)">rejected</span>') + ' <span class="dim">(' + esc(lc.gate.detail ?? '') + ')</span>' : 'n/a'} · ` +
+      `evolve ${lc.evolve ? esc(String(lc.evolve.generations)) + ' gens <span class="dim">(' + esc(lc.evolve.gate ?? '') + ')</span>' : 'off'} · ` +
+      `${esc(String(lc.secs ?? '?'))}s · ${lc.errors && lc.errors.length ? '<span style="color:var(--down)">' + lc.errors.length + ' errors</span>' : 'clean'}`
+    : '<span class="dim">no training cycle has run yet</span>';
+}
+async function load(fill) {
+  try {
+    const r = await fetch('api/autopilot', { cache: 'no-store' });
+    if (r.status === 403) { lockOut(); return; }
+    const s = await r.json();
+    if (fill) fillForm(s.config); // never clobber in-progress edits on the 5s poll
+    renderStatus(s);
+  } catch (e) {
+    $('warn').style.display = '';
+    $('warn').textContent = 'Could not reach the autopilot API — is the watcher (watch.mjs) serving this page live? ' + e.message;
+  }
+}
+function lockOut() {
+  locked = true;
+  $('warn').style.display = '';
+  $('warn').textContent = 'The autopilot API is localhost-only. This is a public/static copy of the config screen — controls are disabled.';
+  document.querySelectorAll('input, button.save').forEach((el) => (el.disabled = true));
+  $('runState').textContent = '○ LOCALHOST ONLY';
+}
+$('save').addEventListener('click', async () => {
+  if (locked) return;
+  $('saveline').textContent = 'saving…';
+  try {
+    const r = await fetch('api/autopilot', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(formConfig()),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    fillForm(j.config);
+    $('saveline').textContent = 'saved ' + new Date().toLocaleTimeString() +
+      (j.config.enabled ? ' — autopilot ENGAGED (keeper picks it up within 60s)' : ' — autopilot disabled');
+    load();
+  } catch (e) {
+    $('saveline').textContent = 'SAVE FAILED: ' + e.message;
+  }
+});
+
+// ---- log tail --------------------------------------------------------------------
+async function tailLog() {
+  if (locked) return;
+  try {
+    const r = await fetch('api/autopilot-log?lines=50', { cache: 'no-store' });
+    if (r.status === 403) { lockOut(); return; }
+    $('logTail').textContent = (await r.text()) || '(empty)';
+    const pre = $('logTail');
+    pre.scrollTop = pre.scrollHeight;
+  } catch { $('logTail').textContent = '(log unavailable)'; }
+}
+
+load(true);
+tailLog();
+setInterval(() => { load(false); tailLog(); }, 5000);
+</script>
+</body>
+</html>
