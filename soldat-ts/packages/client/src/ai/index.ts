@@ -14,6 +14,7 @@ import { createHydraEngine } from './hydra';
 import { createShrikeEngine } from './shrike';
 import { createCuadrillaEngine } from './cuadrilla';
 import { createOrcaEngine } from './orca';
+import { createNeuralEngine } from './neural';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -26,6 +27,7 @@ registerEngine('hydra', createHydraEngine);
 registerEngine('shrike', createShrikeEngine);
 registerEngine('cuadrilla', createCuadrillaEngine);
 registerEngine('orca', createOrcaEngine);
+registerEngine('neural', createNeuralEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -39,3 +41,4 @@ export { HYDRA_DEFAULTS, type HydraConfig } from './hydra';
 export { SHRIKE_DEFAULTS, type ShrikeConfig } from './shrike';
 export { CUADRILLA_DEFAULTS, type CuadrillaConfig } from './cuadrilla';
 export { ORCA_DEFAULTS, type OrcaConfig } from './orca';
+export { NEURAL_DEFAULTS, type NeuralConfig } from './neural';

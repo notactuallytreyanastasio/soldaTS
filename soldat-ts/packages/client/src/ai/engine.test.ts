@@ -8,7 +8,7 @@ import { Game } from '../app/game';
 import { ARENA_SPAWNS } from '../app/arena';
 
 describe('engine registry', () => {
-  it('registers classic, pilot, reaper, matador, kestrel, wolf, plover, hydra, shrike, cuadrilla, and orca', () => {
+  it('registers classic, pilot, reaper, matador, kestrel, wolf, plover, hydra, shrike, cuadrilla, orca, and neural', () => {
     expect(engineIds()).toContain('classic');
     expect(engineIds()).toContain('pilot');
     expect(engineIds()).toContain('reaper');
@@ -20,6 +20,7 @@ describe('engine registry', () => {
     expect(engineIds()).toContain('shrike');
     expect(engineIds()).toContain('cuadrilla');
     expect(engineIds()).toContain('orca');
+    expect(engineIds()).toContain('neural');
   });
 
   it('resolves engines by id and falls back to classic on unknown ids', () => {
@@ -42,6 +43,7 @@ describe.each([
   'shrike',
   'cuadrilla',
   'orca',
+  'neural',
 ] as const)(
   'spectate match under the %s engine',
   (engine) => {

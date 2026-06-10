@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "MIMIC",
+  "engine": "neural",
+  "tweaks": {},
+  "rationale": "The learned player — phase 1 imitation seed (ARENA.md roadmap, decision node 341). A 25→64→64→9 MLP behavior-cloned from 1,440,621 replay rows sampled across 64 runs and 11 doctrines (capped ~136k/engine so wolf/hydra-era volume doesn't drown the early tape; classic contributed its full 77k). Validation on 72k held-out rows: aim cosine 0.786, button accuracy left/right 79.5/79.4%, fire 81.9%, jetpack 79.7%, reload 97.1%. No hand-written tactics: features are own state + the 2 nearest enemies + nearest teammate (all relative), outputs thresholded at 0.5, aim along the learned unit vector. It passes sustainment honestly; this card is a baseline measurement, not a title claim — the clone of ten teachers fights like their average, and the average is where self-play starts."
+}

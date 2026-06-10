@@ -13,6 +13,7 @@ import { WOLF_DEFAULTS } from './wolf';
 import { PLOVER_DEFAULTS } from './plover';
 import { HYDRA_DEFAULTS } from './hydra';
 import { SHRIKE_DEFAULTS } from './shrike';
+import { NEURAL_DEFAULTS } from './neural';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -276,6 +277,17 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
       STALL_RISE_VY: -0.1,
       STALL_TRIGGER: 25,
       STALL_COOLDOWN: 180,
+    });
+  });
+
+  it('NEURAL_DEFAULTS', () => {
+    expect(NEURAL_DEFAULTS).toEqual({
+      FIRE_THRESH: 0.5,
+      MOVE_THRESH: 0.5,
+      UPDOWN_THRESH: 0.5,
+      JET_THRESH: 0.5,
+      RELOAD_THRESH: 0.5,
+      AIM_DIST: 300,
     });
   });
 });
