@@ -10,6 +10,8 @@ import { REAPER_DEFAULTS } from './reaper';
 import { MATADOR_DEFAULTS } from './matador';
 import { KESTREL_DEFAULTS } from './kestrel';
 import { WOLF_DEFAULTS } from './wolf';
+import { PLOVER_DEFAULTS } from './plover';
+import { HYDRA_DEFAULTS } from './hydra';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -163,6 +165,74 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
       FIRE_MAX_DIST: 620,
       SELF_RELOAD_AT: 8,
       FUEL_RESERVE: 100,
+      HUNT_MEMORY_TICKS: 240,
+      STALL_RISE_VY: -0.1,
+      STALL_TRIGGER: 25,
+      STALL_COOLDOWN: 180,
+    });
+  });
+
+  it('PLOVER_DEFAULTS', () => {
+    expect(PLOVER_DEFAULTS).toEqual({
+      BAIT_HP_ON: 95,
+      BAIT_NEAR: 420,
+      BAIT_FAR: 560,
+      ORBIT_MIN: 220,
+      ORBIT_MAX: 420,
+      BAIT_STUCK_TICKS: 30,
+      BAIT_FLIP_TICKS: 70,
+      HUNT_BAND_MIN: 340,
+      HUNT_BAND_MAX: 480,
+      APPROACH_FIRE_DIST: 500,
+      FIRE_MAX_DIST: 620,
+      FOCUS_RETARGET: 30,
+      TAP_PERIOD: 6,
+      TAP_OPEN: 1,
+      EMA_ALPHA: 0.15,
+      DROP_G: 0.135,
+      BOB_UP_TICKS: 12,
+      BOB_DOWN_MIN: 18,
+      BOB_DOWN_VAR: 14,
+      DODGE_HORIZON: 26,
+      DANGER_RADIUS: 56,
+      DODGE_COMMIT: 6,
+      HEIGHT_SLACK: 110,
+      FUEL_FLOOR: 80,
+      RELOAD_LOW: 6,
+      HUNT_MEMORY_TICKS: 240,
+      STALL_RISE_VY: -0.1,
+      STALL_TRIGGER: 25,
+      STALL_COOLDOWN: 180,
+    });
+  });
+
+  it('HYDRA_DEFAULTS', () => {
+    expect(HYDRA_DEFAULTS).toEqual({
+      ROTATE_BELOW: 100,
+      ANCHOR_MIN: 600,
+      ANCHOR_MAX: 760,
+      ANCHOR_FIRE_MAX: 700,
+      ANCHOR_STUCK_TICKS: 30,
+      BEARING_OFF: 340,
+      X_SLACK: 40,
+      GIVE_GROUND: 240,
+      KNIFE_DIST: 170,
+      FIRE_MAX_DIST: 620,
+      APPROACH_FIRE_DIST: 620,
+      FOCUS_RETARGET: 30,
+      TAP_PERIOD: 6,
+      TAP_OPEN: 1,
+      EMA_ALPHA: 0.15,
+      DROP_G: 0.135,
+      BOB_UP_TICKS: 12,
+      BOB_DOWN_MIN: 18,
+      BOB_DOWN_VAR: 14,
+      DODGE_HORIZON: 26,
+      DANGER_RADIUS: 56,
+      DODGE_COMMIT: 6,
+      HEIGHT_SLACK: 110,
+      FUEL_FLOOR: 80,
+      RELOAD_LOW: 6,
       HUNT_MEMORY_TICKS: 240,
       STALL_RISE_VY: -0.1,
       STALL_TRIGGER: 25,

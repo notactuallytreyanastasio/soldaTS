@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "LERNA",
+  "engine": "hydra",
+  "tweaks": {},
+  "rationale": "Eighth doctrine, factory defaults. The champion's focus arithmetic is published: it hunts the lowest-health enemy within 550px of its centroid and holds fire beyond 620. So the cut head withdraws past both numbers and keeps sniping while the fresh heads plant and mirror the focus-fire back. Damage spreads; nobody dies; arithmetic flips."
+}

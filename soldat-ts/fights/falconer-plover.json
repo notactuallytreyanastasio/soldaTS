@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "FALCONER",
+  "engine": "plover",
+  "tweaks": { "APPROACH_FIRE_DIST": 620, "ORBIT_MIN": 0, "ORBIT_MAX": 99999 },
+  "rationale": "Broken-wing gambit, best-known shape (spar 2): wounded-only bait with the wolves' own tie-break mirrored, free-flight kiting (orbit ring disabled — spar 5 proved dragging the chase through the band helps them more than us), executioners tap from 620 on approach. Ablation proved the bait is net-positive; the rest of the gap is the pack's focus arithmetic."
+}

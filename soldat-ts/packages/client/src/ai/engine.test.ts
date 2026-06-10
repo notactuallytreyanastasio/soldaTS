@@ -8,13 +8,15 @@ import { Game } from '../app/game';
 import { ARENA_SPAWNS } from '../app/arena';
 
 describe('engine registry', () => {
-  it('registers classic, pilot, reaper, matador, kestrel, and wolf', () => {
+  it('registers classic, pilot, reaper, matador, kestrel, wolf, plover, and hydra', () => {
     expect(engineIds()).toContain('classic');
     expect(engineIds()).toContain('pilot');
     expect(engineIds()).toContain('reaper');
     expect(engineIds()).toContain('matador');
     expect(engineIds()).toContain('kestrel');
     expect(engineIds()).toContain('wolf');
+    expect(engineIds()).toContain('plover');
+    expect(engineIds()).toContain('hydra');
   });
 
   it('resolves engines by id and falls back to classic on unknown ids', () => {
@@ -25,7 +27,16 @@ describe('engine registry', () => {
   });
 });
 
-describe.each(['classic', 'pilot', 'reaper', 'matador', 'kestrel', 'wolf'] as const)(
+describe.each([
+  'classic',
+  'pilot',
+  'reaper',
+  'matador',
+  'kestrel',
+  'wolf',
+  'plover',
+  'hydra',
+] as const)(
   'spectate match under the %s engine',
   (engine) => {
     it('sustains kills and respawns over 6000 ticks', () => {

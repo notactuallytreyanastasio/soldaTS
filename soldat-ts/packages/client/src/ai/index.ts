@@ -9,6 +9,8 @@ import { createReaperEngine } from './reaper';
 import { createMatadorEngine } from './matador';
 import { createKestrelEngine } from './kestrel';
 import { createWolfEngine } from './wolf';
+import { createPloverEngine } from './plover';
+import { createHydraEngine } from './hydra';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -16,6 +18,8 @@ registerEngine('reaper', createReaperEngine);
 registerEngine('matador', createMatadorEngine);
 registerEngine('kestrel', createKestrelEngine);
 registerEngine('wolf', createWolfEngine);
+registerEngine('plover', createPloverEngine);
+registerEngine('hydra', createHydraEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -24,3 +28,5 @@ export { REAPER_DEFAULTS, type ReaperConfig } from './reaper';
 export { MATADOR_DEFAULTS, type MatadorConfig } from './matador';
 export { KESTREL_DEFAULTS, type KestrelConfig } from './kestrel';
 export { WOLF_DEFAULTS, type WolfConfig } from './wolf';
+export { PLOVER_DEFAULTS, type PloverConfig } from './plover';
+export { HYDRA_DEFAULTS, type HydraConfig } from './hydra';
