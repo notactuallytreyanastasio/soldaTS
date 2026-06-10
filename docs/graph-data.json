@@ -2089,6 +2089,28 @@
       "created_at": "2026-06-10T01:00:26.421125-04:00",
       "updated_at": "2026-06-10T01:00:26.421125-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"7b1fc12\",\"confidence\":95}"
+    },
+    {
+      "id": 191,
+      "change_id": "03f8f43d-710e-49b0-91fa-2fe6c3b884bb",
+      "node_type": "action",
+      "title": "README reframe: the wild bastardized thing (rewrite -> arena -> Claude fight club -> training factory) + blog part 20",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:01:03.908709-04:00",
+      "updated_at": "2026-06-10T01:01:03.908709-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"make sure the README.md at the top goes into this wild bastardized thing we have made and make sure you push another update to the blog post\"}"
+    },
+    {
+      "id": 192,
+      "change_id": "4b178716-e8d0-4ad6-ac8b-44a9ab366774",
+      "node_type": "outcome",
+      "title": "Thesis codified: new-doctrine authoring path in ARENA.md//arena/CLAUDE.md; README reframed; blog part 20",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:02:57.564788-04:00",
+      "updated_at": "2026-06-10T01:02:57.564788-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"47ad18e\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4401,6 +4423,28 @@
       "weight": 1.0,
       "rationale": "Committed",
       "created_at": "2026-06-10T01:00:26.560031-04:00"
+    },
+    {
+      "id": 221,
+      "from_node_id": 170,
+      "to_node_id": 191,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "03f8f43d-710e-49b0-91fa-2fe6c3b884bb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Docs catch up to the arena era",
+      "created_at": "2026-06-10T01:01:04.046718-04:00"
+    },
+    {
+      "id": 222,
+      "from_node_id": 191,
+      "to_node_id": 192,
+      "from_change_id": "03f8f43d-710e-49b0-91fa-2fe6c3b884bb",
+      "to_change_id": "4b178716-e8d0-4ad6-ac8b-44a9ab366774",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-06-10T01:02:57.703671-04:00"
     }
   ]
 }
