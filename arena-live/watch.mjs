@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TS_ROOT = path.resolve(HERE, '..');
-const REPO_ROOT = path.resolve(TS_ROOT, '..');
+const REPO_ROOT = TS_ROOT; // the game IS the repo root now (post move-to-top)
 const SITE_DIR = path.join(HERE, 'site');
 
 const WATCH_PATHS = [
