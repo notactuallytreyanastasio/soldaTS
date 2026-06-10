@@ -257,9 +257,11 @@ const ENGINE_COLORS: Record<string, string> = {
  */
 function showEngineBanner(game: Game): () => void {
   const banner = document.createElement('div');
+  // Bottom-center, lifted above the HUD strip (hint bottom-left, vitals and
+  // ammo bottom-right, score text at the very bottom) so it overlaps nothing.
   banner.style.cssText = [
     'position:fixed',
-    'top:34px',
+    'bottom:96px',
     'left:50%',
     'transform:translateX(-50%)',
     'z-index:20',
