@@ -1,5 +1,13 @@
 [
   {
+    "hash": "3975c31bab72092f5e08a68326f6c07a6a1d5bd1",
+    "short_hash": "3975c31",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:05:27-04:00",
+    "message": "feat(client): big engine banners + live brain hot-swap (E key)\n\nEngines now self-describe (BotEngine.strategy); every spectate window shows\na BIG color-coded banner — amber CLASSIC 'REFLEX BANDS — faithful Pascal\nport...' vs cyan PILOT 'FIRST-PRINCIPLES AERIAL — take height, hold the\nrange band...' — so duel tiles are tellable-apart at a glance. The static\nduel-tile overlay label is gone (the in-game banner replaces it and, unlike\nthe overlay, stays correct after a swap).\n\nGame.setEngine(id) HOT-SWAPS the brain mid-match: every bot gets a fresh\nbrain from the new engine on the next tick; sprites, scores, fuel, and ammo\ncarry over — only the thinking changes. E key cycles registered engines in\nany spectate window; telemetry re-reads the engine id at dump time so\nswapped matches report honestly.\n\nBrowser-verified via CDP: E key flipped classic->pilot mid-match (telemetry\nmeta + banner both updated). 396 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
     "hash": "4a5666f02b7f1c551cd26aae29095c3a57798fdb",
     "short_hash": "4a5666f",
     "author": "Robert Grayson",

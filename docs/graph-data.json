@@ -1594,6 +1594,28 @@
       "created_at": "2026-06-09T19:22:27.645138-04:00",
       "updated_at": "2026-06-09T19:22:27.645138-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"4a5666f\",\"confidence\":95}"
+    },
+    {
+      "id": 146,
+      "change_id": "4454cd91-7616-40ce-ae49-566dd737d8c2",
+      "node_type": "action",
+      "title": "Big engine banner per window (self-describing engines) + live hot-swap (E key cycles brains mid-match)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:01:30.133568-04:00",
+      "updated_at": "2026-06-09T20:01:30.133568-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"make them show what strategy each window is using in big letters so we know they are different and tell me how to hot swap them\"}"
+    },
+    {
+      "id": 147,
+      "change_id": "e829a101-725b-4a50-baf8-913a217be40a",
+      "node_type": "outcome",
+      "title": "Banners + hot-swap live: E key flips brains mid-match, browser-verified",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:05:27.956744-04:00",
+      "updated_at": "2026-06-09T20:05:27.956744-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"3975c31\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3499,6 +3521,28 @@
       "weight": 1.0,
       "rationale": "Committed as 4a5666f; 4-way grid screenshot-verified",
       "created_at": "2026-06-09T19:22:35.452515-04:00"
+    },
+    {
+      "id": 184,
+      "from_node_id": 143,
+      "to_node_id": 146,
+      "from_change_id": "4a1949f6-6755-4c6a-9fa6-6047e606bb3d",
+      "to_change_id": "4454cd91-7616-40ce-ae49-566dd737d8c2",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Follow-on: visible + hot-swappable engines",
+      "created_at": "2026-06-09T20:01:30.267756-04:00"
+    },
+    {
+      "id": 185,
+      "from_node_id": 146,
+      "to_node_id": 147,
+      "from_change_id": "4454cd91-7616-40ce-ae49-566dd737d8c2",
+      "to_change_id": "e829a101-725b-4a50-baf8-913a217be40a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed as 3975c31; CDP-verified swap",
+      "created_at": "2026-06-09T20:05:37.051601-04:00"
     }
   ]
 }
