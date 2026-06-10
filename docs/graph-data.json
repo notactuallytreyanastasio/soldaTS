@@ -4685,6 +4685,149 @@
       "created_at": "2026-06-10T16:38:46.646561-04:00",
       "updated_at": "2026-06-10T16:38:46.646561-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":92}"
+    },
+    {
+      "id": 427,
+      "change_id": "7de0cfdf-c1ac-447d-b402-6223dd5a6214",
+      "node_type": "goal",
+      "title": "The science program: train the best possible bots, with a rigorous evaluation protocol first",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T17:53:48.599361-04:00",
+      "updated_at": "2026-06-10T17:53:48.599361-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"so lets take a scientific approach to this -- now how do we go about training the best bots possible to play this game\"}"
+    },
+    {
+      "id": 428,
+      "change_id": "6b155321-daec-4a81-afef-8fb62f60867e",
+      "node_type": "goal",
+      "title": "Autopilot: boot-time service + config screen — keep daemons grinding and bots training at all times",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T17:57:44.744774-04:00",
+      "updated_at": "2026-06-10T17:57:44.744774-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"lets do that and keep this going at all times or whatever -- we can write a little script that if enabled in a config screen will start this at boot and keep the bots grinding and being trained\"}"
+    },
+    {
+      "id": 429,
+      "change_id": "c84ed659-b5db-4ba6-a4dc-32cbe89e7c74",
+      "node_type": "action",
+      "title": "Building the evaluation gauntlet: EVAL_SPEC_V1 core (packages/arena/src/evaluate.ts), tools/evaluate.mjs driver with worker pool + paired CRN protocol, reserved eval arenas [101,202,303,404,505] / seeds 90000+",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T17:58:24.871326-04:00",
+      "updated_at": "2026-06-10T17:58:24.871326-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"files\":[\"packages/arena/src/evaluate.ts\",\"packages/arena/src/evaluate.test.ts\",\"tools/evaluate.mjs\",\"MANUAL.md\"]}"
+    },
+    {
+      "id": 430,
+      "change_id": "7fd690bf-722f-4a84-8012-a4f43651ec6c",
+      "node_type": "option",
+      "title": "Keeper daemon: one zero-dep tools/autopilot.mjs under launchd — reads autopilot.json each cycle, keeps the 4 daemons up, runs serialized training cycles",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:01:03.338836-04:00",
+      "updated_at": "2026-06-10T18:01:03.338836-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 431,
+      "change_id": "3274bc48-ccee-4feb-9ffd-e7c256cb2ba6",
+      "node_type": "option",
+      "title": "Port deploy/arena-supervisor.mjs locally + separate launchd jobs/cron per concern (daemons vs training)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:01:03.477966-04:00",
+      "updated_at": "2026-06-10T18:01:03.477966-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 432,
+      "change_id": "8c6e3eab-a581-4420-b64c-af1e214cd170",
+      "node_type": "option",
+      "title": "Pure launchd KeepAlive per daemon (4 plists) + cron for training, no keeper process",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:01:03.697805-04:00",
+      "updated_at": "2026-06-10T18:01:03.697805-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":50}"
+    },
+    {
+      "id": 433,
+      "change_id": "aa446c42-befc-49f8-b5f8-9c2d9dd37253",
+      "node_type": "decision",
+      "title": "Single keeper (autopilot.mjs) under one launchd LaunchAgent, gated by arena-live/autopilot.json + a config screen served by watch.mjs",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:01:11.212293-04:00",
+      "updated_at": "2026-06-10T18:01:11.212293-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":92}"
+    },
+    {
+      "id": 434,
+      "change_id": "f5b488a3-a47f-4cad-b7cf-b2dc07ab4cfb",
+      "node_type": "action",
+      "title": "Building the autopilot: autopilot.json config, tools/autopilot.mjs keeper (daemon keeper + serialized train/gate/evolve cycles + ledger), launchd plist + Makefile install targets, config screen in watch.mjs (localhost-only POST)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:01:18.201026-04:00",
+      "updated_at": "2026-06-10T18:01:18.201026-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":88,\"files\":[\"tools/autopilot.mjs\",\"arena-live/autopilot.json\",\"arena-live/watch.mjs\",\"arena-live/config.template.html\",\"deploy/com.soldat.autopilot.plist\",\"Makefile\"]}"
+    },
+    {
+      "id": 435,
+      "change_id": "2aa24f6c-5d86-444c-ae06-2ad853893d75",
+      "node_type": "outcome",
+      "title": "GAUNTLET LIVE: EVAL_SPEC_V1 shipped (4392cf9) — 360-match held-out benchmark runs in 63s (8 workers), --quick 72 in 13s. First baselines: BELMONTE +12.04 (343-12-5, 95.3% — angler its only resistance at 56.7%), DISCIPLE -26.69, MIMIC -38.12; paired demo DISCIPLE-MIMIC = +11.43 kills/match, 95% CI [10.79,12.07], sign test +349/-11 p~2.5e-88. Reserved-seed audit clean: nothing trains on arenas [101,202,303,404,505] or seeds 90000+. Ledger registry at tools/eval-ledger.jsonl. The learned bots lose every held-out match to every hand-written engine — the gauntlet says the real distance, not the spar",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:08:41.062357-04:00",
+      "updated_at": "2026-06-10T18:08:41.062357-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"4392cf9\",\"confidence\":95}"
+    },
+    {
+      "id": 436,
+      "change_id": "a170d449-f23e-4043-9593-62b43f349f28",
+      "node_type": "observation",
+      "title": "Concurrent finding: the local corpus crossed V8's max-string length tonight — build.mjs JSON.stringify(data,null,1) started throwing RangeError at 22:12 (data.json hit 516MB). Fixed in the autopilot work: chunked fights-array writer, compact JSON (361MB)",
+      "description": "watcher.log showed the first REBUILD FAILED at 2026-06-10T22:12:34; the 22:11 build (59s) was the last to succeed. Fix writes the header object then streams each fight element with fs.writeSync — individual fights are small, only the single concatenated string exceeded the limit.",
+      "status": "pending",
+      "created_at": "2026-06-10T18:21:05.506463-04:00",
+      "updated_at": "2026-06-10T18:21:05.506463-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"arena-live/build.mjs\"]}"
+    },
+    {
+      "id": 437,
+      "change_id": "f734880f-379d-429d-8cfe-1b5c7c4a6609",
+      "node_type": "outcome",
+      "title": "Autopilot cycle: teacher=cuadrilla (board #1 (BELMONTE)); gate head-to-head → rejected; evolve 10 gens ([gate] gen 70 mean vs imitation baseline 0-3 (3-4, 3-4, 1-3) → shipped weights left alone); 0 errors, 159s",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:22:55.712041-04:00",
+      "updated_at": "2026-06-10T18:22:55.712041-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":75}"
+    },
+    {
+      "id": 438,
+      "change_id": "2ccbc404-7101-446f-bf67-f6958aa872dd",
+      "node_type": "action",
+      "title": "Shipped THE AUTOPILOT (2f5a352): tools/autopilot.mjs keeper + autopilot-gate.mjs, autopilot.json config, launchd plist + make autopilot-install/uninstall/status, config screen (/config.html + localhost-only /api/autopilot) in watch.mjs, build.mjs RangeError fix",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:26:26.765560-04:00",
+      "updated_at": "2026-06-10T18:26:26.765560-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2f5a352\",\"confidence\":92,\"files\":[\"tools/autopilot.mjs\",\"tools/autopilot-gate.mjs\",\"arena-live/watch.mjs\",\"arena-live/config.template.html\",\"deploy/com.soldat.autopilot.plist\",\"Makefile\",\"arena-live/build.mjs\"]}"
+    },
+    {
+      "id": 439,
+      "change_id": "80ed01da-b053-4acc-870b-c5b282f60114",
+      "node_type": "outcome",
+      "title": "AUTOPILOT LIVE TONIGHT: launchd job com.soldat.autopilot installed + ENABLED (pid 63296, survives reboot via RunAtLoad+KeepAlive). Proof: killed grinder revived by the keeper (22:27:19, pid 96583); abbreviated cycle ran clean (pull->train 77s->gate REJECT/reverted->evolve 10 gens->ledger, 0 errors); config screen live at localhost:8901/config.html with LAN/public requests refused 403; all 4 daemons up. Off-switch: config toggle or make autopilot-uninstall",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T18:28:01.526562-04:00",
+      "updated_at": "2026-06-10T18:28:01.526562-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -9659,6 +9802,138 @@
       "weight": 1.0,
       "rationale": "The bind-mount + supervisor design produced the rsync-only redeploy",
       "created_at": "2026-06-10T16:38:53.736806-04:00"
+    },
+    {
+      "id": 494,
+      "from_node_id": 427,
+      "to_node_id": 429,
+      "from_change_id": "7de0cfdf-c1ac-447d-b402-6223dd5a6214",
+      "to_change_id": "c84ed659-b5db-4ba6-a4dc-32cbe89e7c74",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Measurement foundation: the gauntlet is the program's first deliverable",
+      "created_at": "2026-06-10T17:58:29.746303-04:00"
+    },
+    {
+      "id": 495,
+      "from_node_id": 428,
+      "to_node_id": 430,
+      "from_change_id": "6b155321-daec-4a81-afef-8fb62f60867e",
+      "to_change_id": "7fd690bf-722f-4a84-8012-a4f43651ec6c",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "approach",
+      "created_at": "2026-06-10T18:01:10.657668-04:00"
+    },
+    {
+      "id": 496,
+      "from_node_id": 428,
+      "to_node_id": 431,
+      "from_change_id": "6b155321-daec-4a81-afef-8fb62f60867e",
+      "to_change_id": "3274bc48-ccee-4feb-9ffd-e7c256cb2ba6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "approach",
+      "created_at": "2026-06-10T18:01:10.862759-04:00"
+    },
+    {
+      "id": 497,
+      "from_node_id": 428,
+      "to_node_id": 432,
+      "from_change_id": "6b155321-daec-4a81-afef-8fb62f60867e",
+      "to_change_id": "8c6e3eab-a581-4420-b64c-af1e214cd170",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "approach",
+      "created_at": "2026-06-10T18:01:11.072539-04:00"
+    },
+    {
+      "id": 498,
+      "from_node_id": 430,
+      "to_node_id": 433,
+      "from_change_id": "7fd690bf-722f-4a84-8012-a4f43651ec6c",
+      "to_change_id": "aa446c42-befc-49f8-b5f8-9c2d9dd37253",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "chosen: one supervisor matches the proven arena-supervisor pattern, config-gated so the plist can stay loaded while the feature is off",
+      "created_at": "2026-06-10T18:01:11.401880-04:00"
+    },
+    {
+      "id": 499,
+      "from_node_id": 433,
+      "to_node_id": 434,
+      "from_change_id": "aa446c42-befc-49f8-b5f8-9c2d9dd37253",
+      "to_change_id": "f5b488a3-a47f-4cad-b7cf-b2dc07ab4cfb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation",
+      "created_at": "2026-06-10T18:01:18.325189-04:00"
+    },
+    {
+      "id": 500,
+      "from_node_id": 429,
+      "to_node_id": 435,
+      "from_change_id": "c84ed659-b5db-4ba6-a4dc-32cbe89e7c74",
+      "to_change_id": "2aa24f6c-5d86-444c-ae06-2ad853893d75",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Built, tested (605 green), ran on belmonte + disciple/mimic paired, committed",
+      "created_at": "2026-06-10T18:08:49.511996-04:00"
+    },
+    {
+      "id": 502,
+      "from_node_id": 434,
+      "to_node_id": 436,
+      "from_change_id": "f5b488a3-a47f-4cad-b7cf-b2dc07ab4cfb",
+      "to_change_id": "a170d449-f23e-4043-9593-62b43f349f28",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "found while verifying the watcher for the autopilot",
+      "created_at": "2026-06-10T18:21:24.194884-04:00"
+    },
+    {
+      "id": 503,
+      "from_node_id": 434,
+      "to_node_id": 437,
+      "from_change_id": "f5b488a3-a47f-4cad-b7cf-b2dc07ab4cfb",
+      "to_change_id": "f734880f-379d-429d-8cfe-1b5c7c4a6609",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "autopilot training cycle",
+      "created_at": "2026-06-10T18:22:55.828807-04:00"
+    },
+    {
+      "id": 504,
+      "from_node_id": 434,
+      "to_node_id": 438,
+      "from_change_id": "f5b488a3-a47f-4cad-b7cf-b2dc07ab4cfb",
+      "to_change_id": "2ccbc404-7101-446f-bf67-f6958aa872dd",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation committed",
+      "created_at": "2026-06-10T18:26:32.196034-04:00"
+    },
+    {
+      "id": 505,
+      "from_node_id": 438,
+      "to_node_id": 439,
+      "from_change_id": "2ccbc404-7101-446f-bf67-f6958aa872dd",
+      "to_change_id": "80ed01da-b053-4acc-870b-c5b282f60114",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "verified live",
+      "created_at": "2026-06-10T18:28:01.654967-04:00"
+    },
+    {
+      "id": 506,
+      "from_node_id": 437,
+      "to_node_id": 439,
+      "from_change_id": "f734880f-379d-429d-8cfe-1b5c7c4a6609",
+      "to_change_id": "80ed01da-b053-4acc-870b-c5b282f60114",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "test cycle fed the verification",
+      "created_at": "2026-06-10T18:28:01.878739-04:00"
     }
   ],
   "documents": [

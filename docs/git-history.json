@@ -1,5 +1,21 @@
 [
   {
+    "hash": "2f5a352176067a3de8be41a9cf6c55c7f81b9562",
+    "short_hash": "2f5a352",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T18:26:19-04:00",
+    "message": "feat: THE AUTOPILOT — boot-persistent keeper, config-gated, trains at all times (goal 428)\n\ntools/autopilot.mjs: zero-dep launchd-run keeper. Reads arena-live/autopilot.json\nevery 60s; when enabled it keeps the 4 daemons alive (started exactly as make up\ndoes, exponential backoff 30s-5min), and every intervalHours runs a serialized\ntraining cycle: rsync server datasets (additive) -> train-disciple (teacher auto\n= top hand-written board engine) -> GATE -> evolve --resume (own ship-gate) ->\ntools/autopilot-ledger.jsonl + a deciduous outcome node. The gate prefers the\nEVAL_SPEC_V1 gauntlet (two CRN-paired --quick runs, weights swapped between\nthem; TODO: single --baseline run + CI>0 once evaluate.mjs grows a disciple\nweights seam) and falls back to a paired 5-match head-to-head via\ntools/autopilot-gate.mjs. Ship = commit+push the weights; reject = revert.\n\nBoot persistence: deploy/com.soldat.autopilot.plist (RunAtLoad+KeepAlive,\nasdf-shimmed node, absolute paths) + make autopilot-install/uninstall/status.\n\nConfig screen: GET /config.html + GET/POST /api/autopilot + /api/autopilot-log\nin watch.mjs — every autopilot endpoint is LOCALHOST-ONLY so the public Hetzner\ndeployment of the same watch.mjs cannot be reconfigured by visitors; the ticker\nheader gains a gear link that only shows on localhost.\n\nAlso: build.mjs data.json writer now streams the fights array — the corpus\ncrossed V8's max string length tonight (516MB) and JSON.stringify started\nthrowing RangeError, killing every rebuild.\n\nVerified end to end: 605 tests green; killed grinder revived by the keeper;\none abbreviated cycle pull->train(77s)->gate(REJECT, reverted)->evolve(10\ngens)->ledger with 0 errors; launchd job installed, kickstarted, ENABLED.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 16
+  },
+  {
+    "hash": "4392cf9697645edc12b0bfdd3c62c1998f22b721",
+    "short_hash": "4392cf9",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T18:08:28-04:00",
+    "message": "feat: the evaluation gauntlet — EVAL_SPEC_V1, the program's measurement foundation\n\nOne standardized, variance-controlled, HELD-OUT benchmark for every\ntraining experiment (goal 427), replacing ad-hoc 3-match spars (the\nin-sample trap the ladder already exposed).\n\n- packages/arena/src/evaluate.ts: pinned EVAL_SPEC_V1 (12 hand-written\n  opponents at factory defaults × {stock, shotgun, rifle} × reserved\n  arenas [101,202,303,404,505] × 2 matches on reserved seeds 90000+),\n  cell enumeration with seeds as a pure function of cell coordinates\n  (common random numbers), alias-engine fighter registration (cards or\n  unshipped weight checkpoints via the registerNeuralNet seam), paired\n  delta stats (exact sign test + seeded bootstrap 95% CI), ledger line.\n- tools/evaluate.mjs: zero-dep driver on the evolve.mjs child-worker\n  pattern; full gauntlet 360 matches in ~63 s on 8 workers (--quick:\n  72 in ~13 s); --baseline runs the identical seeds and reports paired\n  per-cell kill-diff deltas; appends to tools/eval-ledger.jsonl (the\n  append-only experiment registry). In-memory only — no datasets, the\n  corpus and public board never see gauntlet matches.\n- evaluate.test.ts: spec constants pinned, 360/72-cell enumeration and\n  seed uniqueness, sign-test/bootstrap math on synthetic data, ledger\n  shape, runCell determinism (14 tests; suite 605 green).\n- MANUAL.md §5: Evaluation subsection — the reserved-seed rule, the\n  paired protocol, the ledger.\n\nFirst baselines (the score to beat): BELMONTE +12.04 (343-12-5,\n95.3%); DISCIPLE −26.69; MIMIC −38.12. Paired demo: DISCIPLE − MIMIC\n= +11.43 kills/match, 95% CI [10.79, 12.07], sign test +349/−11/=0,\np ≈ 2.5e-88 — common random numbers make the gap unmistakable in one\nrun. Reserved-seed audit: nothing in tools/, trainers, dataset\nmanifests, or the ladder uses the eval arenas or the 90000+ block.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
     "hash": "7087f0119f1f68de97960b25ce5bb8a66cbb3a5f",
     "short_hash": "7087f01",
     "author": "Robert Grayson",
