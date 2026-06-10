@@ -99,12 +99,17 @@ export class EntityRenderer {
     this.texturedReady = true;
   }
 
+  /** Team chevrons (drawn above heads) — legible at any zoom. */
+  private readonly markerGfx: Graphics = new Graphics();
+
   constructor() {
-    // Draw order: things under bullets under sprites (players on top).
+    // Draw order: things under bullets under sprites (players on top),
+    // team markers above everything.
     this.container.addChild(this.thingGfx);
     this.container.addChild(this.bulletGfx);
     this.container.addChild(this.spriteGfx);
     this.container.addChild(this.gostekLayer);
+    this.container.addChild(this.markerGfx);
   }
 
   /**
@@ -126,6 +131,7 @@ export class EntityRenderer {
   private renderSprites(world: World, t: number): void {
     const g = this.spriteGfx;
     if (!this.texturedReady) g.clear();
+    this.markerGfx.clear();
     const parts = world.spriteParts;
     if (parts === null) return;
 
@@ -192,6 +198,17 @@ export class EntityRenderer {
           alpha: sprite.deadMeat ? 0.45 : 1,
           dead: sprite.deadMeat,
         });
+      }
+
+      // TEAM CHEVRON above the head (real teams only): the Gostek textures
+      // read as dark camo at spectator zoom, so the tinted shirt pixels are
+      // not enough to tell red from blue — this marker is legible at any
+      // zoom (user question: "why isn't it blue characters vs red ones").
+      if (sprite.team > 0 && !sprite.deadMeat) {
+        const color = sprite.team === 1 ? 0xd23c3c : 0x4060d2;
+        this.markerGfx
+          .poly([x - 7, y - 42, x + 7, y - 42, x, y - 31])
+          .fill({ color, alpha: 0.95 });
       }
     }
   }
