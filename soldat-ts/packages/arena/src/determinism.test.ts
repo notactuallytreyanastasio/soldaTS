@@ -3,6 +3,7 @@
 // seed) fully determines every replay byte.
 
 import { describe, it, expect } from 'vitest';
+import { rollWildcard } from '@soldat/client/headless';
 import { runMatch, type MatchConfig } from './runner';
 import { buildManifest } from './store';
 
@@ -74,5 +75,35 @@ describe('shotgun wildcard determinism', () => {
     };
     expect(buildManifest({ ...base, wildcard: 'shotgun' }).wildcard).toBe('shotgun');
     expect(buildManifest(base).wildcard).toBeNull();
+    // 'none' is an explicit stock request — normalized to null like absence.
+    expect(buildManifest({ ...base, wildcard: 'none' }).wildcard).toBeNull();
+    // Per-match RESOLVED values ride on matches[] (chance runs vary by seed).
+    expect(buildManifest({ ...base, wildcard: 'shotgun' }).matches[0]?.wildcard).toBe('shotgun');
+  });
+});
+
+describe("'chance' wildcard mode (all games get a shot at shotgun play)", () => {
+  it('resolves purely from the seed: same config ⇒ byte-identical artifacts', () => {
+    const a = runMatch({ ...CONFIG, wildcard: 'chance' });
+    const b = runMatch({ ...CONFIG, wildcard: 'chance' });
+    expect(a.replayJsonl === b.replayJsonl).toBe(true);
+    expect(b.events).toEqual(a.events);
+    expect(a.wildcard).toBe(b.wildcard);
+  });
+
+  it('arms SOME seeds and not others, and records which on the result', () => {
+    const armed = rollWildcard(CONFIG.seed);
+    const r = runMatch({ ...CONFIG, wildcard: 'chance', roundTicks: 600 });
+    expect(r.wildcard).toBe(armed ? 'shotgun' : null);
+    // The roll is a real chance: both outcomes occur across nearby seeds.
+    const rolls = Array.from({ length: 40 }, (_, i) => rollWildcard(i + 1));
+    expect(rolls.some(Boolean)).toBe(true);
+    expect(rolls.some((x) => !x)).toBe(true);
+  });
+
+  it("'none' mode is byte-identical to no wildcard at all", () => {
+    const a = runMatch(CONFIG);
+    const b = runMatch({ ...CONFIG, wildcard: 'none' });
+    expect(a.replayJsonl === b.replayJsonl).toBe(true);
   });
 });

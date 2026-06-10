@@ -60,11 +60,17 @@ export function parseTweaks(list: readonly string[] | undefined): Record<string,
 /** Known opt-in wildcards (the match-rule mutators a run may arm). */
 export const WILDCARDS = ['shotgun'] as const;
 
-/** Validate --wildcard; undefined passes through (no wildcard). */
-export function parseWildcard(raw: string | undefined): string | undefined {
-  if (raw === undefined) return undefined;
-  if (!(WILDCARDS as readonly string[]).includes(raw)) {
-    throw new Error(`unknown wildcard '${raw}' (known: ${WILDCARDS.join(', ')})`);
+/** Wildcard MODES a run may request: a specific wildcard forced on every
+ *  match, 'none' (stock), or 'chance' — each match rolls the seeded chance
+ *  (client wildcardChance.ts) so ALL games may incorporate shotgun play. */
+export const WILDCARD_MODES = [...WILDCARDS, 'none', 'chance'] as const;
+
+/** Validate --wildcard; absent defaults to 'chance' (every run gets a shot
+ *  at shotgun play — pass --wildcard none for guaranteed-stock runs). */
+export function parseWildcard(raw: string | undefined): string {
+  if (raw === undefined) return 'chance';
+  if (!(WILDCARD_MODES as readonly string[]).includes(raw)) {
+    throw new Error(`unknown wildcard '${raw}' (known: ${WILDCARD_MODES.join(', ')})`);
   }
   return raw;
 }

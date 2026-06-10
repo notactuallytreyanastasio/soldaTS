@@ -29,6 +29,7 @@ import { Hud, type HudState, type HudScores } from '../ui/hud';
 import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
 import { START_HEALTH } from '../ui/helpers';
 import { BloodFx, Crosshair } from '../render/fx';
+import { resolveWildcard } from './wildcardChance';
 import { buildTexturedMap } from '../render/mapTextured';
 import { AudioEngine } from '../audio/audio';
 import { SoundManager } from '../audio/soundManager';
@@ -238,12 +239,16 @@ export function parseSpectate(
   const coachB = params.get('coach-b') ?? undefined;
   const arenaRaw = parseInt(params.get('arena') ?? '', 10);
   const arenaSeed = Number.isFinite(arenaRaw) && arenaRaw >= 0 ? arenaRaw : 0;
-  // ?wildcard=shotgun: one SPAS-12 carrier per team (Game picks via world.rng).
-  const wildcard = params.get('wildcard') ?? undefined;
+  // ?wildcard=shotgun|none|chance. Fresh PLAY sessions default to the seeded
+  // chance roll (every game gets a shot at shotgun play); SPECTATE links
+  // without the param stay STOCK — every watch URL recorded before the
+  // chance era carries no param and must keep replaying byte-identically.
+  const wildcardRaw = params.get('wildcard') ?? undefined;
   if (params.has(PLAY_QUERY_PARAM)) {
     return {
       spectate: false, botCount: 3, aiEngine, seed, teams, variant, roundSecs,
-      tweakA, tweakB, coachA, coachB, arenaSeed, wildcard,
+      tweakA, tweakB, coachA, coachB, arenaSeed,
+      wildcard: resolveWildcard(wildcardRaw ?? 'chance', seed),
     };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
@@ -251,7 +256,8 @@ export function parseSpectate(
     Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
   return {
     spectate: true, botCount, aiEngine, seed, teams, variant, roundSecs,
-    tweakA, tweakB, coachA, coachB, arenaSeed, wildcard,
+    tweakA, tweakB, coachA, coachB, arenaSeed,
+    wildcard: resolveWildcard(wildcardRaw, seed),
   };
 }
 

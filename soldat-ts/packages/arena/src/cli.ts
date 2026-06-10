@@ -19,6 +19,7 @@ import {
   parseTweaks,
   parseWildcard,
   WILDCARDS,
+  WILDCARD_MODES,
   type RunPlan,
 } from './cliArgs';
 import { runMatch, type MatchResult } from './runner';
@@ -44,8 +45,9 @@ OPTIONS:
   --round SECS           round length in sim-seconds (default 120)
   --bots N               total bots, split evenly (default 6 = 3v3)
   --variant NAME         gameplay variant: ${VARIANTS.map((v) => v.name).join(' | ')}
-  --wildcard NAME        opt-in match mutator: ${WILDCARDS.join(' | ')} (one SPAS-12
-                         carrier per team, picked deterministically from the seed)
+  --wildcard MODE        ${WILDCARD_MODES.join(' | ')} — default 'chance': each match
+                         rolls a seeded chance of arming one SPAS-12 carrier
+                         per team; 'shotgun' forces it, 'none' is stock
   --seed N               base seed; match k uses seed+k (default 1337)
   --out DIR              dataset base dir (default soldat-ts/datasets)
   --arena N              generated-arena seed (0 = canonical Skyreach)
@@ -313,7 +315,7 @@ function fight(
   console.log(
     `CLAUDE ARENA — ${a.coach} (${a.engine}) vs ${b.coach} (${b.engine}) · ` +
       `${matches} match(es) · ${roundSecs}s rounds · arena #${arenaSeed}` +
-      (wildcard !== undefined ? ` · wildcard ${wildcard}` : ''),
+      ` · wildcard ${wildcard}`,
   );
   if (a.rationale !== undefined) console.log(`  ${a.coach}: "${a.rationale}"`);
   if (b.rationale !== undefined) console.log(`  ${b.coach}: "${b.rationale}"`);
@@ -392,7 +394,10 @@ function fight(
   console.log(`  series: ${a.coach} ${aWins} — ${bWins} ${b.coach}`);
   console.log('');
   console.log('  WATCH (replays the exact match-1 sim in the browser — pnpm play first):');
-  const watchUrl = buildWatchUrl('http://localhost:5173', a, b, { seed: seedBase, roundSecs, arenaSeed, wildcard });
+  const watchUrl = buildWatchUrl('http://localhost:5173', a, b, {
+    seed: seedBase, roundSecs, arenaSeed,
+    wildcard: results[0]?.wildcard ?? undefined,
+  });
   console.log(`  ${watchUrl}`);
   live.finish({ dataset: dir, watchUrl });
 }

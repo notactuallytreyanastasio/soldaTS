@@ -14,6 +14,11 @@ export {
   type RoundResult,
 } from './app/game';
 export {
+  WILDCARD_CHANCE_PCT,
+  rollWildcard,
+  resolveWildcard,
+} from './app/wildcardChance';
+export {
   MatchRecorder,
   SCHEMA as TELEMETRY_SCHEMA,
   deriveStats,

@@ -14,6 +14,7 @@ import {
   generateArena,
   engineIds,
   resolveVariant,
+  resolveWildcard,
   subjectName,
   type GameTuning,
   type MatchDump,
@@ -43,8 +44,9 @@ export interface MatchConfig {
   variant?: string; // tournament variant NAME, default 'baseline'
   roundTicks?: number; // default 7200 (120 s)
   maxTicks?: number; // hard cap, default roundTicks + 600
-  /** Opt-in wildcard ('shotgun'): one SPAS-12 carrier per team, picked
-   *  deterministically from `seed` by the Game. Omitted = stock loadouts. */
+  /** Wildcard MODE: 'shotgun' forces one SPAS-12 carrier per team (picked
+   *  deterministically from `seed` by the Game); 'chance' rolls the seeded
+   *  per-match chance; 'none'/omitted = stock loadouts. */
   wildcard?: string | undefined;
 }
 
@@ -57,6 +59,9 @@ export interface MatchBotInfo {
 
 export interface MatchResult {
   seed: number;
+  /** The wildcard this match actually ran with (null = stock) — the resolved
+   *  value, not the requested mode ('chance' resolves per seed). */
+  wildcard: string | null;
   ticks: number; // world.mainTickCounter at exit
   round: RoundResult | null; // null only if the maxTicks cap hit
   telemetry: MatchDump;
@@ -98,6 +103,10 @@ export function runMatch(config: MatchConfig): MatchResult {
   const maxTicks = config.maxTicks ?? roundTicks + 600;
 
   const arena = generateArena(config.arenaSeed ?? 0);
+  // Resolve the wildcard MODE to this match's armed value — 'chance' is a
+  // pure function of the seed, so the manifest (config + seed) still fully
+  // determines every recorded byte.
+  const wildcard = resolveWildcard(config.wildcard, config.seed);
   const game = new Game({
     seed: config.seed,
     spawns: arena.spawns,
@@ -107,7 +116,7 @@ export function runMatch(config: MatchConfig): MatchResult {
     teams: true,
     tuning: variant.tuning,
     roundTicks,
-    wildcard: config.wildcard,
+    wildcard,
     engineTweaks: {
       ...(red.tweaks ? { [red.engine]: red.tweaks } : {}),
       ...(blue.tweaks ? { [blue.engine]: blue.tweaks } : {}),
@@ -195,6 +204,7 @@ export function runMatch(config: MatchConfig): MatchResult {
 
   return {
     seed: config.seed,
+    wildcard: wildcard ?? null,
     ticks: game.world.mainTickCounter,
     round: game.roundResult,
     telemetry: recorder.dump(),

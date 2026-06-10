@@ -37,12 +37,16 @@ export interface RunManifest {
   roundTicks: number;
   maxTicks: number;
   variant: { name: string; tuning: GameTuning }; // RESOLVED full tuning
-  /** Opt-in wildcard the run was armed with ('shotgun'), null when stock. */
+  /** Wildcard MODE the run was requested with ('shotgun'|'chance'), null
+   *  when stock — per-match RESOLVED values live on matches[].wildcard. */
   wildcard: string | null;
   teams: [TeamManifest, TeamManifest];
   matches: {
     n: number;
     seed: number;
+    /** Wildcard this match actually ran ('shotgun' | null) — 'chance' runs
+     *  resolve per seed, so matches within one run may differ. */
+    wildcard?: string | null;
     files: { replay: string; telemetry: string; events: string }; // relative
   }[];
   /** process.argv.slice(2).join(' ') when run from cli.ts, else null. */
@@ -137,11 +141,12 @@ export function buildManifest(args: ManifestArgs): RunManifest {
     roundTicks: args.roundTicks,
     maxTicks: args.maxTicks,
     variant: { name: args.variantName, tuning: { ...first.tuning } },
-    wildcard: args.wildcard ?? null,
+    wildcard: args.wildcard === undefined || args.wildcard === 'none' ? null : args.wildcard,
     teams: [teamManifest(0), teamManifest(1)],
     matches: args.results.map((r, i) => ({
       n: i + 1,
       seed: r.seed,
+      wildcard: r.wildcard ?? null,
       files: {
         replay: `match-${i + 1}.replay.jsonl.gz`,
         telemetry: `match-${i + 1}.telemetry.json`,
