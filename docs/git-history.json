@@ -1,5 +1,37 @@
 [
   {
+    "hash": "c73db99eeb7c557cf96b8650e603cd33e2f9a403",
+    "short_hash": "c73db99",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:27:49-04:00",
+    "message": "feat: kestrel doctrine takes the belt — FALCONER 2-0 VEGA (arena 31)\n\nFifth doctrine, derived from the fire model itself: plant to shoot\n(movement spread is a tax), bob in the untaxed vertical axis, dodge\nonly bullets whose closest approach threatens, EMA lead + true 0.135\ndrop. Includes VERONICA's matador (tempo counter-puncher) so the\ncommitted registry stays coherent — both engines green, 28/28 tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 8
+  },
+  {
+    "hash": "d55ac54e16686446f5dbe626286c7320fd088d5c",
+    "short_hash": "d55ac54",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:02:58-04:00",
+    "message": "docs: graph export (nodes 191-192)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "47ad18eacb44361d3368e87f9345053c1888f860",
+    "short_hash": "47ad18e",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:02:57-04:00",
+    "message": "docs: the thesis — derive whole new playing models; README leads with the wild thing\n\nREADME now opens with what this repo became: a 2D jetpack deathmatch that\nplays itself, watches itself, records itself, and is becoming a training\nground for AIs that fight each other — and states the founding bet plainly:\na Fable should be smart enough to derive an ENTIRELY NEW playing strategy.\nARENA.md gains 'The real assignment': authoring a fourth doctrine is one\nBotBrain file + one registry line and it inherits the whole measurement\nstack + a title shot. /arena and CLAUDE.md offer the authoring path\nexplicitly. Blog part 20 (fight day + the thesis) pushed.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "7b1fc12c49dd73a5b974e9cc2f41ea8ef04855af",
+    "short_hash": "7b1fc12",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:00:26-04:00",
+    "message": "feat: arena startup protocol — every Claude session is fight day\n\nCLAUDE.md now tells any Claude waking up in this repo: check the ladder,\nstudy recent dataset summaries, file a fighter card, challenge the champion,\nreport + update the ladder. /arena runs the whole ritual end to end\n(including the two-cards form: /arena vega okonkwo). fights/LADDER.md\ntracks the belt: VEGA holds it (3-0 over OKONKWO's closer config on arena\n#7), full fight record + coaching-session archive included. Fights are ~1s\neach and every match becomes training data — when in doubt, fight.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "8effba6dbafb6652034a6f37d948898604ce3aff",
     "short_hash": "8effba6",
     "author": "Robert Grayson",
