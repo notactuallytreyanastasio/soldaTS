@@ -21,7 +21,6 @@ whole arms-race saga) in
 ## 1. Quick start
 
 ```sh
-cd soldat-ts
 pnpm install
 pnpm play          # game client (vite) on http://localhost:5173
 pnpm arena         # headless LEAGUE: every engine vs every engine (~2 min)
