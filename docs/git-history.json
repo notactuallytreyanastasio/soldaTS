@@ -1,5 +1,21 @@
 [
   {
+    "hash": "4f9d74b281474d8c7f0bbde2ae5d3f967bae72c6",
+    "short_hash": "4f9d74b",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T02:30:54-04:00",
+    "message": "feat: SPAS-12 shotgun wildcard + Tab/B weapon swap\n\nPer-sprite weapon slots off the shared contract (guns.ts SPAS12,\nrebalanced by the same ratios the AK got); 6-pellet fan per trigger\npull, all spread via world.rng. Opt-in: ?wildcard=shotgun / --wildcard\nshotgun arms one carrier per team deterministically from the seed —\nwildcard-off consumes zero rng and stays byte-identical (pinned by\ntests). Player swaps AK74/SPAS12 any time on Tab or B (per-weapon\nammo, swap cancels reload, HUD + [SPAS12] kill feed). 526/526 green.\n\nBuilt by the shotgun-wildcard workflow (5 readers, 1 implementer,\n3 verifiers — tests, double-run determinism, adversarial review).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 14
+  },
+  {
+    "hash": "6ba8de7211e8a909860f28f570e07e84fafedefa",
+    "short_hash": "6ba8de7",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T02:22:06-04:00",
+    "message": "feat: hydra doctrine takes the belt — LERNA 2-1 AKELA (arena 53)\n\nEighth doctrine: cut one head, the others bite. Health-rank rotation\n(withdraw at 55hp, beyond the wolf's published prey radius + fire max),\nleft/right bearing slots, shared lowest-health focus, kestrel fire kit.\nSwept: no top slot (1-7), no juke (plant+bob+dodge), tap 6/1, dodge\nessential. Spars: 5-4 vs AKELA wolf, 6-3 vs FALCONER plover official\ncard, 0-3 vs matador (accepted anti-pack specialization). Official\nchallenge won 2-1 on fresh arena #53; ladder updated.\n\nFair-play note: doctrine derived only from public sources (wolf.ts on\nmain, ladder records, published spar datasets) — no rival WIP was used.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
     "hash": "7c4839336f160fd3ef6ea1b4d42c6941fc91f058",
     "short_hash": "7c48393",
     "author": "Robert Grayson",
