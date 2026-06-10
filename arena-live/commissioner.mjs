@@ -35,10 +35,21 @@ const DATASETS = path.join(TS_ROOT, 'datasets');
 const DATA_JSON = path.join(HERE, 'site', 'data.json');
 const STATE_FILE = path.join(HERE, 'commissioner-state.json');
 const CRUCIBLES_FILE = path.join(HERE, 'crucibles.jsonl');
+const SEASON_FILE = path.join(HERE, 'season-state.json');
+const LADDER_MD = path.join(FIGHTS, 'LADDER.md');
+const SEASONS_MD = path.join(FIGHTS, 'SEASONS.md');
 
-const CYCLE_MS = 10 * 60 * 1000;          // keep in sync with build.mjs
+const CYCLE_MS = 30 * 1000;               // keep in sync with build.mjs — the
+// sim runs a 2-min match in ~1s, so the cadence is presentation, not compute:
+// 30s ≈ one best-of-3 landing on the board every refresh (Robert: "it should
+// be running fast simulating the games")
 const FRESH_WINDOW_MS = 2 * 60 * 60 * 1000; // "fresh blood" lookback
 const FIGHT_TIMEOUT_MS = 5 * 60 * 1000;   // kill a hung fight after 5 min
+// A season is a fixed 3-hour window. When it expires the commissioner declares
+// the winner (the LADDER belt holder, or board #1 if the belt is VACANT),
+// APPENDS a season record to fights/SEASONS.md, and rolls a fresh window.
+// LADDER.md is never touched — coaches own it.
+const SEASON_HOURS = 3;
 
 function log(...args) {
   console.log(new Date().toISOString(), '[commissioner]', ...args);
@@ -181,7 +192,9 @@ async function cycle() {
     saveState(state);
     return;
   }
-  const arenaSeed = Math.floor(Date.now() / 60000) % 997; // fresh seed per crucible
+  const arenaSeed = Math.floor(Date.now() / 1000) % 997; // fresh seed per crucible
+  // (second resolution — at sub-minute cycles the old minute clock would
+  // hand consecutive crucibles the same arena)
   log(`summoning FRESH BLOOD ${challenger.coach}/${challenger.engine} (${challenger.file}) ` +
       `to face champion ${champ.coach}/${champ.engine} (${champ.file}) in arena #${arenaSeed}`);
 
