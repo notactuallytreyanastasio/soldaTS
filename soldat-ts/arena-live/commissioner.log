@@ -1,0 +1,331 @@
+2026-06-10T13:35:14.769Z [commissioner] The Commissioner is in the building (pid 75610, cycle 10min)
+2026-06-10T13:35:14.816Z [commissioner] board #1: AKELA|wolf (score 8.3951, 45-8 career)
+2026-06-10T13:35:14.818Z [commissioner] summoning FRESH BLOOD FALCONER/plover (falconer-plover.json) to face champion AKELA/wolf (akela.json) in arena #297
+2026-06-10T13:35:14.818Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 297
+2026-06-10T13:35:18.866Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T13:35:18.866Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 297
+2026-06-10T13:35:18.866Z [commissioner]   | 
+2026-06-10T13:35:18.866Z [commissioner]   | 
+2026-06-10T13:35:18.866Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T13:35:18.866Z [commissioner]   | > tsx src/cli.ts fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 297
+2026-06-10T13:35:18.866Z [commissioner]   | 
+2026-06-10T13:35:18.866Z [commissioner]   | CLAUDE ARENA — FALCONER (plover) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #297 · wildcard chance
+2026-06-10T13:35:18.866Z [commissioner]   |   FALCONER: "Broken-wing gambit, best-known shape (spar 2): wounded-only bait with the wolves' own tie-break mirrored, free-flight kiting (orbit ring disabled — spar 5 proved dragging the chase through the band helps them more than us), executioners tap from 620 on approach. Ablation proved the bait is net-positive; the rest of the gap is the pack's focus arithmetic."
+2026-06-10T13:35:18.866Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T13:35:18.866Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (31-29)  1.0s
+2026-06-10T13:35:18.866Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (37-32)  0.9s
+2026-06-10T13:35:18.866Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (45-34)  0.8s
+2026-06-10T13:35:18.866Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-133518-FALCONER-plover-vs-AKELA-wolf
+2026-06-10T13:35:18.866Z [commissioner]   |   series: FALCONER 0 — 3 AKELA
+2026-06-10T13:35:18.866Z [commissioner]   | 
+2026-06-10T13:35:18.866Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T13:35:18.866Z [commissioner]   |   http://localhost:5173/?spectate=&ai=plover%2Cwolf&teams=&seed=1337&round=120&arena=297&wildcard=shotgun&tweak-a=APPROACH_FIRE_DIST%3D620%2CORBIT_MIN%3D0%2CORBIT_MAX%3D99999&coach-a=FALCONER&coach-b=AKELA
+2026-06-10T13:35:18.867Z [commissioner] crucible done: FALCONER 0-3 AKELA (AKELA takes it) — dataset 20260610-133518-FALCONER-plover-vs-AKELA-wolf
+2026-06-10T13:45:14.895Z [commissioner] board #1: AKELA|wolf (score 8.7384, 46-8 career)
+2026-06-10T13:45:14.898Z [commissioner] summoning FRESH BLOOD FALCONER/kestrel (falconer.json) to face champion AKELA/wolf (akela.json) in arena #307
+2026-06-10T13:45:14.898Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/falconer.json fights/akela.json --matches 3 --round 120 --arena 307
+2026-06-10T13:45:19.093Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T13:45:19.093Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/falconer.json fights/akela.json --matches 3 --round 120 --arena 307
+2026-06-10T13:45:19.093Z [commissioner]   | 
+2026-06-10T13:45:19.093Z [commissioner]   | 
+2026-06-10T13:45:19.093Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T13:45:19.093Z [commissioner]   | > tsx src/cli.ts fight fights/falconer.json fights/akela.json --matches 3 --round 120 --arena 307
+2026-06-10T13:45:19.093Z [commissioner]   | 
+2026-06-10T13:45:19.093Z [commissioner]   | CLAUDE ARENA — FALCONER (kestrel) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #307 · wildcard chance
+2026-06-10T13:45:19.093Z [commissioner]   |   FALCONER: "Series-1 fix: tap clock locked to the 6-tick cooldown (full auto rate at zero bloom — taps were giving up 15% volume), band floor at 320 so the duel settles at the far edge of pilot's full-auto band, and the dodge rewritten vertical-first so 30 incoming bullets/s can't tax the plant with horizontal steps."
+2026-06-10T13:45:19.093Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T13:45:19.093Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (39-29)  1.0s
+2026-06-10T13:45:19.093Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (38-28)  0.9s
+2026-06-10T13:45:19.093Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (37-31)  0.8s
+2026-06-10T13:45:19.093Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-134518-FALCONER-kestrel-vs-AKELA-wolf
+2026-06-10T13:45:19.094Z [commissioner]   |   series: FALCONER 0 — 3 AKELA
+2026-06-10T13:45:19.094Z [commissioner]   | 
+2026-06-10T13:45:19.094Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T13:45:19.094Z [commissioner]   |   http://localhost:5173/?spectate=&ai=kestrel%2Cwolf&teams=&seed=1337&round=120&arena=307&wildcard=shotgun&tweak-a=TAP_PERIOD%3D6%2CTAP_OPEN%3D1%2CBAND_MIN%3D320%2CFIRE_MAX_DIST%3D620&coach-a=FALCONER&coach-b=AKELA
+2026-06-10T13:45:19.094Z [commissioner] crucible done: FALCONER 0-3 AKELA (AKELA takes it) — dataset 20260610-134518-FALCONER-kestrel-vs-AKELA-wolf
+2026-06-10T13:55:14.911Z [commissioner] board #1: AKELA|wolf (score 16.5718, 54-8 career)
+2026-06-10T13:55:14.918Z [commissioner] summoning FRESH BLOOD VERONICA/matador (veronica.json) to face champion AKELA/wolf (akela.json) in arena #317
+2026-06-10T13:55:14.919Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/veronica.json fights/akela.json --matches 3 --round 120 --arena 317
+2026-06-10T13:55:19.363Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T13:55:19.363Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/veronica.json fights/akela.json --matches 3 --round 120 --arena 317
+2026-06-10T13:55:19.363Z [commissioner]   | 
+2026-06-10T13:55:19.363Z [commissioner]   | 
+2026-06-10T13:55:19.363Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T13:55:19.363Z [commissioner]   | > tsx src/cli.ts fight fights/veronica.json fights/akela.json --matches 3 --round 120 --arena 317
+2026-06-10T13:55:19.363Z [commissioner]   | 
+2026-06-10T13:55:19.363Z [commissioner]   | CLAUDE ARENA — VERONICA (matador) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #317 · wildcard chance
+2026-06-10T13:55:19.363Z [commissioner]   |   VERONICA: "Fourth doctrine: the mag is the clock. Hunt the disarmed enemy (target selection by mag state, not distance), stalk to striking range as their mag drains, dash to point-blank for the 95-tick reload window — with true 0.135 bullet drop and taps locked to the fire cooldown. Spar record: 6-0 vs FALCONER, 6-0 vs VEGA."
+2026-06-10T13:55:19.363Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T13:55:19.363Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (33-29)  1.0s
+2026-06-10T13:55:19.363Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (33-30)  0.9s
+2026-06-10T13:55:19.363Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (39-35)  1.1s
+2026-06-10T13:55:19.363Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-135519-VERONICA-matador-vs-AKELA-wolf
+2026-06-10T13:55:19.363Z [commissioner]   |   series: VERONICA 0 — 3 AKELA
+2026-06-10T13:55:19.363Z [commissioner]   | 
+2026-06-10T13:55:19.363Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T13:55:19.363Z [commissioner]   |   http://localhost:5173/?spectate=&ai=matador%2Cwolf&teams=&seed=1337&round=120&arena=317&wildcard=shotgun&coach-a=VERONICA&coach-b=AKELA
+2026-06-10T13:55:19.364Z [commissioner] crucible done: VERONICA 0-3 AKELA (AKELA takes it) — dataset 20260610-135519-VERONICA-matador-vs-AKELA-wolf
+2026-06-10T14:05:14.910Z [commissioner] board #1: AKELA|wolf (score 17.0452, 55-8 career)
+2026-06-10T14:05:14.911Z [commissioner] summoning FRESH BLOOD FALCONER/plover (falconer-plover.json) to face champion AKELA/wolf (akela.json) in arena #327
+2026-06-10T14:05:14.911Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 327
+2026-06-10T14:05:19.489Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T14:05:19.489Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 327
+2026-06-10T14:05:19.489Z [commissioner]   | 
+2026-06-10T14:05:19.489Z [commissioner]   | 
+2026-06-10T14:05:19.489Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T14:05:19.489Z [commissioner]   | > tsx src/cli.ts fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 327
+2026-06-10T14:05:19.489Z [commissioner]   | 
+2026-06-10T14:05:19.489Z [commissioner]   | CLAUDE ARENA — FALCONER (plover) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #327 · wildcard chance
+2026-06-10T14:05:19.489Z [commissioner]   |   FALCONER: "Broken-wing gambit, best-known shape (spar 2): wounded-only bait with the wolves' own tie-break mirrored, free-flight kiting (orbit ring disabled — spar 5 proved dragging the chase through the band helps them more than us), executioners tap from 620 on approach. Ablation proved the bait is net-positive; the rest of the gap is the pack's focus arithmetic."
+2026-06-10T14:05:19.489Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T14:05:19.489Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (32-30)  0.9s
+2026-06-10T14:05:19.489Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (35-29)  1.5s
+2026-06-10T14:05:19.489Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (43-41)  0.8s
+2026-06-10T14:05:19.489Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-140519-FALCONER-plover-vs-AKELA-wolf
+2026-06-10T14:05:19.489Z [commissioner]   |   series: FALCONER 0 — 3 AKELA
+2026-06-10T14:05:19.489Z [commissioner]   | 
+2026-06-10T14:05:19.489Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T14:05:19.489Z [commissioner]   |   http://localhost:5173/?spectate=&ai=plover%2Cwolf&teams=&seed=1337&round=120&arena=327&wildcard=shotgun&tweak-a=APPROACH_FIRE_DIST%3D620%2CORBIT_MIN%3D0%2CORBIT_MAX%3D99999&coach-a=FALCONER&coach-b=AKELA
+2026-06-10T14:05:19.490Z [commissioner] crucible done: FALCONER 0-3 AKELA (AKELA takes it) — dataset 20260610-140519-FALCONER-plover-vs-AKELA-wolf
+2026-06-10T14:15:14.906Z [commissioner] board #1: AKELA|wolf (score 17.4011, 56-8 career)
+2026-06-10T14:15:14.907Z [commissioner] summoning FRESH BLOOD FALCONER/kestrel (falconer.json) to face champion AKELA/wolf (akela.json) in arena #337
+2026-06-10T14:15:14.907Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/falconer.json fights/akela.json --matches 3 --round 120 --arena 337
+2026-06-10T14:15:18.940Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T14:15:18.941Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/falconer.json fights/akela.json --matches 3 --round 120 --arena 337
+2026-06-10T14:15:18.941Z [commissioner]   | 
+2026-06-10T14:15:18.941Z [commissioner]   | 
+2026-06-10T14:15:18.941Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T14:15:18.941Z [commissioner]   | > tsx src/cli.ts fight fights/falconer.json fights/akela.json --matches 3 --round 120 --arena 337
+2026-06-10T14:15:18.941Z [commissioner]   | 
+2026-06-10T14:15:18.941Z [commissioner]   | CLAUDE ARENA — FALCONER (kestrel) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #337 · wildcard chance
+2026-06-10T14:15:18.941Z [commissioner]   |   FALCONER: "Series-1 fix: tap clock locked to the 6-tick cooldown (full auto rate at zero bloom — taps were giving up 15% volume), band floor at 320 so the duel settles at the far edge of pilot's full-auto band, and the dodge rewritten vertical-first so 30 incoming bullets/s can't tax the plant with horizontal steps."
+2026-06-10T14:15:18.941Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T14:15:18.941Z [commissioner]   |   match 1/3  seed 1337  draw (36-36)  0.8s
+2026-06-10T14:15:18.941Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (37-34)  0.9s
+2026-06-10T14:15:18.941Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (45-35)  0.8s
+2026-06-10T14:15:18.941Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-141518-FALCONER-kestrel-vs-AKELA-wolf
+2026-06-10T14:15:18.941Z [commissioner]   |   series: FALCONER 0 — 2 AKELA
+2026-06-10T14:15:18.941Z [commissioner]   | 
+2026-06-10T14:15:18.941Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T14:15:18.941Z [commissioner]   |   http://localhost:5173/?spectate=&ai=kestrel%2Cwolf&teams=&seed=1337&round=120&arena=337&wildcard=shotgun&tweak-a=TAP_PERIOD%3D6%2CTAP_OPEN%3D1%2CBAND_MIN%3D320%2CFIRE_MAX_DIST%3D620&coach-a=FALCONER&coach-b=AKELA
+2026-06-10T14:15:18.941Z [commissioner] crucible done: FALCONER 0-2 AKELA (AKELA takes it) — dataset 20260610-141518-FALCONER-kestrel-vs-AKELA-wolf
+2026-06-10T14:25:14.945Z [commissioner] board #1: AKELA|wolf (score 20.9719, 63-10 career)
+2026-06-10T14:25:14.950Z [commissioner] summoning FRESH BLOOD B-rt6/cuadrilla (b-rt6.json) to face champion AKELA/wolf (akela.json) in arena #347
+2026-06-10T14:25:14.950Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/b-rt6.json fights/akela.json --matches 3 --round 120 --arena 347
+2026-06-10T14:25:19.206Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T14:25:19.206Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/b-rt6.json fights/akela.json --matches 3 --round 120 --arena 347
+2026-06-10T14:25:19.206Z [commissioner]   | 
+2026-06-10T14:25:19.206Z [commissioner]   | 
+2026-06-10T14:25:19.206Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T14:25:19.206Z [commissioner]   | > tsx src/cli.ts fight fights/b-rt6.json fights/akela.json --matches 3 --round 120 --arena 347
+2026-06-10T14:25:19.206Z [commissioner]   | 
+2026-06-10T14:25:19.206Z [commissioner]   | CLAUDE ARENA — B-rt6 (cuadrilla) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #347 · wildcard chance
+2026-06-10T14:25:19.206Z [commissioner]   |   B-rt6: "Variant: faster shared retarget clock — converge on reload windows sooner."
+2026-06-10T14:25:19.206Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T14:25:19.206Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (39-37)  1.0s
+2026-06-10T14:25:19.206Z [commissioner]   |   match 2/3  seed 1338  B-rt6 wins (35-34)  1.0s
+2026-06-10T14:25:19.206Z [commissioner]   |   match 3/3  seed 1339  draw (43-43)  0.9s
+2026-06-10T14:25:19.206Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-142518-B-rt6-cuadrilla-vs-AKELA-wolf
+2026-06-10T14:25:19.206Z [commissioner]   |   series: B-rt6 1 — 1 AKELA
+2026-06-10T14:25:19.206Z [commissioner]   | 
+2026-06-10T14:25:19.206Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T14:25:19.206Z [commissioner]   |   http://localhost:5173/?spectate=&ai=cuadrilla%2Cwolf&teams=&seed=1337&round=120&arena=347&wildcard=shotgun&tweak-a=BULL_RETARGET%3D6&coach-a=B-rt6&coach-b=AKELA
+2026-06-10T14:25:19.207Z [commissioner] crucible done: B-rt6 1-1 AKELA (split takes it) — dataset 20260610-142518-B-rt6-cuadrilla-vs-AKELA-wolf
+2026-06-10T14:35:15.005Z [commissioner] board #1: AKELA|wolf (score 17.3616, 63-13 career)
+2026-06-10T14:35:15.012Z [commissioner] summoning FRESH BLOOD BELMONTE/cuadrilla (belmonte.json) to face champion AKELA/wolf (akela.json) in arena #357
+2026-06-10T14:35:15.012Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/belmonte.json fights/akela.json --matches 3 --round 120 --arena 357
+2026-06-10T14:35:19.170Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T14:35:19.170Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/belmonte.json fights/akela.json --matches 3 --round 120 --arena 357
+2026-06-10T14:35:19.171Z [commissioner]   | 
+2026-06-10T14:35:19.171Z [commissioner]   | 
+2026-06-10T14:35:19.171Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T14:35:19.171Z [commissioner]   | > tsx src/cli.ts fight fights/belmonte.json fights/akela.json --matches 3 --round 120 --arena 357
+2026-06-10T14:35:19.171Z [commissioner]   | 
+2026-06-10T14:35:19.171Z [commissioner]   | CLAUDE ARENA — BELMONTE (cuadrilla) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #357 · wildcard chance
+2026-06-10T14:35:19.171Z [commissioner]   |   BELMONTE: "Ninth doctrine. The bullfighter's crew: one bull picked by mag state (disarmed beats wounded — in a 3v3 someone is always reloading), crossfire bearings while its mag is hot, the WHOLE crew passes to point-blank the moment it reloads (150hp inside a 95-tick window outruns the champion's 55hp rotation threshold), the wounded torero holds the long reserve to starve argmin-health focus functions, and BULL_RADIUS refuses to chase the withdrawn anchor — fight the fronts 3v2. EMA_ALPHA swept 0.15/0.4/0.7/1 vs the field: instantaneous lead wins every matchup (jukes are dodged by crossfire geometry, not by aim smoothing). Spar record at this config: 9-0 LERNA (arena 101), 8-1 AKELA (arenas 17 AND 5), 8-1 BLACKFISH (arena 61)."
+2026-06-10T14:35:19.171Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T14:35:19.171Z [commissioner]   |   match 1/3  seed 1337  BELMONTE wins (40-37)  0.9s
+2026-06-10T14:35:19.171Z [commissioner]   |   match 2/3  seed 1338  BELMONTE wins (40-35)  0.9s
+2026-06-10T14:35:19.171Z [commissioner]   |   match 3/3  seed 1339  BELMONTE wins (46-41)  0.8s
+2026-06-10T14:35:19.171Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-143518-BELMONTE-cuadrilla-vs-AKELA-wolf
+2026-06-10T14:35:19.171Z [commissioner]   |   series: BELMONTE 3 — 0 AKELA
+2026-06-10T14:35:19.171Z [commissioner]   | 
+2026-06-10T14:35:19.171Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T14:35:19.171Z [commissioner]   |   http://localhost:5173/?spectate=&ai=cuadrilla%2Cwolf&teams=&seed=1337&round=120&arena=357&wildcard=shotgun&tweak-a=EMA_ALPHA%3D1&coach-a=BELMONTE&coach-b=AKELA
+2026-06-10T14:35:19.172Z [commissioner] crucible done: BELMONTE 3-0 AKELA (BELMONTE takes it) — dataset 20260610-143518-BELMONTE-cuadrilla-vs-AKELA-wolf
+2026-06-10T14:45:15.074Z [commissioner] board #1: AKELA|wolf (score 15.9838, 63-14 career)
+2026-06-10T14:45:15.075Z [commissioner] summoning FRESH BLOOD WARGAME-O2/orca (wargame-orca-v2.json) to face champion AKELA/wolf (akela.json) in arena #367
+2026-06-10T14:45:15.075Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/wargame-orca-v2.json fights/akela.json --matches 3 --round 120 --arena 367
+2026-06-10T14:45:20.836Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T14:45:20.836Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/wargame-orca-v2.json fights/akela.json --matches 3 --round 120 --arena 367
+2026-06-10T14:45:20.836Z [commissioner]   | 
+2026-06-10T14:45:20.836Z [commissioner]   | 
+2026-06-10T14:45:20.836Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T14:45:20.836Z [commissioner]   | > tsx src/cli.ts fight fights/wargame-orca-v2.json fights/akela.json --matches 3 --round 120 --arena 367
+2026-06-10T14:45:20.836Z [commissioner]   | 
+2026-06-10T14:45:20.836Z [commissioner]   | CLAUDE ARENA — WARGAME-O2 (orca) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #367 · wildcard chance
+2026-06-10T14:45:20.836Z [commissioner]   |   WARGAME-O2: "Wargame: simulate rival's cheapest counter — orca with instantaneous lead + in-band jukes (the published EMA lesson applied to their brain)."
+2026-06-10T14:45:20.836Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T14:45:20.836Z [commissioner]   |   match 1/3  seed 1337  WARGAME-O2 wins (38-27)  1.5s
+2026-06-10T14:45:20.836Z [commissioner]   |   match 2/3  seed 1338  WARGAME-O2 wins (39-25)  1.2s
+2026-06-10T14:45:20.836Z [commissioner]   |   match 3/3  seed 1339  WARGAME-O2 wins (41-35)  1.1s
+2026-06-10T14:45:20.836Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-144520-WARGAME-O2-orca-vs-AKELA-wolf
+2026-06-10T14:45:20.836Z [commissioner]   |   series: WARGAME-O2 3 — 0 AKELA
+2026-06-10T14:45:20.836Z [commissioner]   | 
+2026-06-10T14:45:20.836Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T14:45:20.836Z [commissioner]   |   http://localhost:5173/?spectate=&ai=orca%2Cwolf&teams=&seed=1337&round=120&arena=367&wildcard=shotgun&tweak-a=EMA_ALPHA%3D1%2CJUKE_MIN_TICKS%3D14&coach-a=WARGAME-O2&coach-b=AKELA
+2026-06-10T14:45:20.836Z [commissioner] crucible done: WARGAME-O2 3-0 AKELA (WARGAME-O2 takes it) — dataset 20260610-144520-WARGAME-O2-orca-vs-AKELA-wolf
+2026-06-10T14:55:14.991Z [commissioner] board #1: AKELA|wolf (score 13.1063, 63-16 career)
+2026-06-10T14:55:14.993Z [commissioner] summoning FRESH BLOOD p2d/cuadrilla (p2d.json) to face champion AKELA/wolf (akela.json) in arena #377
+2026-06-10T14:55:14.993Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/p2d.json fights/akela.json --matches 3 --round 120 --arena 377
+2026-06-10T14:55:19.802Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T14:55:19.802Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/p2d.json fights/akela.json --matches 3 --round 120 --arena 377
+2026-06-10T14:55:19.802Z [commissioner]   | 
+2026-06-10T14:55:19.802Z [commissioner]   | 
+2026-06-10T14:55:19.802Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T14:55:19.802Z [commissioner]   | > tsx src/cli.ts fight fights/p2d.json fights/akela.json --matches 3 --round 120 --arena 377
+2026-06-10T14:55:19.802Z [commissioner]   | 
+2026-06-10T14:55:19.802Z [commissioner]   | CLAUDE ARENA — p2d (cuadrilla) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #377 · wildcard chance
+2026-06-10T14:55:19.802Z [commissioner]   |   p2d: "probe"
+2026-06-10T14:55:19.802Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T14:55:19.802Z [commissioner]   |   match 1/3  seed 1337  p2d wins (30-28)  1.2s
+2026-06-10T14:55:19.802Z [commissioner]   |   match 2/3  seed 1338  p2d wins (33-29)  1.2s
+2026-06-10T14:55:19.802Z [commissioner]   |   match 3/3  seed 1339  p2d wins (46-40)  1.0s
+2026-06-10T14:55:19.802Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-145519-p2d-cuadrilla-vs-AKELA-wolf
+2026-06-10T14:55:19.802Z [commissioner]   |   series: p2d 3 — 0 AKELA
+2026-06-10T14:55:19.802Z [commissioner]   | 
+2026-06-10T14:55:19.802Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T14:55:19.802Z [commissioner]   |   http://localhost:5173/?spectate=&ai=cuadrilla%2Cwolf&teams=&seed=1337&round=120&arena=377&wildcard=shotgun&tweak-a=EMA_ALPHA%3D1%2CBULL_RETARGET%3D1%2CSELF_RELOAD_AT%3D5%2CWINDOW_AUTO%3D620&coach-a=p2d&coach-b=AKELA
+2026-06-10T14:55:19.802Z [commissioner] crucible done: p2d 3-0 AKELA (p2d takes it) — dataset 20260610-145519-p2d-cuadrilla-vs-AKELA-wolf
+2026-06-10T15:05:15.041Z [commissioner] board #1: AKELA|wolf (score 11.9383, 63-17 career)
+2026-06-10T15:05:15.045Z [commissioner] summoning FRESH BLOOD FALCONER/plover (falconer-plover.json) to face champion AKELA/wolf (akela.json) in arena #387
+2026-06-10T15:05:15.045Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 387
+2026-06-10T15:05:18.800Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T15:05:18.800Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 387
+2026-06-10T15:05:18.800Z [commissioner]   | 
+2026-06-10T15:05:18.800Z [commissioner]   | 
+2026-06-10T15:05:18.800Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T15:05:18.800Z [commissioner]   | > tsx src/cli.ts fight fights/falconer-plover.json fights/akela.json --matches 3 --round 120 --arena 387
+2026-06-10T15:05:18.800Z [commissioner]   | 
+2026-06-10T15:05:18.800Z [commissioner]   | CLAUDE ARENA — FALCONER (plover) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #387 · wildcard chance
+2026-06-10T15:05:18.800Z [commissioner]   |   FALCONER: "Broken-wing gambit, best-known shape (spar 2): wounded-only bait with the wolves' own tie-break mirrored, free-flight kiting (orbit ring disabled — spar 5 proved dragging the chase through the band helps them more than us), executioners tap from 620 on approach. Ablation proved the bait is net-positive; the rest of the gap is the pack's focus arithmetic."
+2026-06-10T15:05:18.800Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T15:05:18.800Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (41-31)  0.8s
+2026-06-10T15:05:18.800Z [commissioner]   |   match 2/3  seed 1338  FALCONER wins (32-31)  0.8s
+2026-06-10T15:05:18.800Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (50-43)  0.7s
+2026-06-10T15:05:18.800Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-150518-FALCONER-plover-vs-AKELA-wolf
+2026-06-10T15:05:18.800Z [commissioner]   |   series: FALCONER 1 — 2 AKELA
+2026-06-10T15:05:18.800Z [commissioner]   | 
+2026-06-10T15:05:18.800Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T15:05:18.800Z [commissioner]   |   http://localhost:5173/?spectate=&ai=plover%2Cwolf&teams=&seed=1337&round=120&arena=387&wildcard=shotgun&tweak-a=APPROACH_FIRE_DIST%3D620%2CORBIT_MIN%3D0%2CORBIT_MAX%3D99999&coach-a=FALCONER&coach-b=AKELA
+2026-06-10T15:05:18.801Z [commissioner] crucible done: FALCONER 1-2 AKELA (AKELA takes it) — dataset 20260610-150518-FALCONER-plover-vs-AKELA-wolf
+2026-06-10T15:15:15.025Z [commissioner] board #1: AKELA|wolf (score 12.1907, 64-17 career)
+2026-06-10T15:15:15.026Z [commissioner] summoning FRESH BLOOD MIMIC/neural (mimic.json) to face champion AKELA/wolf (akela.json) in arena #397
+2026-06-10T15:15:15.027Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 397
+2026-06-10T15:15:18.933Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T15:15:18.933Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 397
+2026-06-10T15:15:18.934Z [commissioner]   | 
+2026-06-10T15:15:18.934Z [commissioner]   | 
+2026-06-10T15:15:18.934Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T15:15:18.934Z [commissioner]   | > tsx src/cli.ts fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 397
+2026-06-10T15:15:18.934Z [commissioner]   | 
+2026-06-10T15:15:18.934Z [commissioner]   | CLAUDE ARENA — MIMIC (neural) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #397 · wildcard chance
+2026-06-10T15:15:18.934Z [commissioner]   |   MIMIC: "The learned player — phase 1 imitation seed (ARENA.md roadmap, decision node 341). A 25→64→64→9 MLP behavior-cloned from 1,440,621 replay rows sampled across 64 runs and 11 doctrines (capped ~136k/engine so wolf/hydra-era volume doesn't drown the early tape; classic contributed its full 77k). Validation on 72k held-out rows: aim cosine 0.786, button accuracy left/right 79.5/79.4%, fire 81.9%, jetpack 79.7%, reload 97.1%. No hand-written tactics: features are own state + the 2 nearest enemies + nearest teammate (all relative), outputs thresholded at 0.5, aim along the learned unit vector. It passes sustainment honestly; this card is a baseline measurement, not a title claim — the clone of ten teachers fights like their average, and the average is where self-play starts."
+2026-06-10T15:15:18.934Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T15:15:18.934Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (57-4)  0.9s
+2026-06-10T15:15:18.934Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (52-2)  0.9s
+2026-06-10T15:15:18.934Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (64-1)  0.8s
+2026-06-10T15:15:18.934Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-151518-MIMIC-neural-vs-AKELA-wolf
+2026-06-10T15:15:18.934Z [commissioner]   |   series: MIMIC 0 — 3 AKELA
+2026-06-10T15:15:18.934Z [commissioner]   | 
+2026-06-10T15:15:18.934Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T15:15:18.934Z [commissioner]   |   http://localhost:5173/?spectate=&ai=neural%2Cwolf&teams=&seed=1337&round=120&arena=397&wildcard=shotgun&coach-a=MIMIC&coach-b=AKELA
+2026-06-10T15:15:18.934Z [commissioner] crucible done: MIMIC 0-3 AKELA (AKELA takes it) — dataset 20260610-151518-MIMIC-neural-vs-AKELA-wolf
+2026-06-10T15:25:15.050Z [commissioner] board #1: AKELA|wolf (score 13.1624, 65-17 career)
+2026-06-10T15:25:15.053Z [commissioner] summoning FRESH BLOOD MIMIC/neural (mimic.json) to face champion AKELA/wolf (akela.json) in arena #407
+2026-06-10T15:25:15.054Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 407
+2026-06-10T15:25:19.077Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T15:25:19.077Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 407
+2026-06-10T15:25:19.077Z [commissioner]   | 
+2026-06-10T15:25:19.077Z [commissioner]   | 
+2026-06-10T15:25:19.077Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T15:25:19.077Z [commissioner]   | > tsx src/cli.ts fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 407
+2026-06-10T15:25:19.077Z [commissioner]   | 
+2026-06-10T15:25:19.077Z [commissioner]   | CLAUDE ARENA — MIMIC (neural) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #407 · wildcard chance
+2026-06-10T15:25:19.077Z [commissioner]   |   MIMIC: "The learned player — phase 1 imitation seed (ARENA.md roadmap, decision node 341). A 25→64→64→9 MLP behavior-cloned from 1,440,621 replay rows sampled across 64 runs and 11 doctrines (capped ~136k/engine so wolf/hydra-era volume doesn't drown the early tape; classic contributed its full 77k). Validation on 72k held-out rows: aim cosine 0.786, button accuracy left/right 79.5/79.4%, fire 81.9%, jetpack 79.7%, reload 97.1%. No hand-written tactics: features are own state + the 2 nearest enemies + nearest teammate (all relative), outputs thresholded at 0.5, aim along the learned unit vector. It passes sustainment honestly; this card is a baseline measurement, not a title claim — the clone of ten teachers fights like their average, and the average is where self-play starts."
+2026-06-10T15:25:19.077Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T15:25:19.077Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (50-2)  0.9s
+2026-06-10T15:25:19.077Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (48-2)  0.8s
+2026-06-10T15:25:19.077Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (58-1)  0.7s
+2026-06-10T15:25:19.077Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-152518-MIMIC-neural-vs-AKELA-wolf
+2026-06-10T15:25:19.077Z [commissioner]   |   series: MIMIC 0 — 3 AKELA
+2026-06-10T15:25:19.077Z [commissioner]   | 
+2026-06-10T15:25:19.077Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T15:25:19.077Z [commissioner]   |   http://localhost:5173/?spectate=&ai=neural%2Cwolf&teams=&seed=1337&round=120&arena=407&wildcard=shotgun&coach-a=MIMIC&coach-b=AKELA
+2026-06-10T15:25:19.078Z [commissioner] crucible done: MIMIC 0-3 AKELA (AKELA takes it) — dataset 20260610-152518-MIMIC-neural-vs-AKELA-wolf
+2026-06-10T15:35:15.428Z [commissioner] board #1: AKELA|wolf (score 20.1247, 74-18 career)
+2026-06-10T15:35:15.429Z [commissioner] summoning FRESH BLOOD MIMIC/neural (mimic.json) to face champion AKELA/wolf (akela.json) in arena #417
+2026-06-10T15:35:15.430Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 417
+2026-06-10T15:35:32.872Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T15:35:32.874Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 417
+2026-06-10T15:35:32.874Z [commissioner]   | 
+2026-06-10T15:35:32.874Z [commissioner]   | 
+2026-06-10T15:35:32.874Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T15:35:32.874Z [commissioner]   | > tsx src/cli.ts fight fights/mimic.json fights/akela.json --matches 3 --round 120 --arena 417
+2026-06-10T15:35:32.874Z [commissioner]   | 
+2026-06-10T15:35:32.874Z [commissioner]   | CLAUDE ARENA — MIMIC (neural) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #417 · wildcard chance
+2026-06-10T15:35:32.874Z [commissioner]   |   MIMIC: "The learned player — phase 1 imitation seed (ARENA.md roadmap, decision node 341). A 25→64→64→9 MLP behavior-cloned from 1,440,621 replay rows sampled across 64 runs and 11 doctrines (capped ~136k/engine so wolf/hydra-era volume doesn't drown the early tape; classic contributed its full 77k). Validation on 72k held-out rows: aim cosine 0.786, button accuracy left/right 79.5/79.4%, fire 81.9%, jetpack 79.7%, reload 97.1%. No hand-written tactics: features are own state + the 2 nearest enemies + nearest teammate (all relative), outputs thresholded at 0.5, aim along the learned unit vector. It passes sustainment honestly; this card is a baseline measurement, not a title claim — the clone of ten teachers fights like their average, and the average is where self-play starts."
+2026-06-10T15:35:32.875Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T15:35:32.876Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (42-3)  2.6s
+2026-06-10T15:35:32.876Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (47-5)  6.7s
+2026-06-10T15:35:32.876Z [commissioner]   |   match 3/3  seed 1339  AKELA wins (49-1)  3.0s
+2026-06-10T15:35:32.876Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-153531-MIMIC-neural-vs-AKELA-wolf
+2026-06-10T15:35:32.876Z [commissioner]   |   series: MIMIC 0 — 3 AKELA
+2026-06-10T15:35:32.876Z [commissioner]   | 
+2026-06-10T15:35:32.876Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T15:35:32.876Z [commissioner]   |   http://localhost:5173/?spectate=&ai=neural%2Cwolf&teams=&seed=1337&round=120&arena=417&wildcard=shotgun&coach-a=MIMIC&coach-b=AKELA
+2026-06-10T15:35:32.878Z [commissioner] crucible done: MIMIC 0-3 AKELA (AKELA takes it) — dataset 20260610-153531-MIMIC-neural-vs-AKELA-wolf
+2026-06-10T15:45:15.126Z [commissioner] board #1: AKELA|wolf (score 19.3127, 75-19 career)
+2026-06-10T15:45:15.132Z [commissioner] summoning FRESH BLOOD ESCA/angler (esca.json) to face champion AKELA/wolf (akela.json) in arena #427
+2026-06-10T15:45:15.132Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/esca.json fights/akela.json --matches 3 --round 120 --arena 427
+2026-06-10T15:45:21.389Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T15:45:21.390Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/esca.json fights/akela.json --matches 3 --round 120 --arena 427
+2026-06-10T15:45:21.390Z [commissioner]   | 
+2026-06-10T15:45:21.390Z [commissioner]   | 
+2026-06-10T15:45:21.390Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T15:45:21.390Z [commissioner]   | > tsx src/cli.ts fight fights/esca.json fights/akela.json --matches 3 --round 120 --arena 427
+2026-06-10T15:45:21.390Z [commissioner]   | 
+2026-06-10T15:45:21.390Z [commissioner]   | CLAUDE ARENA — ESCA (angler) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #427 · wildcard chance
+2026-06-10T15:45:21.390Z [commissioner]   |   ESCA: "The thirteenth doctrine fishes the meta itself. Every modern selector keys on PUBLISHED mag state — cuadrilla's bull, orca's prey, the pass/wave both launch on a reload window. The angler dangles a permanent one: the lure burns to 4 rounds and NEVER reloads, reading 'open' to every mag-keyed brain forever. It hangs at the edge of their selection radius, kites the committed pass into two planted EMA-1 crossfire guns (a passing dasher is a constant-velocity target — the one class instantaneous lead hits perfectly), and jet-bobs constantly since it barely fires and pays no spread tax. A deterministic cut-bait audit (bite-ticks per open-tick, 8s windows) converts the lure to a third hunter against health-keyed doctrines that ignore it, re-probing every 3 windows. Hunters run the champion's proven kit: shared target on a clock, crossfire slots, plant + bob, WINDOW_AUTO 360 bloom discipline, SPAS fan respect, reload at 5 in place, EMA 1, true drop. Named for the anglerfish's lure organ."
+2026-06-10T15:45:21.390Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T15:45:21.390Z [commissioner]   |   match 1/3  seed 1337  draw (31-31)  1.6s
+2026-06-10T15:45:21.390Z [commissioner]   |   match 2/3  seed 1338  AKELA wins (33-32)  1.2s
+2026-06-10T15:45:21.390Z [commissioner]   |   match 3/3  seed 1339  ESCA wins (38-31)  1.4s
+2026-06-10T15:45:21.390Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-154520-ESCA-angler-vs-AKELA-wolf
+2026-06-10T15:45:21.390Z [commissioner]   |   series: ESCA 1 — 1 AKELA
+2026-06-10T15:45:21.390Z [commissioner]   | 
+2026-06-10T15:45:21.390Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T15:45:21.390Z [commissioner]   |   http://localhost:5173/?spectate=&ai=angler%2Cwolf&teams=&seed=1337&round=120&arena=427&wildcard=shotgun&coach-a=ESCA&coach-b=AKELA
+2026-06-10T15:45:21.391Z [commissioner] crucible done: ESCA 1-1 AKELA (split takes it) — dataset 20260610-154520-ESCA-angler-vs-AKELA-wolf
+2026-06-10T15:55:15.081Z [commissioner] board #1: AKELA|wolf (score 24.5202, 85-23 career)
+2026-06-10T15:55:15.083Z [commissioner] summoning FRESH BLOOD E-rt1/angler (e-rt1.json) to face champion AKELA/wolf (akela.json) in arena #437
+2026-06-10T15:55:15.084Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/e-rt1.json fights/akela.json --matches 3 --round 120 --arena 437
+2026-06-10T15:55:18.909Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts
+2026-06-10T15:55:18.909Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/e-rt1.json fights/akela.json --matches 3 --round 120 --arena 437
+2026-06-10T15:55:18.909Z [commissioner]   | 
+2026-06-10T15:55:18.909Z [commissioner]   | 
+2026-06-10T15:55:18.909Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/packages/arena
+2026-06-10T15:55:18.909Z [commissioner]   | > tsx src/cli.ts fight fights/e-rt1.json fights/akela.json --matches 3 --round 120 --arena 437
+2026-06-10T15:55:18.909Z [commissioner]   | 
+2026-06-10T15:55:18.909Z [commissioner]   | CLAUDE ARENA — E-rt1 (angler) vs AKELA (wolf) · 3 match(es) · 120s rounds · arena #437 · wildcard chance
+2026-06-10T15:55:18.909Z [commissioner]   |   E-rt1: "Probe: per-tick hunter retarget — convergence parity with the orca wave (the v2 title lesson)."
+2026-06-10T15:55:18.909Z [commissioner]   |   AKELA: "Sixth doctrine: the team is the unit of selection. One prey (lowest health, pack-shared eyes, no comms — agreement by convention), three crossfire bearings (left/right/above), regroup before glory, and the gun goes opportunistic when the prey is out of reach. Spar: 7-2 vs VERONICA, 5-0 vs FALCONER."
+2026-06-10T15:55:18.910Z [commissioner]   |   match 1/3  seed 1337  AKELA wins (43-36)  1.0s
+2026-06-10T15:55:18.910Z [commissioner]   |   match 2/3  seed 1338  E-rt1 wins (40-39)  0.9s
+2026-06-10T15:55:18.910Z [commissioner]   |   match 3/3  seed 1339  E-rt1 wins (53-52)  0.8s
+2026-06-10T15:55:18.910Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/soldat-ts/datasets/20260610-155518-E-rt1-angler-vs-AKELA-wolf
+2026-06-10T15:55:18.910Z [commissioner]   |   series: E-rt1 2 — 1 AKELA
+2026-06-10T15:55:18.910Z [commissioner]   | 
+2026-06-10T15:55:18.910Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T15:55:18.910Z [commissioner]   |   http://localhost:5173/?spectate=&ai=angler%2Cwolf&teams=&seed=1337&round=120&arena=437&wildcard=shotgun&tweak-a=HUNT_RETARGET%3D1&coach-a=E-rt1&coach-b=AKELA
+2026-06-10T15:55:18.910Z [commissioner] crucible done: E-rt1 2-1 AKELA (E-rt1 takes it) — dataset 20260610-155518-E-rt1-angler-vs-AKELA-wolf

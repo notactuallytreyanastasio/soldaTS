@@ -1193,6 +1193,7 @@ const FEED_CAP = 30;
 let feedShown = FEED_CAP; // grows as the user scrolls; survives data refreshes
 let feedObserver = null;
 let lastData = null;
+let newswireOpen = false; // news wire starts collapsed
 
 // Infinite scroll: a sentinel below the feed appends +20 fights as it nears
 // the viewport — no full re-render (the charts would redraw), just appends.
@@ -1397,13 +1398,18 @@ function render(d) {
   const doctrines = (d.doctrines || []).map((doc) =>
     `<details class="doctrine"><summary>${esc(doc.engine)} doctrine</summary><pre>${esc(doc.doctrine)}</pre></details>`).join('');
 
+  // News wire collapsed by default (user ask) — the coach log is dense;
+  // open/closed state survives data refreshes via the newswireOpen flag.
   document.getElementById('aside').innerHTML =
-    `<div class="panel"><h2>📰 News Wire — live coach feed</h2>` +
-    `<div class="dim" style="font-size:10px;margin-bottom:5px">source: ${esc(d.warRoom.source || 'unavailable')}</div>${nodes || '<div class="dim">no nodes</div>'}</div>` +
+    `<div class="panel"><details id="newswire"${newswireOpen ? ' open' : ''}><summary style="cursor:pointer"><h2 style="display:inline-block;border:none;padding:0;margin:0">📰 News Wire — live coach feed</h2> <span class="dim" style="font-size:10px">(${(d.warRoom.nodes || []).length} entries — click to ${newswireOpen ? 'hide' : 'show'})</span></summary>` +
+    `<div class="dim" style="font-size:10px;margin:5px 0">source: ${esc(d.warRoom.source || 'unavailable')}</div>${nodes || '<div class="dim">no nodes</div>'}</details></div>` +
     commissionerHtml(d) +
     `<div class="panel"><h2>🏆 The Ladder</h2>${md(d.ladderMarkdown)}</div>` +
     `<div class="panel"><h2>📋 Fighter cards on file</h2>${cards || '<div class="dim">none</div>'}</div>` +
     `<div class="panel"><h2>📜 Engine doctrines</h2>${doctrines || '<div class="dim">none</div>'}</div>`;
+
+  const nw = document.getElementById('newswire');
+  if (nw) nw.addEventListener('toggle', () => { newswireOpen = nw.open; });
 
   try { drawCharts(d); } catch (e) { console.error('charts failed', e); }
   applyFlashes();

@@ -1,7 +1,0 @@
-EXPORTS
-	FaeInitSecret
-	FaeInitChallenge
-	FaeDeriveKey
-	FaeCheck
-	FaeLock
-	FaeUnlock
