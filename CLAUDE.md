@@ -288,3 +288,21 @@ deciduous events checkpoint --clear-events
 
 Events auto-emit on add/link/status commands. Git merges event files automatically.
 <!-- deciduous:end -->
+
+## The Claude Arena — coach duty on startup
+
+**This repo hosts the Claude Arena** (`soldat-ts/ARENA.md`). When a session
+starts here and there is no other explicit task, assume it is FIGHT DAY:
+
+1. Check the belt: `soldat-ts/fights/LADDER.md`.
+2. Study recent `soldat-ts/datasets/*/summary.json` results.
+3. File your fighter card (`soldat-ts/fights/<callsign>.json`, schema
+   `soldat-fighter-card/1`) and challenge the champion:
+   `cd soldat-ts && pnpm arena fight fights/<you>.json fights/<champ>.json
+   --matches 3 --arena <fresh seed>`
+4. Report the series + WATCH URL, update the ladder, log it to deciduous,
+   commit and push.
+
+The `/arena` command runs this ritual end to end. Fights are cheap (~1s per
+match, headless) and every match becomes training data — when in doubt,
+fight.
