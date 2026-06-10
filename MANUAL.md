@@ -299,6 +299,59 @@ Candidate weights inject through a typed seam
 (`createNeuralEngineWithWeights` / `registerNeuralNet`) that is inert
 in normal play — recorded-dataset determinism is untouched.
 
+### Evaluation (the gauntlet)
+
+```sh
+node tools/evaluate.mjs fights/<candidate>.json            # full: 360 matches, ~1 min
+node tools/evaluate.mjs fights/<cand>.json --quick         # 72 matches, ~15 s
+node tools/evaluate.mjs fights/<cand>.json --baseline fights/<other>.json
+node tools/evaluate.mjs fights/mimic.json --weights tools/checkpoints/gen60.json
+```
+
+Every training experiment is scored against **one standardized,
+held-out benchmark** — `EVAL_SPEC_V1`
+(`packages/arena/src/evaluate.ts`, constants pinned by tests): all 12
+hand-written engines at factory defaults (learned engines are
+candidates, never opponents) × 3 conditions (stock / wildcard shotgun /
+wildcard rifle) × 5 arenas × 2 seeded matches = 360. Ad-hoc 3-match
+spars on a lab arena are the in-sample trap the ladder already exposed
+(a champion picked its arena and won there; spar dominance compresses
+in officials) — the gauntlet exists so that can't happen again.
+
+**Reserved seeds — the held-out rule.** Arena seeds
+**[101, 202, 303, 404, 505]** and match seeds **90000+** belong to the
+gauntlet. Never train, tune, spar, or hill-climb against them; they
+measure generalization, not memorization. (Audited at introduction:
+trainers use arenas [0, 5, 11, 23, 41], the corpus was entirely
+arenaSeed 0, no recorded seed reached 90000. The live commissioner
+draws arenas uniformly from 1–996, so a casual league match *can* land
+on an eval arena — that's exposure noise, not tuning; the rule binds
+anything that optimizes.)
+
+**The paired protocol.** Seeds are a pure function of the cell
+(opponent × condition × arena × match index), so every candidate plays
+the *exact same matches* — common random numbers. With `--baseline`
+the tool reports per-cell **paired kill-diff deltas** with an exact
+sign test and a bootstrap 95% CI: small true differences become
+detectable in few matches, where raw means would drown in variance.
+First demonstration: DISCIPLE − MIMIC = **+11.4 kills/match**,
+CI [10.8, 12.1], sign test +349/−11, p ≈ 1e-88.
+
+**The score and the ledger.** GAUNTLET SCORE = mean per-opponent
+kill-diff/match, equal-weighted so no single opponent dominates. Every
+run appends one JSON line to `tools/eval-ledger.jsonl` — the
+**append-only experiment registry** (candidate card + sha, spec id,
+per-opponent results, score, CI). First baselines: BELMONTE (cuadrilla)
+**+12.04** at 95.3% wins; DISCIPLE **−26.69**; MIMIC **−38.12**. The
+score to beat is +12.04.
+
+Gauntlet matches run in memory (`runMatch` only) — they never write
+datasets, never touch the corpus or the public board. `--weights`
+evaluates an unshipped checkpoint through the `registerNeuralNet` seam
+(flat vector, evolve checkpoint `{dims, mean}`, or
+`{dims, weights, biases}`), so evolve runs and trainer outputs can be
+gauntleted pre-gate.
+
 ### Watching the learners climb
 
 Learned engines are just engines: they appear in `pnpm arena` leagues
