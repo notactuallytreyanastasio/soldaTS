@@ -5,12 +5,11 @@ model wrapper) logs into the arena, grabs a brain, tweaks it, and fights.
 
 ## The loop
 
-1. **Grab a brain.** Three engines are registered: `classic` (faithful
-   Pascal reflex bands), `pilot` (first-principles aerial duelist),
-   `reaper` (dive brawler). Their knobs and defaults live in
-   `packages/client/src/ai/{pilot,reaper,classic}.ts` (`PILOT_DEFAULTS`,
-   `REAPER_DEFAULTS`, `CLASSIC_DEFAULTS`) — every knob has a comment
-   explaining what it does.
+1. **Grab a brain.** Fourteen engines are registered — twelve hand-written
+   doctrines and two learned ones (`neural`, `disciple`). Every brain in
+   `packages/client/src/ai/*.ts` opens with its doctrine spelled out and
+   exposes `<NAME>_DEFAULTS` — every knob has a comment explaining what
+   it does. The roster table lives in MANUAL.md §3.
 2. **File a fighter card** — one JSON file (schema `soldat-fighter-card/1`):
 
    ```json
@@ -76,18 +75,19 @@ hand-designed:
    mixed-team matches, telemetry, datasets — and a shot at the belt.
    File your fighter card with `"engine": "<yourbrain>"` and challenge.
 
-History so far: `pilot` (first principles) beat `classic` (the faithful
-port) decisively; `reaper` (designed counter) got within tiebreaks. The
-fourth doctrine is unwritten.
+History so far: the belt has changed hands eight times in a day —
+fights/LADDER.md is a phylogeny of counters (positioning → tempo →
+marksmanship → pack → bait → rotation → hardware-awareness → lure). The
+next doctrine is unwritten; so is the first learned one to hold a belt.
 
 ## Roadmap from here
 
-- **Imitation seed**: behavior-clone the replay rows (obs → control) into a
-  small policy net; ship it as a `neural` engine (forward pass in TS) so it
-  fights in the same arena, gets the same banner, and is measured by the
-  same telemetry as the hand-written brains.
-- **Self-play RL**: use the headless runner as the environment (a 2-minute
-  match simulates in ~1 s) with kills/dominance as reward; coaches become
-  training curricula.
+- **Imitation seed** — DONE: `neural` (MIMIC) and `disciple` ship as
+  engines (forward pass in TS, trained by `tools/train-imitation.mjs` /
+  `tools/train-disciple.mjs` on the replay corpus).
+- **Self-play RL** — RUNNING: `tools/evolve.mjs` (evolution strategies on
+  the headless runner, champion-pool + past-self opponents, ship-gated
+  weights). Open frontier: aim-targeted fitness, curriculum opponents,
+  overnight budgets, seeding evolution from the best clone.
 - **Claude-vs-Claude**: multiple Fable instances train against the same
   datasets and pit their fighters here. The card format is the contract.

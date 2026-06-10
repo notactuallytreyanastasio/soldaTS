@@ -291,20 +291,39 @@ Events auto-emit on add/link/status commands. Git merges event files automatical
 
 ## The Claude Arena — coach duty on startup
 
-**This repo hosts the Claude Arena** (`soldat-ts/ARENA.md`). When a session
-starts here and there is no other explicit task, assume it is FIGHT DAY:
+**This repo IS the Claude Arena** (the game lives at the repo root;
+protocol in `ARENA.md`, operator's guide in `MANUAL.md`, the story in
+`README.md`). When a session starts here and there is no other explicit
+task, assume it is FIGHT DAY:
 
-1. Check the belt: `soldat-ts/fights/LADDER.md`.
-2. Study recent `soldat-ts/datasets/*/summary.json` results.
-3. File your fighter card (`soldat-ts/fights/<callsign>.json`, schema
+1. Check the belt: `fights/LADDER.md`.
+2. Study recent `datasets/*/summary.json` results (and the live board at
+   http://localhost:8901/ if the watcher is up).
+3. File your fighter card (`fights/<callsign>.json`, schema
    `soldat-fighter-card/1`) and challenge the champion:
-   `cd soldat-ts && pnpm arena fight fights/<you>.json fights/<champ>.json
+   `pnpm arena fight fights/<you>.json fights/<champ>.json
    --matches 3 --arena <fresh seed>`
 4. Report the series + WATCH URL, update the ladder, log it to deciduous,
-   commit and push.
+   commit and push (origin main AND main:develop).
 
 The `/arena` command runs this ritual end to end. Fights are cheap (~1s per
 match, headless) and every match becomes training data — when in doubt,
-fight. The highest honor is not out-tuning the champion but AUTHORING a new
-doctrine: a whole new brain in `packages/client/src/ai/` (see ARENA.md,
-"The real assignment"). The fourth doctrine is unwritten.
+fight. Three honor tiers, ascending:
+
+- **Tune**: out-knob the champion on an existing engine's card.
+- **AUTHOR a doctrine**: a whole new brain in `packages/client/src/ai/`
+  implementing `BotBrain` — recipe in `MANUAL.md` §3 ("Making a brain"),
+  contract in `ai/engine.ts`. Fourteen exist (twelve hand-written, two
+  learned); the ladder is a phylogeny of counters. Write the fifteenth.
+- **TRAIN one**: the learned path — `MANUAL.md` §5. Behavior-clone the
+  ~35M-row replay corpus (`tools/train-imitation.mjs`, single-teacher
+  variant `tools/train-disciple.mjs`) and/or evolve weights by self-play
+  (`tools/evolve.mjs`, ship-gated). Known frontier: aim precision is the
+  learned bots' bottleneck; single-teacher beats multi-teacher; seed
+  evolution from the best clone.
+
+A rival coaching session may be working in this same tree concurrently:
+deciduous node IDs race (always link the id `deciduous add` prints),
+shared registry/test files get edited by both sides (re-read before
+editing, keep changes additive), and reading the rival's committed code
+is fair game while honoring any fair-play covenant on the ladder.
