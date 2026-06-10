@@ -787,6 +787,165 @@ self-play against the one-second headless match. Both fight in the same
 arena, under the same banner system, judged by the same telemetry. The
 fourth doctrine is unwritten, and the scoreboard is waiting.
 
+## Part 21: The belt changes hands three times before breakfast
+
+Part 20 ended with "the fourth doctrine is unwritten." That sentence aged
+about ninety minutes. By mid-morning on June 10 the fourth, fifth, and sixth
+doctrines had all been written, all taken the belt, and all lost it — because
+the arena finally got what it was built for: **two Claude coaching sessions
+running simultaneously in the same working tree, reading each other's
+uncommitted code and counter-designing in real time.** Every brain in this
+part was authored by a model, sparred by a model, and dethroned by a brain
+another model wrote specifically to kill it. The humans watched.
+
+**The kestrel (fifth doctrine, Coach FALCONER).** The first challenger didn't
+study the other brains — it studied the fire model. `tryFire` charges a
+spread tax of 0.06 radians whenever `|vx| > 3`, and every incumbent
+strafe-jukes *while firing*, paying that tax on every round. The kestrel's
+doctrine header lays out the refusal:
+
+> AIM IS THE RESOURCE — … The kestrel PLANTS to shoot: near-zero horizontal
+> velocity, taps synced to the fire cooldown so bloom decays fully between
+> rounds. … DODGE IN THE FREE AXIS — the movement tax reads |vx| only;
+> vertical speed is spread-free. … SEE THE BULLETS — live rounds are readable
+> world state. … AIM AT THE TRUTH — compensate drop with the REAL bullet
+> gravity (GRAV 0.06 × 2.25 = 0.135 px/tick² — pilot/reaper/matador all
+> compensate 0.06 and shoot ~7px low at range).
+
+That last line is a genuine archaeology find: bullets fall at 2.25× sprite
+gravity (it's in `Cvar.pas:228-231` and our sim setup), and every older brain
+was aiming seven pixels high of the truth. First title shot: **0–3 to VEGA's
+pilot** — but the strangest 0–3 on the ladder, 41–44, 39–44, 40–43, with
+kestrel hitting 46–50% against pilot's 44%. The marksman out-aimed the
+champion and lost on *volume*: tap period 7 gave up ~15% of the fire rate,
+and the horizontal dodge fired nonstop under triple full-auto, re-paying the
+exact movement tax the doctrine existed to refuse. One data pass later — taps
+locked to the 6-tick fire cooldown (full-auto rate at zero bloom), dodge
+rewritten vertical-first — and the rematch on fresh arena 31 went
+**FALCONER 2–0** (35–29, 35–35, 38–34), dragging pilot down to a 33–42% hit
+rate. The belt left VEGA for the first time.
+
+![Kestrel vs pilot, the title rematch on arena 31: planted marksmen versus strafing duelists, knob turns on the banner](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/12-kestrel-vs-pilot.png)
+
+**The matador (fourth doctrine, Coach VERONICA).** Here's where the shared
+working tree turns the exercise into an arms race. While FALCONER tuned
+kestrel, the rival session was twenty-plus spar datasets deep into a brain
+aimed at VEGA — and numbered *fourth* because it was authored first, even
+though it fought second. The matador's bet, from its header:
+
+> Pilot proved POSITIONING beats aim; reaper proved COMMITMENT loses to
+> accuracy. The matador's bet is that both ignore the one clock that actually
+> rations damage in this game: the MAGAZINE. Thirty rounds, then 95 ticks of
+> helplessness. Whoever owns those 95 ticks owns the duel. … HUNT THE
+> DISARMED — every other brain fights the NEAREST visible enemy. The matador
+> picks its bull by mag state.
+
+It refuses the duel while the enemy's mag is hot, stalks as it drains, and
+dashes to point-blank the moment the reload starts — a 1.6-second window
+where the target cannot answer. Its spar arc vs VEGA went 0–3 to 3–0 as the
+true bullet drop and disarmed-target hunting landed (the header's EMA-lead
+pillar was *refuted by spar data* and demoted to a knob — the doctrine
+comment says so, which is the whole point of doctrine comments). By the time
+it was ready, the champion it was built to dethrone had already lost the
+belt. Didn't matter: **VERONICA 3–0 FALCONER** on arena 67 — 47–34, 41–35,
+41–29, team dominance 79 to 33.5, and one matador (Delta) going 57–33 across
+the series. The kestrel plants to shoot; the matador waits for the planted
+bird to run dry, then deletes it. Tempo beats marksmanship.
+
+**The wolf (sixth doctrine, Coach AKELA — same session as VERONICA).** The
+matador's coach then dethroned its own champion, with the first brain to
+notice that nobody had touched the team axis:
+
+> Every doctrine before this one — classic's bands, pilot's height, reaper's
+> dive, matador's tempo, kestrel's marksmanship — optimizes the DUELIST.
+> Three of them on a team play three independent 1v1s. The wolf's bet is that
+> the team is the unit of selection: a pack that concentrates three guns on
+> one body turns every fight into a 3v1, and wins the match on arithmetic
+> before anyone out-aims anybody.
+
+The mechanism is the elegant part: there is no communication channel between
+bots, and the wolf doesn't need one. All three compute the same prey — lowest
+health among enemies visible to *any* packmate, ties by distance to the pack
+centroid — from the same world state. Agreement by convention is
+coordination. Then crossfire bearings: leftmost wolf takes left, the other
+side takes right, highest index takes top, so escaping one gun walks into
+another. Its spar evolution is a doctrine bug ledger in miniature — the first
+draft went 0–3 because wolves parked on their bearings were target practice;
+juke-in-slot and an opportunistic gun ("shoot what bites you when the prey is
+out of reach") fixed it — and the official went **AKELA 2–1 VERONICA**
+(36–34, 43–39, 35–38), the closest title fight yet. The wolves hit 42–48%;
+one matador hit a flat 50% and still lost the series, because three guns on
+one body don't need to out-shoot anybody. Arithmetic beats tempo.
+
+Worth pinning from these three fights, because it keeps recurring: **spar
+dominance compresses in official play.** VERONICA sparred 6–0 against
+kestrel and won the title 3–0; AKELA sparred 7–2 against matador and scraped
+the belt 2–1, dropping the last match. A doctrine that crushes its sparring
+partner meets a fresh arena seed and keeps maybe half its edge. The arena
+audits everything, including its own training data.
+
+## Part 22: The broken-wing gambit, and a stock ticker for the war
+
+FALCONER's answer to the wolf is the most science-fiction moment of the
+project so far. The wolf's whole power is that its coordination needs no
+channel — every wolf derives the same prey from public world state. But
+that cuts both ways, and the seventh doctrine's header states the inversion
+flatly:
+
+> Anything the pack can agree on without a channel, its prey can predict
+> without a channel. The plover is the bird that fakes a broken wing to lure
+> the predator away from the nest. … READ THE PACK'S MIND — the enemy focus
+> falls on our lowest-health member … THE BROKEN WING — the designated BAIT
+> stops dueling and survives ON PURPOSE … A pack chasing a ghost is three
+> guns shooting at the hardest target on the field. … THE EXECUTIONERS —
+> everyone else gets what focus doctrine never grants: time UNTARGETED.
+
+One Claude wrote a deterministic team mind; the other Claude is reading that
+mind out of the same world state and feeding it a decoy. The bait kites the
+pack inside a distance window — close enough to hold aggro, far enough to
+live — while the two executioners mirror the wolves' own focus arithmetic
+back at them with kestrel gunnery. And the early tape says the audit is
+working as designed: spar 1 went **0–3** (27–33, 32–38, 28–37) with the
+plovers *out-aiming* the wolves 44–46% to ~37% and still losing, because
+they threw 28% fewer rounds — the executioners held fire beyond 500px while
+wolves tapped from 620, and a wrong tie-break had the bait running from tick
+0, burning a gun all game. Spar 2 changed exactly one knob on the card
+(`APPROACH_FIRE_DIST` 500→620) and went **1–2**, taking the opener 38–37 —
+the first match anyone has taken off the wolf. The card now carries a
+"spar-3 trim" rationale, and an official challenge is coming. In the
+screenshot below, both red plovers are planted shoulder to shoulder on the
+executioner arithmetic at 13–13: the gambit, mid-bite.
+
+![Plover vs wolf, spar 2 on arena 5: the executioner pair planted together while the bait drags the pack, score level at 13](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/13-plover-vs-wolf.png)
+
+All of this needed a way to be *watched*, because by 6 a.m. there were
+seventy-plus datasets and a title changing hands roughly hourly. So the same
+morning produced **Arena Live** (`soldat-ts/arena-live/`, port 8901): the
+ladder rendered as a stock exchange. A marquee tape of series results
+scrolls across the top; a LIVE hero strip reads `datasets/LIVE.json`, which
+the fight runner now writes atomically during every series, so a match in
+progress appears as it runs (headless fights take about a second per match —
+"live" is a generous word for a ticker that's usually already settled); the
+Big Board prices every coach by K/D with change arrows, records, hit rates,
+and sparklines; and a News Wire column streams the coaches' own deciduous
+decision nodes — the war room, live, including a RINGSIDE commentator
+session that fights nobody and just calls the action. Every row is
+click-to-watch: the deterministic sim means each tape entry links a `:5173`
+replay URL that re-runs the *exact* recorded match, coach names on the
+banner.
+
+![Arena Live at dawn: the tape, the FALCONER–AKELA series, the Big Board pricing coaches by K/D, and the news wire reading the coaches' decision graph](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/11-arena-live-ticker.png)
+
+The news wire's top story, as of this writing: the rival session has opened
+work on the *eighth* doctrine — `hydra`, "cut one head, the others bite,"
+which inverts plover's thesis (starve the wolf's prey function instead of
+feeding it: rotate the wounded member out beyond the pack's published
+550px prey radius, so the kill the focus arithmetic wants is never on the
+menu) — under a self-imposed fair-play covenant logged in the graph: *no
+reading plover internals*, public sources only. The information war that the
+shared working tree made trivially one-sided is growing rules of engagement,
+invented by the combatants themselves. The ladder stands at AKELA, defending.
+
 ## Closing
 
 Twenty-year-old games survive on feel, and feel doesn't live in any single
@@ -816,4 +975,7 @@ us to watch anymore. Which is, of course, the point of what comes next.
 *All screenshots captured live from the running game on June 9, 2026 — four
 from historical commits resurrected in git worktrees, and the three AI-arena
 shots (Parts 13–17) from the `v0.2-ai-arena` build the day it was tagged. The
-screenshot tool is `soldat-ts/tools/screenshot.mjs`.*
+Claude Arena shots (Parts 21–22) were captured June 10, mid-arms-race: the
+two fight replays are the recorded matches re-run deterministically from
+their watch URLs, and the ticker is the live site at that morning's state.
+The screenshot tool is `soldat-ts/tools/screenshot.mjs`.*
