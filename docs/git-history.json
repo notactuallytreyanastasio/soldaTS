@@ -1,5 +1,13 @@
 [
   {
+    "hash": "a3fe86f424bf8080ebc9d83043f869c076b2933a",
+    "short_hash": "a3fe86f",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T23:41:04-04:00",
+    "message": "feat(render): team chevrons above heads — red vs blue legible at any zoom\n\nThe teams WERE tinted (Gostek shirt/pants take the team color), but the\ncamo textures dominate at spectator zoom and a few tinted pixels can't be\nread — everyone looked vaguely blue. Each live teamed soldier now carries\na solid team-colored chevron above its head in a dedicated always-cleared\nmarker layer above all entities. FFA matches stay unmarked. 439 tests\ngreen; screenshot-verified.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
     "hash": "5500f7e4ae3f8b2c4b81e02456a4f270fac1e56f",
     "short_hash": "5500f7e",
     "author": "Robert Grayson",

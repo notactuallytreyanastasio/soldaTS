@@ -1836,6 +1836,17 @@
       "created_at": "2026-06-09T23:37:47.979966-04:00",
       "updated_at": "2026-06-09T23:37:47.979966-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"5500f7e\",\"confidence\":95}"
+    },
+    {
+      "id": 168,
+      "change_id": "7cd6e289-aa0e-4aec-93f5-5a6ae81b8cad",
+      "node_type": "outcome",
+      "title": "Team legibility fixed: chevron markers (439 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T23:41:05.165613-04:00",
+      "updated_at": "2026-06-09T23:41:05.165613-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"a3fe86f\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3917,6 +3928,17 @@
       "weight": 1.0,
       "rationale": "Committed; screenshot-verified",
       "created_at": "2026-06-09T23:37:48.130742-04:00"
+    },
+    {
+      "id": 200,
+      "from_node_id": 166,
+      "to_node_id": 168,
+      "from_change_id": "46efdee3-d22a-415e-8007-58d1a8d7f3dc",
+      "to_change_id": "7cd6e289-aa0e-4aec-93f5-5a6ae81b8cad",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Follow-on legibility fix",
+      "created_at": "2026-06-09T23:41:05.310471-04:00"
     }
   ]
 }
