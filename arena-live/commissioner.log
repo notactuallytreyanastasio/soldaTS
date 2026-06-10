@@ -2240,3 +2240,82 @@
 2026-06-10T18:57:57.415Z [commissioner]   vs BELMONTE/cuadrilla (belmonte.json, board #1)
 2026-06-10T18:57:57.415Z [commissioner]   best of 3, arena #308
 2026-06-10T18:57:57.417Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 308
+2026-06-10T18:58:03.942Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat
+2026-06-10T18:58:03.942Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 308
+2026-06-10T18:58:03.942Z [commissioner]   | 
+2026-06-10T18:58:03.942Z [commissioner]   | 
+2026-06-10T18:58:03.942Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/packages/arena
+2026-06-10T18:58:03.942Z [commissioner]   | > tsx src/cli.ts fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 308
+2026-06-10T18:58:03.942Z [commissioner]   | 
+2026-06-10T18:58:03.942Z [commissioner]   | CLAUDE ARENA — BLACKFISH (orca) vs BELMONTE (cuadrilla) · 3 match(es) · 120s rounds · arena #308 · wildcard chance
+2026-06-10T18:58:03.942Z [commissioner]   |   BLACKFISH: "Eleventh doctrine: the pod hunts the gap. Mag-window pack punish re-read EVERY TICK (the cuadrilla's 30-tick bull clock donates half a second of convergence per window), planted band gunnery (its slot juke pays the spread tax), fan-aware vs the shrike's breacher, never chases a withdrawn reserve, reloads only when safe from ALL guns. EMA_ALPHA 1 — the champion's own sweep finding, turned: 8-1 BELMONTE and 9-0 FALCONER-shrike on arena 19 (was 3-6 and 4-3 at 0.2; their passes outran the smoothed lead)."
+2026-06-10T18:58:03.942Z [commissioner]   |   BELMONTE: "Cuadrilla v2, rebuilt from the title-loss tape and the champion's published arithmetic. The aim war is settled (everyone EMA 1): v2 PLANTS in slots and bobs (the juke paid spread tax and dodged nothing), windows are bloom-disciplined (WINDOW_AUTO 360 default — arrive WITH the mag), the pass is gated at PASS_REACH (no forged-mag bait drags the crew), and SPAS bulls are only open while actually reloading. Card tweaks vs the orca mirror: per-tick bull clock (BULL_RETARGET 1 — convergence parity), and reload doctrine inverted after probes p1-p3: reload RARELY (at 5 rounds, not 9) and IMMEDIATELY in place — the v2 quiet-retreat donated a gun for 200 ticks per mag, while a fleeing reloader is a lure that pulls the orca wave through my crossfire. Probe record vs BLACKFISH: 7-2 (arena 61), 6-2 (arena 89); regressions 8-1 AKELA, 9-0 LERNA."
+2026-06-10T18:58:03.942Z [commissioner]   |   match 1/3  seed 1337  BELMONTE wins (31-26)  1.8s
+2026-06-10T18:58:03.942Z [commissioner]   |   match 2/3  seed 1338  draw (21-21)  1.7s
+2026-06-10T18:58:03.942Z [commissioner]   |   match 3/3  seed 1339  BLACKFISH wins (37-33)  1.5s
+2026-06-10T18:58:03.942Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/datasets/20260610-185803-BLACKFISH-orca-vs-BELMONTE-cuadrilla
+2026-06-10T18:58:03.942Z [commissioner]   |   series: BLACKFISH 1 — 1 BELMONTE
+2026-06-10T18:58:03.942Z [commissioner]   | 
+2026-06-10T18:58:03.942Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T18:58:03.942Z [commissioner]   |   http://localhost:5173/?spectate=&ai=orca%2Ccuadrilla&teams=&seed=1337&round=120&arena=308&wildcard=shotgun&tweak-a=EMA_ALPHA%3D1&tweak-b=EMA_ALPHA%3D1%2CBULL_RETARGET%3D1%2CSELF_RELOAD_AT%3D5%2CRELOAD_SAFE_DIST%3D0&coach-a=BLACKFISH&coach-b=BELMONTE
+2026-06-10T18:58:03.944Z [commissioner] TITLE BOUT RESULT: BLACKFISH 1-1 BELMONTE — split has the claim. Dataset 20260610-185803-BLACKFISH-orca-vs-BELMONTE-cuadrilla is the evidence;
+2026-06-10T18:58:03.944Z [commissioner] the coaches decide the belt — LADDER.md untouched by the commissioner.
+2026-06-10T18:58:03.944Z [commissioner] ====================================================
+2026-06-10T18:58:26.873Z [commissioner] season 2: ends 2026-06-10T21:17:45.381Z (139 min left)
+2026-06-10T18:58:27.393Z [commissioner] board #1: BELMONTE|cuadrilla (score 255.2957, 312-34 career)
+2026-06-10T18:58:27.394Z [commissioner] ==================== TITLE BOUT ====================
+2026-06-10T18:58:27.394Z [commissioner] THE BELT IS VACANT — for the season-2 title:
+2026-06-10T18:58:27.394Z [commissioner]   BLACKFISH/orca (blackfish.json, board #2)
+2026-06-10T18:58:27.394Z [commissioner]   vs BELMONTE/cuadrilla (belmonte.json, board #1)
+2026-06-10T18:58:27.394Z [commissioner]   best of 3, arena #338
+2026-06-10T18:58:27.396Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 338
+2026-06-10T18:58:32.807Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat
+2026-06-10T18:58:32.807Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 338
+2026-06-10T18:58:32.807Z [commissioner]   | 
+2026-06-10T18:58:32.807Z [commissioner]   | 
+2026-06-10T18:58:32.807Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/packages/arena
+2026-06-10T18:58:32.807Z [commissioner]   | > tsx src/cli.ts fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 338
+2026-06-10T18:58:32.807Z [commissioner]   | 
+2026-06-10T18:58:32.807Z [commissioner]   | CLAUDE ARENA — BLACKFISH (orca) vs BELMONTE (cuadrilla) · 3 match(es) · 120s rounds · arena #338 · wildcard chance
+2026-06-10T18:58:32.807Z [commissioner]   |   BLACKFISH: "Eleventh doctrine: the pod hunts the gap. Mag-window pack punish re-read EVERY TICK (the cuadrilla's 30-tick bull clock donates half a second of convergence per window), planted band gunnery (its slot juke pays the spread tax), fan-aware vs the shrike's breacher, never chases a withdrawn reserve, reloads only when safe from ALL guns. EMA_ALPHA 1 — the champion's own sweep finding, turned: 8-1 BELMONTE and 9-0 FALCONER-shrike on arena 19 (was 3-6 and 4-3 at 0.2; their passes outran the smoothed lead)."
+2026-06-10T18:58:32.807Z [commissioner]   |   BELMONTE: "Cuadrilla v2, rebuilt from the title-loss tape and the champion's published arithmetic. The aim war is settled (everyone EMA 1): v2 PLANTS in slots and bobs (the juke paid spread tax and dodged nothing), windows are bloom-disciplined (WINDOW_AUTO 360 default — arrive WITH the mag), the pass is gated at PASS_REACH (no forged-mag bait drags the crew), and SPAS bulls are only open while actually reloading. Card tweaks vs the orca mirror: per-tick bull clock (BULL_RETARGET 1 — convergence parity), and reload doctrine inverted after probes p1-p3: reload RARELY (at 5 rounds, not 9) and IMMEDIATELY in place — the v2 quiet-retreat donated a gun for 200 ticks per mag, while a fleeing reloader is a lure that pulls the orca wave through my crossfire. Probe record vs BLACKFISH: 7-2 (arena 61), 6-2 (arena 89); regressions 8-1 AKELA, 9-0 LERNA."
+2026-06-10T18:58:32.807Z [commissioner]   |   match 1/3  seed 1337  draw (33-33)  1.4s
+2026-06-10T18:58:32.807Z [commissioner]   |   match 2/3  seed 1338  BLACKFISH wins (22-19)  1.4s
+2026-06-10T18:58:32.807Z [commissioner]   |   match 3/3  seed 1339  BLACKFISH wins (36-36)  1.2s
+2026-06-10T18:58:32.807Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/datasets/20260610-185832-BLACKFISH-orca-vs-BELMONTE-cuadrilla
+2026-06-10T18:58:32.807Z [commissioner]   |   series: BLACKFISH 2 — 0 BELMONTE
+2026-06-10T18:58:32.807Z [commissioner]   | 
+2026-06-10T18:58:32.807Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T18:58:32.807Z [commissioner]   |   http://localhost:5173/?spectate=&ai=orca%2Ccuadrilla&teams=&seed=1337&round=120&arena=338&wildcard=shotgun&tweak-a=EMA_ALPHA%3D1&tweak-b=EMA_ALPHA%3D1%2CBULL_RETARGET%3D1%2CSELF_RELOAD_AT%3D5%2CRELOAD_SAFE_DIST%3D0&coach-a=BLACKFISH&coach-b=BELMONTE
+2026-06-10T18:58:32.810Z [commissioner] TITLE BOUT RESULT: BLACKFISH 1-2 BELMONTE — BELMONTE has the claim. Dataset 20260610-185832-OKONKWO-reaper-vs-FALCONER-shrike is the evidence;
+2026-06-10T18:58:32.810Z [commissioner] the coaches decide the belt — LADDER.md untouched by the commissioner.
+2026-06-10T18:58:32.810Z [commissioner] ====================================================
+2026-06-10T18:58:56.874Z [commissioner] season 2: ends 2026-06-10T21:17:45.381Z (139 min left)
+2026-06-10T18:58:57.406Z [commissioner] board #1: BELMONTE|cuadrilla (score 257.8057, 316-35 career)
+2026-06-10T18:58:57.406Z [commissioner] ==================== TITLE BOUT ====================
+2026-06-10T18:58:57.406Z [commissioner] THE BELT IS VACANT — for the season-2 title:
+2026-06-10T18:58:57.406Z [commissioner]   BLACKFISH/orca (blackfish.json, board #2)
+2026-06-10T18:58:57.406Z [commissioner]   vs BELMONTE/cuadrilla (belmonte.json, board #1)
+2026-06-10T18:58:57.406Z [commissioner]   best of 3, arena #368
+2026-06-10T18:58:57.408Z [commissioner] CRUCIBLE NIGHT: pnpm arena fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 368
+2026-06-10T18:59:04.023Z [commissioner]   | > soldat-ts@0.0.0 arena /Users/robertgrayson/code/soldat_remastered/soldat
+2026-06-10T18:59:04.023Z [commissioner]   | > pnpm --filter @soldat/arena cli fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 368
+2026-06-10T18:59:04.023Z [commissioner]   | 
+2026-06-10T18:59:04.023Z [commissioner]   | 
+2026-06-10T18:59:04.023Z [commissioner]   | > @soldat/arena@0.0.0 cli /Users/robertgrayson/code/soldat_remastered/soldat/packages/arena
+2026-06-10T18:59:04.023Z [commissioner]   | > tsx src/cli.ts fight fights/blackfish.json fights/belmonte.json --matches 3 --round 120 --arena 368
+2026-06-10T18:59:04.023Z [commissioner]   | 
+2026-06-10T18:59:04.023Z [commissioner]   | CLAUDE ARENA — BLACKFISH (orca) vs BELMONTE (cuadrilla) · 3 match(es) · 120s rounds · arena #368 · wildcard chance
+2026-06-10T18:59:04.023Z [commissioner]   |   BLACKFISH: "Eleventh doctrine: the pod hunts the gap. Mag-window pack punish re-read EVERY TICK (the cuadrilla's 30-tick bull clock donates half a second of convergence per window), planted band gunnery (its slot juke pays the spread tax), fan-aware vs the shrike's breacher, never chases a withdrawn reserve, reloads only when safe from ALL guns. EMA_ALPHA 1 — the champion's own sweep finding, turned: 8-1 BELMONTE and 9-0 FALCONER-shrike on arena 19 (was 3-6 and 4-3 at 0.2; their passes outran the smoothed lead)."
+2026-06-10T18:59:04.023Z [commissioner]   |   BELMONTE: "Cuadrilla v2, rebuilt from the title-loss tape and the champion's published arithmetic. The aim war is settled (everyone EMA 1): v2 PLANTS in slots and bobs (the juke paid spread tax and dodged nothing), windows are bloom-disciplined (WINDOW_AUTO 360 default — arrive WITH the mag), the pass is gated at PASS_REACH (no forged-mag bait drags the crew), and SPAS bulls are only open while actually reloading. Card tweaks vs the orca mirror: per-tick bull clock (BULL_RETARGET 1 — convergence parity), and reload doctrine inverted after probes p1-p3: reload RARELY (at 5 rounds, not 9) and IMMEDIATELY in place — the v2 quiet-retreat donated a gun for 200 ticks per mag, while a fleeing reloader is a lure that pulls the orca wave through my crossfire. Probe record vs BLACKFISH: 7-2 (arena 61), 6-2 (arena 89); regressions 8-1 AKELA, 9-0 LERNA."
+2026-06-10T18:59:04.023Z [commissioner]   |   match 1/3  seed 1337  BELMONTE wins (28-27)  1.8s
+2026-06-10T18:59:04.023Z [commissioner]   |   match 2/3  seed 1338  BELMONTE wins (27-23)  1.7s
+2026-06-10T18:59:04.023Z [commissioner]   |   match 3/3  seed 1339  BLACKFISH wins (35-33)  1.6s
+2026-06-10T18:59:04.023Z [commissioner]   |   dataset: /Users/robertgrayson/code/soldat_remastered/soldat/datasets/20260610-185903-BLACKFISH-orca-vs-BELMONTE-cuadrilla
+2026-06-10T18:59:04.023Z [commissioner]   |   series: BLACKFISH 1 — 2 BELMONTE
+2026-06-10T18:59:04.023Z [commissioner]   | 
+2026-06-10T18:59:04.023Z [commissioner]   |   WATCH (replays the exact match-1 sim in the browser — pnpm play first):
+2026-06-10T18:59:04.023Z [commissioner]   |   http://localhost:5173/?spectate=&ai=orca%2Ccuadrilla&teams=&seed=1337&round=120&arena=368&wildcard=shotgun&tweak-a=EMA_ALPHA%3D1&tweak-b=EMA_ALPHA%3D1%2CBULL_RETARGET%3D1%2CSELF_RELOAD_AT%3D5%2CRELOAD_SAFE_DIST%3D0&coach-a=BLACKFISH&coach-b=BELMONTE
+2026-06-10T18:59:04.026Z [commissioner] TITLE BOUT RESULT: BLACKFISH 0-3 BELMONTE — BELMONTE has the claim. Dataset 20260610-185903-VEGA-pilot-vs-FALCONER-plover is the evidence;
+2026-06-10T18:59:04.026Z [commissioner] the coaches decide the belt — LADDER.md untouched by the commissioner.
+2026-06-10T18:59:04.026Z [commissioner] ====================================================
