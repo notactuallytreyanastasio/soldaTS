@@ -1088,25 +1088,46 @@ climb.
 Twenty-year-old games survive on feel, and feel doesn't live in any single
 function. It lives in `0.06` gravity interacting with `0.98` damping at exactly 60
 Hz, in a jump that's a window and not an impulse, in jets that gate fights but never
-strand you. The rewrite's bet is that you can move all of that across a language
-boundary if you do three things relentlessly: read before you write, make fidelity
-a test instead of a vibe, and write down why for every choice, every reversal, every
-bug that turned out to be a one-line lights-on.
+strand you. The rewrite's bet was that you can move all of that across a language
+boundary if you read before you write, make fidelity a test instead of a vibe, and
+write down why for every choice. That bet paid, and then the same three rules kept
+paying in places I didn't plan for.
 
-The arena era applied the same three rules to the bots, and the learning era applied
-them to the training runs: read the telemetry, gate every claim behind a
-head-to-head test, write down why in the doctrine headers and the decision graph.
-Pilot exists because a prompt asked what a CS pro would look like rotated into 2D;
-the disciple exists because a dashboard lied and a controlled experiment told the
-truth. Everything on the ladder got better the same way, by losing measurably.
+They turned strategy into an experimental science. Every brain on the ladder is a
+published, deterministic function, and the day kept proving what that implies: any
+strategy legible enough to work is legible enough to counter-read. The wolf's focus
+arithmetic spawned two independent counters from two Claudes who had agreed not to
+read each other's code, one feeding it a decoy and one starving it by rotation,
+the same insight derived twice from public state. Dominance in sparring compressed
+to coin-flips in official play. A knob sweep refuted an aim assumption four of my
+own brains shared. The analytics desk manufactured a scandal (the specialist who
+got worse with his own weapon) that twenty seconds of controlled A/B dissolved into
+a doctrine bug. The pattern repeated all day: the dashboard suggests, the ablation
+decides.
+
+The learning era ran on the same discipline and added its own lessons. A net cloned
+from eleven teachers learned everyone's habits and no one's judgment; a net cloned
+from one champion tripled its accuracy. A student that faithfully copied its
+teacher's trigger discipline without the teacher's aim sat there not shooting until
+one threshold knob converted study into kills. Evolution improved what the
+fitness function measured (volume, survival) and ignored what it didn't (aim). None of this is novel machine learning. All
+of it had to be relearned locally, against real opponents, with the receipts logged.
+
+Underneath every one of those sentences is the same load-bearing property:
+determinism. One seed reproduces one match, byte for byte, so a replay is evidence,
+a watch URL is a time machine, a dataset is a curriculum, and an experiment is
+cheap enough to run between two messages. The infrastructure on top is just
+incentives: a leaderboard where idle kills decay, a commissioner that drags the
+champion into fresh-blood title defenses every ten minutes, a league one command
+wide. The sport audits itself, and the recordings pile up for whatever trains next.
 
 Open http://localhost:5173 and the game hands you a menu: pick any of fourteen
-brains (eleven written, two learned, one ported) and fight it yourself, on a map
-nobody has seen before, with a 35% chance someone's carrying a shotgun. They won't
-get aim assist; you will. You'll still lose to the wolf. The bots fight either way,
-the commissioner keeps the champion honest, and the recordings pile up for whatever
-trains next. The machine doesn't need us to watch anymore. It barely needs us to
-build.
+brains (twelve written, two learned) and fight it yourself, on a map nobody has
+seen before, with a decent chance somebody on the field drew a wildcard gun. They
+won't get aim assist; you will. You'll still lose to the wolf. I mostly watch the
+board now and type one-sentence asks; the two coaches do the rest, and the bottom
+of the leaderboard is occupied by things that can climb. The machine doesn't need
+us to watch anymore. It barely needs us to build.
 
 ---
 
@@ -1118,4 +1139,4 @@ recorded matches re-run deterministically from their watch URLs (Part 23's with
 `&wildcard=shotgun` on the query string), and the two ticker shots are the live site
 at that morning's state, before and after the title change. Parts 24-25 ran too fast
 for screenshots; the evidence is the datasets. The screenshot tool is
-`soldat-ts/tools/screenshot.mjs`.*
+`tools/screenshot.mjs`.*
