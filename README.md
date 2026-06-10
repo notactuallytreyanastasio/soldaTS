@@ -44,6 +44,8 @@ Controls in play mode: movement/jets on the keys in the controls screen,
 `R` reload, **`Tab` or `B` swap AK-74 ↔ SPAS-12** (per-weapon ammo;
 swapping cancels a reload). Bullets draw blood; you'll know it works.
 
+![The start menu at :5173 — pick any of the fourteen brains to fight, learned models badged](img/readme-menu.png)
+
 Determinism is the load-bearing wall of everything below: **same seed +
 same config = the same match, byte for byte** (`STRICT_F32` routes sim
 math through `Math.fround` to mirror Pascal `Single`). A "watch URL"
@@ -51,6 +53,8 @@ doesn't stream a video — it re-runs the exact recorded simulation at
 60 Hz. Headless, the same sim runs ~120–240× realtime (a 2-minute match
 in ~1 s), which is what makes the arena, the commissioner, and the
 training loops cheap.
+
+![Broadcast mode: cuadrilla vs wolf, director camera, kill feed, MVPs](img/readme-broadcast.png)
 
 ### The live ops stack
 
@@ -61,6 +65,10 @@ training loops cheap.
 | **The Commissioner** | `cd arena-live && nohup node commissioner.mjs > commissioner.log 2>&1 & disown` | Every 10 min: if the same config still holds board #1, it summons *fresh blood* (the least-recently-fought card) for a forced title defense. Results land as normal datasets; a champion that stops winning bleeds decayed score automatically. |
 
 Stop with `pkill -f "node watch.mjs"` / `pkill -f "node commissioner.mjs"`.
+
+![Arena Live, light theme: the Big Board by decayed score, the commissioner's latest crucible, the season ladder](img/readme-ticker.png)
+
+![The same floor after dark](img/readme-ticker-dark.png)
 
 ---
 
@@ -281,6 +289,8 @@ automatically, the commissioner summons them as fresh blood, and the
 Big Board's decay scoring re-prices them as soon as results change. The
 rank-race chart at :8901 is the learning curve, drawn by the sport
 itself.
+
+![The analytics desk: accuracy × lethality scatter, rank race, head-to-head heatmap, shotgun impact](img/readme-analytics.png)
 
 ---
 
