@@ -55,8 +55,10 @@ export interface MatchDump {
     map: string;
     botCount: number;
     spectate: boolean;
-    /** Bot-AI engine id driving this match (adapter, decision node 136). */
+    /** Bot-AI engine id(s) driving this match ('+'-joined when mixed). */
     engine: string;
+    /** Per-bot engine assignment (mixed matches split the roster). */
+    botEngines: Record<number, string>;
     tickHz: 60;
     sampleEveryTicks: number;
     names: Record<number, string>;
@@ -246,6 +248,7 @@ export class MatchRecorder {
       botCount,
       spectate,
       engine: game.aiEngineId,
+      botEngines: {},
       tickHz: 60,
       sampleEveryTicks: SAMPLE_EVERY_TICKS,
       names,
@@ -323,8 +326,14 @@ export class MatchRecorder {
     };
     return {
       schema: SCHEMA,
-      // engine re-read at dump time: the E-key hot-swap can change it.
-      meta: { ...this.meta, engine: this.game.aiEngineId },
+      // engine fields re-read at dump time: the E-key hot-swap changes them.
+      meta: {
+        ...this.meta,
+        engine: this.game.aiEngineId,
+        botEngines: Object.fromEntries(
+          this.game.botIndices().map((i) => [i, this.game.engineOf(i)]),
+        ),
+      },
       ...raw,
       derived: deriveStats(raw, this.meta.names),
     };

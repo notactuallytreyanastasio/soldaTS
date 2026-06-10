@@ -25,7 +25,7 @@ import { buildMapMesh } from '../render/mapMesh';
 import { MapRenderer } from '../render/renderer';
 import { EntityRenderer } from '../render/entityRender';
 import { InputController } from '../input/input';
-import { Hud, type HudState } from '../ui/hud';
+import { Hud, type HudState, type HudScores } from '../ui/hud';
 import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
 import { START_HEALTH } from '../ui/helpers';
 import { Crosshair } from '../render/fx';
@@ -251,6 +251,36 @@ const ENGINE_COLORS: Record<string, string> = {
 };
 
 /**
+ * Mixed-match scoreboard: total kills per ENGINE group (first two groups map
+ * onto the HUD's alpha/bravo). Returns null for uniform matches so the
+ * caller falls back to the FFA leader board.
+ */
+function engineScores(
+  game: Game,
+  board: KillBoard,
+  followed: number,
+): HudScores | null {
+  const groups = game.engineGroups();
+  if (groups.length < 2) return null;
+  const totals = new Map<string, number>(groups.map((g) => [g, 0]));
+  for (const [idx, k] of board.kills) {
+    const g = game.engineOf(idx);
+    if (totals.has(g)) totals.set(g, (totals.get(g) ?? 0) + k);
+  }
+  const a = totals.get(groups[0] ?? '') ?? 0;
+  const b = totals.get(groups[1] ?? '') ?? 0;
+  const followedGroup = game.engineOf(followed);
+  const leadingGroup = a >= b ? groups[0] : groups[1];
+  return {
+    alpha: a,
+    bravo: b,
+    playerKills: board.kills.get(followed) ?? 0,
+    leading: followedGroup === leadingGroup && a !== b,
+    gap: Math.abs(a - b),
+  };
+}
+
+/**
  * BIG top-center banner naming the engine driving this window and its
  * strategy in one line. Returns an updater so the E-key hot-swap can relabel
  * the window live.
@@ -277,8 +307,10 @@ function showEngineBanner(game: Game): () => void {
   banner.append(name, tagline);
   document.body.appendChild(banner);
   const update = (): void => {
-    name.textContent = game.aiEngineId.toUpperCase();
-    name.style.color = ENGINE_COLORS[game.aiEngineId] ?? '#ffffff';
+    const groups = game.engineGroups();
+    name.textContent = groups.map((g) => g.toUpperCase()).join(' vs ');
+    name.style.color =
+      groups.length === 1 ? (ENGINE_COLORS[groups[0] ?? ''] ?? '#ffffff') : '#ffffff';
     tagline.textContent = game.aiStrategy;
   };
   update();
@@ -609,10 +641,14 @@ async function main(): Promise<void> {
       } else if (key === 'a' || key === '0') {
         director.setAuto();
       } else if (key === 'e') {
-        // HOT-SWAP the brain: cycle to the next registered engine. Sprites,
+        // HOT-SWAP the brains: cycle classic → pilot → ... → MIXED (all
+        // engines splitting the bots in one arena) → classic. Sprites,
         // scores, and fuel carry over — only the thinking changes.
-        const ids = engineIds();
-        const next = ids[(ids.indexOf(game.aiEngineId) + 1) % ids.length];
+        const specs = [...engineIds(), engineIds().join(',')];
+        const cur = specs.findIndex(
+          (s) => s.split(',').join('+') === game.aiEngineId,
+        );
+        const next = specs[(cur + 1) % specs.length];
         if (next !== undefined) {
           game.setEngine(next);
           updateEngineBanner();
@@ -700,9 +736,17 @@ async function main(): Promise<void> {
         jet: fs?.jetsCount ?? 0,
         maxJet: JET_FUEL_MAX,
         ammo: game.ammoOf(followed),
-        // The weapon line doubles as the "now watching" label.
-        weaponName: `${nameOf(followed)} · ${game.reloadingOf(followed) ? 'RELOADING…' : 'RIFLE'}`,
-        scores: ffaScores(board.kills, followed),
+        // The weapon line doubles as the "now watching" label (mixed matches
+        // tag the followed bot with its engine).
+        weaponName:
+          `${nameOf(followed)}` +
+          (game.engineGroups().length > 1
+            ? ` [${(game.engineOf(followed)[0] ?? '?').toUpperCase()}]`
+            : '') +
+          ` · ${game.reloadingOf(followed) ? 'RELOADING…' : 'RIFLE'}`,
+        // Mixed match: the scoreboard becomes ENGINE vs ENGINE — the live
+        // answer to "which brain wins" in one shared arena.
+        scores: engineScores(game, board, followed) ?? ffaScores(board.kills, followed),
         killFeed: board.feed,
         fps: dt > 0 ? 1 / dt : 0,
       };

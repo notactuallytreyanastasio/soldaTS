@@ -193,8 +193,14 @@ export class Game {
   private readonly sprayHeat: number[] = [];
   /** Context handed to every bot brain (graph resolves live via getter). */
   private readonly engineCtx: BotEngineContext;
-  /** The active bot-AI engine (hot-swappable via setEngine). */
-  private engine: BotEngine;
+  /**
+   * Active bot-AI engines (hot-swappable via setEngine). One = a uniform
+   * match; several = a MIXED match with bots split round-robin and the
+   * scoreboard counting kills per engine (goal node 148).
+   */
+  private engines: BotEngine[];
+  /** Per-bot engine id (mixed matches assign round-robin). */
+  private readonly botEngine = new Map<number, string>();
 
   constructor(opts: GameOptions = {}) {
     this.world = createWorld();
@@ -230,36 +236,63 @@ export class Game {
       this.spawnSprite(this.playerIndex, this.spawnFor(0));
     }
 
-    // Bots, each driven by a brain from the selected engine.
-    this.engine = createEngine(opts.aiEngine);
+    // Bots. `aiEngine` may be one id ('pilot') or a comma list
+    // ('classic,pilot') — a list splits the bots round-robin into a MIXED
+    // match where the engines fight each other in the same arena.
+    this.engines = Game.resolveEngines(opts.aiEngine);
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
       const index = this.playerIndex + 1 + b;
       this.spawnSprite(index, this.spawnFor(index));
-      this.bots.push({ index, brain: this.engine.createBrain() });
+      const engine = this.engines[b % this.engines.length]!;
+      this.botEngine.set(index, engine.id);
+      this.bots.push({ index, brain: engine.createBrain() });
     }
   }
 
-  /** Active bot-AI engine id (for banners / telemetry). */
-  get aiEngineId(): string {
-    return this.engine.id;
+  /** Parse 'a' or 'a,b,...' into engine instances (unknown ids → classic). */
+  private static resolveEngines(spec: string | undefined): BotEngine[] {
+    const ids = (spec ?? 'classic')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+    return (ids.length > 0 ? ids : ['classic']).map((id) => createEngine(id));
   }
 
-  /** One-line strategy description of the active engine. */
+  /** Active engine id(s) — mixed matches join with '+' (telemetry-compact). */
+  get aiEngineId(): string {
+    return this.engineGroups().join('+');
+  }
+
+  /** Strategy line of the active engine, or a mixed-match banner line. */
   get aiStrategy(): string {
-    return this.engine.strategy;
+    const groups = this.engineGroups();
+    if (groups.length === 1) return this.engines[0]!.strategy;
+    return 'MIXED MATCH — engines share the arena; the score is engine vs engine';
+  }
+
+  /** Distinct engine ids in play, in assignment order. */
+  engineGroups(): readonly string[] {
+    return [...new Set(this.engines.map((e) => e.id))];
+  }
+
+  /** Engine id driving sprite `index` ('' for the human player slot). */
+  engineOf(index: number): string {
+    return this.botEngine.get(index) ?? '';
   }
 
   /**
-   * HOT-SWAP the bot-AI engine mid-match: every bot gets a fresh brain from
-   * the new engine on the next tick. Sprites, scores, fuel, and ammo carry
-   * over untouched — only the thinking changes.
+   * HOT-SWAP the bot-AI engine(s) mid-match: accepts one id or a comma list
+   * (mixed). Every bot gets a fresh brain on the next tick; sprites, scores,
+   * fuel, and ammo carry over untouched — only the thinking changes.
    */
-  setEngine(id: string): void {
-    this.engine = createEngine(id);
-    for (const bot of this.bots) {
-      bot.brain = this.engine.createBrain();
-    }
+  setEngine(spec: string): void {
+    this.engines = Game.resolveEngines(spec);
+    this.bots.forEach((bot, b) => {
+      const engine = this.engines[b % this.engines.length]!;
+      this.botEngine.set(bot.index, engine.id);
+      bot.brain = engine.createBrain();
+    });
   }
 
   /** Spawn point for a sprite index, cycling the configured list. */

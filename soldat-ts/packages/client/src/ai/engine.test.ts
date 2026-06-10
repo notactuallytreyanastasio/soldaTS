@@ -54,6 +54,57 @@ describe.each(['classic', 'pilot'] as const)(
   },
 );
 
+describe('mixed-engine matches (one arena, several brains)', () => {
+  it('splits bots round-robin across a comma list and reports groups', () => {
+    const game = new Game({
+      seed: 3,
+      spawns: ARENA_SPAWNS,
+      botCount: 4,
+      spectate: true,
+      aiEngine: 'classic,pilot',
+    });
+    expect(game.aiEngineId).toBe('classic+pilot');
+    expect(game.engineGroups()).toEqual(['classic', 'pilot']);
+    const assigned = game.botIndices().map((i) => game.engineOf(i));
+    expect(assigned).toEqual(['classic', 'pilot', 'classic', 'pilot']);
+  });
+
+  it('hot-swap homogenizes or re-mixes the roster', () => {
+    const game = new Game({
+      seed: 3,
+      spawns: ARENA_SPAWNS,
+      botCount: 4,
+      spectate: true,
+      aiEngine: 'classic,pilot',
+    });
+    game.setEngine('pilot');
+    expect(game.engineGroups()).toEqual(['pilot']);
+    game.setEngine('pilot,classic');
+    expect(game.botIndices().map((i) => game.engineOf(i))).toEqual([
+      'pilot',
+      'classic',
+      'pilot',
+      'classic',
+    ]);
+  });
+
+  it('a mixed match sustains itself (both brains fight in one world)', () => {
+    const game = new Game({
+      seed: 11,
+      spawns: ARENA_SPAWNS,
+      botCount: 4,
+      spectate: true,
+      aiEngine: 'classic,pilot',
+    });
+    const kills: { killer: number; victim: number }[] = [];
+    game.onKill = (killer, victim): void => {
+      kills.push({ killer, victim });
+    };
+    for (let t = 0; t < 6000; t++) game.tick(1 / 60);
+    expect(kills.length).toBeGreaterThan(0);
+  });
+});
+
 describe('play mode under the adapter (regression)', () => {
   it('default Game still spawns the player with classic bots', () => {
     const game = new Game({});
