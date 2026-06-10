@@ -1616,6 +1616,72 @@
       "created_at": "2026-06-09T20:05:27.956744-04:00",
       "updated_at": "2026-06-09T20:05:27.956744-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"3975c31\",\"confidence\":95}"
+    },
+    {
+      "id": 148,
+      "change_id": "91d298f6-3e0e-4665-94af-00b249bcab37",
+      "node_type": "goal",
+      "title": "Mixed-engine matches: split one match's bots across AI modes, engine-vs-engine score",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:17:27.484099-04:00",
+      "updated_at": "2026-06-09T20:17:27.484099-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"now how do we split it into multiple diff AI modes\"}"
+    },
+    {
+      "id": 149,
+      "change_id": "6bef0b6e-d434-407a-a87d-057c75d0be7f",
+      "node_type": "action",
+      "title": "Game accepts ?ai=a,b list: round-robin per-bot engines, engine-group scoreboard, banner shows X vs Y",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:17:27.634359-04:00",
+      "updated_at": "2026-06-09T20:17:27.634359-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 150,
+      "change_id": "b7c408c0-a755-47a2-8f2e-024c5ffed793",
+      "node_type": "goal",
+      "title": "Pilot bots cling to the ceiling (mutual height arms race)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:22:41.026710-04:00",
+      "updated_at": "2026-06-09T20:22:41.026710-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"in pilot mode they all cling to the ceiling\"}"
+    },
+    {
+      "id": 151,
+      "change_id": "0f2a84ca-f17a-422b-8408-d9218d57beeb",
+      "node_type": "action",
+      "title": "Ceiling-stall detection: jetting without rising for 25 ticks suppresses climbing for 3s",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:22:41.132137-04:00",
+      "updated_at": "2026-06-09T20:22:41.132137-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 152,
+      "change_id": "b1df737e-0b32-436a-8597-393543e61364",
+      "node_type": "outcome",
+      "title": "Ceiling-cling fixed: stall give-up spreads pilot matches across the airspace (399 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:25:23.883650-04:00",
+      "updated_at": "2026-06-09T20:25:23.883650-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"77b5ed6\",\"confidence\":95}"
+    },
+    {
+      "id": 153,
+      "change_id": "19713652-f860-4c3b-8a52-b2a3c1cdafbc",
+      "node_type": "outcome",
+      "title": "Mixed-engine matches live: ?ai=classic,pilot — first match pilot led 20:10",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:25:24.311756-04:00",
+      "updated_at": "2026-06-09T20:25:24.311756-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"0e1de5b\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3543,6 +3609,50 @@
       "weight": 1.0,
       "rationale": "Committed as 3975c31; CDP-verified swap",
       "created_at": "2026-06-09T20:05:37.051601-04:00"
+    },
+    {
+      "id": 186,
+      "from_node_id": 148,
+      "to_node_id": 149,
+      "from_change_id": "91d298f6-3e0e-4665-94af-00b249bcab37",
+      "to_change_id": "6bef0b6e-d434-407a-a87d-057c75d0be7f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation",
+      "created_at": "2026-06-09T20:17:27.778823-04:00"
+    },
+    {
+      "id": 187,
+      "from_node_id": 150,
+      "to_node_id": 151,
+      "from_change_id": "b7c408c0-a755-47a2-8f2e-024c5ffed793",
+      "to_change_id": "0f2a84ca-f17a-422b-8408-d9218d57beeb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Fix",
+      "created_at": "2026-06-09T20:22:41.239333-04:00"
+    },
+    {
+      "id": 188,
+      "from_node_id": 151,
+      "to_node_id": 152,
+      "from_change_id": "0f2a84ca-f17a-422b-8408-d9218d57beeb",
+      "to_change_id": "b1df737e-0b32-436a-8597-393543e61364",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed; screenshot-verified",
+      "created_at": "2026-06-09T20:25:24.024761-04:00"
+    },
+    {
+      "id": 189,
+      "from_node_id": 149,
+      "to_node_id": 153,
+      "from_change_id": "6bef0b6e-d434-407a-a87d-057c75d0be7f",
+      "to_change_id": "19713652-f860-4c3b-8a52-b2a3c1cdafbc",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed as 0e1de5b",
+      "created_at": "2026-06-09T20:25:24.449252-04:00"
     }
   ]
 }

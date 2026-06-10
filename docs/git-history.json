@@ -1,5 +1,21 @@
 [
   {
+    "hash": "77b5ed64fe890e17d045ab2b72c0215a069ac2c0",
+    "short_hash": "77b5ed6",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:25:23-04:00",
+    "message": "fix(ai): pilot ceiling-cling — concede unwinnable height contests\n\nTwo pilots each demanding a 50px height edge over the other is a symmetric\narms race that ended with the whole match pinned to the ceiling slab\n(user-reported). The brain now detects a stalled climb — burning jet for 25\nconsecutive ticks without actually rising — and concedes: thrust cut, all\nclimbing suppressed for ~3s (engage, reload-disengage, and hunt climbs all\ngated), so gravity brings the duel back into the arena before the next\nheight bid. Screenshot-verified: pilot-only match spreads across the full\nairspace. 399 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "0e1de5be8a87643b41562e9627d81f39ef39d795",
+    "short_hash": "0e1de5b",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:22:07-04:00",
+    "message": "feat: mixed-engine matches — split one match's bots across AI modes\n\n?ai now accepts a comma list (?ai=classic,pilot): bots are assigned to\nengines round-robin and the brains fight EACH OTHER in one shared arena.\nThe scoreboard becomes ENGINE vs ENGINE (group kill totals on the HUD's\nalpha:bravo line), the banner reads 'CLASSIC vs PILOT — MIXED MATCH', and\nthe followed-bot label carries a [C]/[P] engine tag. The E hot-swap cycle\nnow ends on the mixed mode: classic -> pilot -> classic+pilot -> ...\nsetEngine() accepts the same comma syntax, so a uniform match can be\nre-split live. Telemetry meta gains per-bot engine assignments (botEngines,\nre-read at dump time).\n\nFirst mixed-match screenshot: pilot leading classic 20:10 in one arena.\n399 tests green (3 new: round-robin split, hot-swap re-mix, mixed\nsustainment).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
     "hash": "3975c31bab72092f5e08a68326f6c07a6a1d5bd1",
     "short_hash": "3975c31",
     "author": "Robert Grayson",
