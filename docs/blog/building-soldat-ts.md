@@ -146,7 +146,7 @@ synthetic fallback scene's RGB triangles, the player a few pixels of vector art
 (captured mid-jump; the screenshot rig holds W down), and the HUD already
 wired:
 
-![First light: the synthetic test scene, player mid-jump](img/01-first-light.png)
+![First light: the synthetic test scene, player mid-jump](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/01-first-light.png)
 
 The lesson got its own observation node: structural verification (types, tests,
 CI) and ground-truth verification (pixels, playtests) are different categories,
@@ -168,7 +168,7 @@ arena generator, bots, shooting, death and respawn, and procedurally drawn
 This build, live today; red is the player (the rig is holding the mouse button
 — note the tracers in flight), blue are bots:
 
-![The combat sandbox: vector Gosteks, platforms, live tracer rounds](img/02-combat-sandbox.png)
+![The combat sandbox: vector Gosteks, platforms, live tracer rounds](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/02-combat-sandbox.png)
 
 Then came a decision that shaped everything after. Soldat ships ten primaries
 and four secondaries; we ported the entire stat table (every weapon's
@@ -207,7 +207,7 @@ With assets supplied, the flat-color world snaps into the real thing. This is
 the real-assets commit running `ctf_Ash` today — textured polygons, textured
 soldiers, the player mid-reload:
 
-![Real assets: textured ctf_Ash, textured Gosteks, RELOADING…](img/03-textured.png)
+![Real assets: textured ctf_Ash, textured Gosteks, RELOADING…](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/03-textured.png)
 
 The texturing pipeline had its own archaeology: `.PMS` maps store per-vertex
 UVs against a named texture file, edge-stretched scenery, and a sector grid for
@@ -229,7 +229,7 @@ dumping your elevation. The startup controls screen renders from
 cannot drift from reality. (It also currently shows on *every* startup, an
 explicit "the scheme is in flux" choice.)
 
-![The controls screen, rendered from the real binding table](img/07-play-controls.png)
+![The controls screen, rendered from the real binding table](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/07-play-controls.png)
 
 The bug this scheme surfaced is my favorite input bug of the project: **the
 first-mousemove takeover**. Aim follows the mouse if you use the mouse — but
@@ -312,7 +312,7 @@ turned the lights on.
 Here's the spectate-mode commit running today on `ctf_Ash`, six bots, kill feed
 flowing, the director parked on Foxtrot:
 
-![Spectate mode on ctf_Ash: director camera, kill feed, live scoreboard](img/04-spectate-ctfash.png)
+![Spectate mode on ctf_Ash: director camera, kill feed, live scoreboard](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/04-spectate-ctfash.png)
 
 With the match running headless we could finally *measure* the game. First
 judgment of a 3.7-minute match: 16.3 kills/min (hot), median 3.1 s between
@@ -355,13 +355,13 @@ distinct heights. 391 tests green.
 
 This is what greets you on startup today:
 
-![Skyreach: the default bot-vs-bot aerial match, mid-dogfight](img/05-skyreach-wide.png)
+![Skyreach: the default bot-vs-bot aerial match, mid-dogfight](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/05-skyreach-wide.png)
 
 And zoomed in mid-fight — two bots airborne, one reloading on the wing
 (the wheel-zoom is dispatched over CDP, so even the close-up is the real
 running game):
 
-![Close-up: airborne Gosteks trading fire over Skyreach](img/06-skyreach-closeup.png)
+![Close-up: airborne Gosteks trading fire over Skyreach](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/06-skyreach-closeup.png)
 
 ## Part 11: How this was actually built — the meta-machinery
 
@@ -493,7 +493,7 @@ color-coded banner — amber CLASSIC "REFLEX BANDS", cyan PILOT
 bot gets a fresh brain from the new engine on the next tick while sprites,
 scores, fuel, and ammo carry over. Only the thinking changes.
 
-![Duel mode: pilot and reaper racing in independent arenas, banners and follow lines live](img/10-duel-pilot-reaper.png)
+![Duel mode: pilot and reaper racing in independent arenas, banners and follow lines live](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/10-duel-pilot-reaper.png)
 
 ## Part 14: Mixed matches, and teams that follow engines
 
@@ -572,7 +572,7 @@ all four games is the engine with the most game wins. Pilot swept the first
 full round 4–0, across all four variants. For about a day, the meta looked
 solved.
 
-![The tournament: four variant games, leaderboards and MVPs per tile, aggregated standings in the sidebar](img/08-tournament.png)
+![The tournament: four variant games, leaderboards and MVPs per tile, aggregated standings in the sidebar](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/08-tournament.png)
 
 ## Part 16: Reaper — designing the counter, then tuning it by telemetry
 
@@ -653,7 +653,7 @@ This game's default mode is watching, and the tournament made watching the
 primary instrument for judging the AIs. An instrument you can't read isn't an
 instrument.
 
-![A pilot-vs-reaper team match: chevrons over heads, per-team MVP panel, the compact info card with its follow line](img/09-team-match.png)
+![A pilot-vs-reaper team match: chevrons over heads, per-team MVP panel, the compact info card with its follow line](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/09-team-match.png)
 
 ## Part 18: Another line in the sand
 
