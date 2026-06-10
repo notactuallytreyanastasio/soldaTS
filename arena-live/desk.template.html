@@ -582,7 +582,7 @@ function drawClimb(d) {
     for (const r of s.ranks) {
       const id = idOf(r);
       if (!series.has(id)) series.set(id, { id, coach: r.coach, engine: r.engine, pts: [] });
-      series.get(id).pts.push({ t, r: r.rank });
+      series.get(id).pts.push({ t, r: r.rank, trigger: s.trigger ?? null });
     }
   }
   const learned = [...series.values()].filter((s) => LEARNED[s.engine]);
@@ -609,8 +609,18 @@ function drawClimb(d) {
     svg.append('path').datum(s.pts).attr('fill', 'none')
       .attr('stroke', P.dim).attr('stroke-width', 1).attr('stroke-opacity', 0.16)
       .attr('d', line)
-      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n(the written field)`))
-      .on('mouseleave', hideTip);
+      .style('cursor', 'pointer')
+      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n(the written field — click to watch nearest)`))
+      .on('mouseleave', hideTip)
+      .on('click', (ev) => {
+        const tx = x.invert(d3.pointer(ev)[0]);
+        let best = null;
+        for (const pt of s.pts) {
+          if (!pt.trigger) continue;
+          if (!best || Math.abs(pt.t - tx) < Math.abs(best.t - tx)) best = pt;
+        }
+        if (best) openUrl(watchOf(d, best.trigger));
+      });
   }
   // weight-ship pins (evolve gates; ts = checkpoint mtime)
   const ships = ((d.desk && d.desk.evolveShips) || []).filter((e) => e.ts);
@@ -639,8 +649,18 @@ function drawClimb(d) {
     svg.append('path').datum(s.pts).attr('fill', 'none')
       .attr('stroke', col).attr('stroke-width', 2.4).attr('d', line)
       .style('cursor', 'pointer')
-      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n${LEARNED[s.engine].label}\ndebut #${s.pts[0].r} → now #${s.pts[s.pts.length - 1].r}\nbest #${Math.min(...s.pts.map((p) => p.r))} over ${s.pts.length} snapshots`))
-      .on('mouseleave', hideTip);
+      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n${LEARNED[s.engine].label}\ndebut #${s.pts[0].r} → now #${s.pts[s.pts.length - 1].r}\nbest #${Math.min(...s.pts.map((p) => p.r))} over ${s.pts.length} snapshots\n(click: watch the fight behind the nearest point)`))
+      .on('mouseleave', hideTip)
+      .on('click', (ev) => {
+        // every quantified point is a door into the game that produced it
+        const tx = x.invert(d3.pointer(ev)[0]);
+        let best = null;
+        for (const pt of s.pts) {
+          if (!pt.trigger) continue;
+          if (!best || Math.abs(pt.t - tx) < Math.abs(best.t - tx)) best = pt;
+        }
+        if (best) openUrl(watchOf(d, best.trigger));
+      });
     const first = s.pts[0], last = s.pts[s.pts.length - 1];
     svg.append('circle').attr('cx', x(first.t)).attr('cy', y(first.r)).attr('r', 3.5).attr('fill', col);
     svg.append('text').attr('x', x(first.t) + 5).attr('y', y(first.r) + 12)
@@ -797,7 +817,13 @@ function gunMeterHtml(d) {
     const isHot = hour.top && hour.top.weapon === w && hour.top.kills > 0;
     const hourKills = hour.tally[w] ?? 0;
     const top = b.rows[0];
-    return `<div class="gcell${isHot ? ' hot' : ''}">
+    let url = '';
+    outer: for (const f of d.fights || []) {
+      for (const m of f.matches || []) {
+        if (m.timeline && m.timeline.some((k) => (k.weapon ?? 'AK74') === w)) { url = m.watchUrl; break outer; }
+      }
+    }
+    return `<div class="gcell${isHot ? ' hot' : ''}"${url ? ` data-watch="${attr(url)}" style="cursor:pointer" title="watch the latest ${meta.name} kill"` : ''}>
       ${isHot ? `<span class="hourbadge">GUN OF THE HOUR · ${hour.top.kills}</span>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <span class="gname">${meta.icon} ${esc(meta.name)}</span><span class="gnum">${b.total.toLocaleString()}</span></div>
