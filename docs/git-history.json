@@ -1,5 +1,13 @@
 [
   {
+    "hash": "5500f7e4ae3f8b2c4b81e02456a4f270fac1e56f",
+    "short_hash": "5500f7e",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T23:37:47-04:00",
+    "message": "feat(client): adaptive match-info card, follow highlight, mute-by-default\n\nThe info layer is now watchable-WITH, not instead-of: small windows\n(tournament tiles are half-screen iframes) auto-render a COMPACT\nsemi-transparent card instead of the 34px banner — engines, strategy,\nvariant knob turns, and a new team-colored '▶ FOLLOWING <bot> — BLUE ·\npilot' line that tracks the director's camera. Full-size windows keep the\nbig banner (now with the following line too).\n\nControls: B (or the ℹ button) toggles the info card; M (or the 🔇/🔊\nbutton) toggles sound — MUTED BY DEFAULT per user preference. Buttons are\nclickable in every tile and blur after click so they never steal game keys.\n\n439 tests green; tournament screenshot verified all 4 tiles readable with\ncards + follow lines.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
     "hash": "235a0885aaf8016599fdf32b4452887fddfa6afa",
     "short_hash": "235a088",
     "author": "Robert Grayson",
