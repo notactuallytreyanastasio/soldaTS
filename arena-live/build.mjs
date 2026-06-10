@@ -54,7 +54,18 @@ function warn(msg) {
 
 function readJson(file) {
   try {
-    return JSON.parse(fs.readFileSync(file, 'utf8'));
+    // Datasets gzip their JSON now; old runs may also have been
+    // retro-compressed (name.json -> name.json.gz) behind a stale manifest —
+    // or the reverse. Resolve either direction before giving up.
+    let buf;
+    try {
+      buf = fs.readFileSync(file);
+    } catch (e) {
+      if (e.code !== 'ENOENT') throw e;
+      buf = fs.readFileSync(file.endsWith('.gz') ? file.slice(0, -3) : `${file}.gz`);
+    }
+    const raw = buf[0] === 0x1f && buf[1] === 0x8b ? zlib.gunzipSync(buf) : buf;
+    return JSON.parse(raw.toString('utf8'));
   } catch (e) {
     warn(`unreadable JSON ${path.relative(TS_ROOT, file)}: ${e.message}`);
     return null;
@@ -516,15 +527,27 @@ function computeBoard(fights) {
     ? (chrono[chrono.length - 1].createdAt ?? tsFromDirName(chrono[chrono.length - 1].dirName))
     : new Date().toISOString();
   applyDecay(rows, newest ?? new Date().toISOString());
-  const board = rankBoard(rows).map((r, i) => ({
-    ...r,
-    rank: i + 1,
-    // SERIES count drives history-favoring: rows with real history (>=3
-    // series) get full prominence on the page; one-shots fold away.
-    series: r.results.length,
-    // FORM: last 5 series results, most recent first ('w'/'l'/'d').
-    form: r.results.slice(-5).reverse().map((e) => e.res),
-  }));
+  const board = rankBoard(rows).map((r, i) => {
+    // STREAK: how many consecutive series the row's latest result has run
+    // ('w' x4 = four straight wins). Feeds the desk's lead-story picker.
+    let streak = null;
+    if (r.results.length) {
+      const lastRes = r.results[r.results.length - 1].res;
+      let n = 0;
+      for (let k = r.results.length - 1; k >= 0 && r.results[k].res === lastRes; k--) n += 1;
+      streak = { res: lastRes, n };
+    }
+    return {
+      ...r,
+      rank: i + 1,
+      // SERIES count drives history-favoring: rows with real history (>=3
+      // series) get full prominence on the page; one-shots fold away.
+      series: r.results.length,
+      // FORM: last 5 series results, most recent first ('w'/'l'/'d').
+      form: r.results.slice(-5).reverse().map((e) => e.res),
+      streak,
+    };
+  });
   for (const r of board) delete r.results; // internal detail, keep data.json lean
   return { board, canonical };
 }
@@ -637,6 +660,127 @@ function loadCommissioner() {
     stateMtime = fs.statSync(COMMISSIONER_STATE).mtime.toISOString();
   } catch { /* commissioner not started yet */ }
   return { state, stateMtime, cycleMs: COMMISSIONER_CYCLE_MS };
+}
+
+// --- the sports desk -------------------------------------------------------------
+// Server-side feed for site/desk.html ("THE SKYREACH DESK" — story-first front
+// page). Everything here is nice-to-have: computed in one try/catch from
+// build(), and the desk page renders whatever subset survived.
+
+const SEASON_STATE = path.join(HERE, 'season-state.json');
+const LEAGUE_STATE = path.join(HERE, 'league-state.json');
+const LEAGUE_PACE_MS = 30 * 1000; // keep in sync with league.mjs PACE_MS
+const EVOLVE_LOG = path.join(TS_ROOT, 'tools', 'evolve-log.jsonl');
+const CHECKPOINTS = path.join(TS_ROOT, 'tools', 'checkpoints');
+// Replay rows per match ≈ botCount × roundTicks / 2 (rows land at ~30 Hz);
+// matches league.mjs's own "~3.7M rows/hour at 120 matches/hour" arithmetic.
+const ROWS_PER_BOT_TICK = 0.5;
+
+/** Last season's winner: fights/SEASONS.md tail if present, else the
+ *  LADDER.md season-archive paragraph ("ran A → B → ... → ESCA (angler),
+ *  and closed"). Both best-effort. */
+function lastSeasonInfo(ladderMd) {
+  const seasonsMd = readText(path.join(FIGHTS, 'SEASONS.md'));
+  if (seasonsMd) {
+    const lines = seasonsMd.split('\n').map((s) => s.trim()).filter(Boolean);
+    return { source: 'fights/SEASONS.md', note: lines.slice(-3).join(' '), winner: null, engine: null };
+  }
+  const m = /ladder ran ([^.]*?),\s*and closed/i.exec(String(ladderMd ?? ''));
+  if (m) {
+    const last = m[1].split('→').pop().trim();
+    const w = /^([A-Z]+)\s*(?:\(([^)]+)\))?/.exec(last);
+    if (w) return { source: 'LADDER.md archive note', note: null, winner: w[1], engine: (w[2] ?? '').split(' ')[0] || null };
+  }
+  return null;
+}
+
+/** Training-corpus stats: dataset dirs on disk, matches/rows fought, GB,
+ *  and the last hour's match volume (the grinder's pulse). */
+function corpusStats(fights) {
+  let datasets = 0, bytes = 0;
+  for (const d of fs.readdirSync(DATASETS, { withFileTypes: true })) {
+    if (!d.isDirectory()) continue;
+    datasets += 1;
+    try {
+      for (const f of fs.readdirSync(path.join(DATASETS, d.name))) {
+        try { bytes += fs.statSync(path.join(DATASETS, d.name, f)).size; } catch { /* gone */ }
+      }
+    } catch { /* unreadable dir */ }
+  }
+  let matches = 0, estRows = 0, matchesLastHour = 0;
+  const hourAgo = Date.now() - 3600_000;
+  for (const f of fights) {
+    matches += f.matches.length;
+    estRows += f.matches.length * (f.botCount ?? 8) * (f.roundSecs ?? 120) * 60 * ROWS_PER_BOT_TICK;
+    const ts = new Date(f.createdAt ?? tsFromDirName(f.dirName) ?? 0).getTime();
+    if (ts >= hourAgo) matchesLastHour += f.matches.length;
+  }
+  return { datasets, matches, estRows: Math.round(estRows), gb: Number((bytes / 1e9).toFixed(2)), matchesLastHour };
+}
+
+/** Weight-ship events for the learned bots: evolve.mjs gate lines carry no
+ *  timestamp, but every shipped gen has a tools/checkpoints/gen<N>.json whose
+ *  mtime is the ship time. */
+function evolveShips() {
+  const out = [];
+  const log = readText(EVOLVE_LOG);
+  if (!log) return out;
+  for (const line of log.split('\n')) {
+    const t = line.trim();
+    if (!t || !t.includes('"gate"')) continue;
+    let e;
+    try { e = JSON.parse(t); } catch { continue; }
+    if (!e || typeof e.gen !== 'number') continue;
+    let ts = null;
+    try { ts = fs.statSync(path.join(CHECKPOINTS, `gen${e.gen}.json`)).mtime.toISOString(); } catch { /* pruned */ }
+    out.push({ gen: e.gen, gate: e.gate ?? '', shipped: !!e.shipped, ts, engine: 'neural' });
+  }
+  return out;
+}
+
+/** Which gun did the killing in the last hour (the desk's GUN METER). */
+function gunOfTheHour(fights) {
+  const hourAgo = Date.now() - 3600_000;
+  const tally = {};
+  for (const f of fights) {
+    const ts = new Date(f.createdAt ?? tsFromDirName(f.dirName) ?? 0).getTime();
+    if (ts < hourAgo) continue;
+    for (const m of f.matches) {
+      for (const k of m.timeline ?? []) {
+        const w = k.weapon ?? 'AK74';
+        tally[w] = (tally[w] ?? 0) + 1;
+      }
+    }
+  }
+  const top = Object.entries(tally).sort((a, b) => b[1] - a[1])[0] ?? null;
+  return { tally, top: top ? { weapon: top[0], kills: top[1] } : null };
+}
+
+function computeDesk(fights, doctrines, ladderMd) {
+  const seasonState = readJson(SEASON_STATE); // {season, startedAt, endsAt}
+  let league = null;
+  try {
+    const st = JSON.parse(fs.readFileSync(LEAGUE_STATE, 'utf8'));
+    const mtime = fs.statSync(LEAGUE_STATE).mtime.toISOString();
+    const engines = doctrines.filter((x) => x.isEngine).length;
+    const pairings = engines >= 2 ? (engines * (engines - 1)) / 2 : 0;
+    league = {
+      cycle: st.cycle ?? 0,
+      cycleInPass: pairings ? ((st.cycle ?? 0) % pairings) : 0,
+      pairings,
+      engines,
+      paceMs: LEAGUE_PACE_MS,
+      lastPairingAt: mtime,
+    };
+  } catch { /* grinder not running yet */ }
+  return {
+    seasonState,
+    lastSeason: lastSeasonInfo(ladderMd),
+    corpus: corpusStats(fights),
+    league,
+    evolveShips: evolveShips(),
+    gunHour: gunOfTheHour(fights),
+  };
 }
 
 // --- analytics desk -------------------------------------------------------------
@@ -884,6 +1028,17 @@ export function build() {
     gunBoards = null;
   }
 
+  const doctrines = loadDoctrines();
+
+  // The sports desk feed (site/desk.html): season clock, corpus stats,
+  // grinder progress, weight-ship events — never allowed to kill a build.
+  let desk = null;
+  try {
+    desk = computeDesk(fights, doctrines, ladderMarkdown);
+  } catch (e) {
+    warn(`desk data failed: ${e.message}`);
+  }
+
   const data = {
     generatedAt: new Date().toISOString(),
     // In-progress fight feed (schema soldat-arena-live/1), written atomically
@@ -891,7 +1046,7 @@ export function build() {
     live: readJson(path.join(DATASETS, 'LIVE.json')),
     ladderMarkdown,
     cards,
-    doctrines: loadDoctrines(),
+    doctrines,
     fights,
     board,
     rankHistory,
@@ -901,6 +1056,7 @@ export function build() {
     crucibles: loadCrucibles(),
     commissioner: loadCommissioner(),
     gunBoards,
+    desk,
     warRoom: loadDecisionGraph(),
     warnings: [...warnings],
   };
@@ -910,10 +1066,17 @@ export function build() {
   fs.writeFileSync(tmp, JSON.stringify(data, null, 1));
   fs.renameSync(tmp, path.join(SITE_DIR, 'data.json'));
   fs.writeFileSync(path.join(SITE_DIR, 'index.html'), readText(path.join(HERE, 'index.template.html')) ?? FALLBACK_HTML);
+  // Second dashboard: THE DESK (story-first sports front page).
+  try {
+    fs.writeFileSync(path.join(SITE_DIR, 'desk.html'), readText(path.join(HERE, 'desk.template.html')) ?? FALLBACK_DESK);
+  } catch (e) {
+    warn(`desk.html emit failed: ${e.message}`);
+  }
   return data;
 }
 
 const FALLBACK_HTML = '<!doctype html><title>Arena Live</title><p>template missing — see arena-live/index.template.html</p>';
+const FALLBACK_DESK = '<!doctype html><title>The Skyreach Desk</title><p>template missing — see arena-live/desk.template.html</p>';
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const d = build();

@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>THE SKYREACH DESK — the arena, story-first</title>
+<style>
+  /* ---- theme system --------------------------------------------------------
+     Same custom-property palette as the ticker (index.template.html) so the
+     two pages share a theme via localStorage('arena-theme'). The desk lays a
+     NEWSPAPER skin on top: serif display type, column rules, ruled boxes.
+     Dark = the night desk an hour before the presses run; light = the
+     morning sports section on warm paper. */
+  :root, :root[data-theme="dark"] {
+    --bg: #04060a;
+    --bg-deep: #020407;
+    --head-bg: #070a10;
+    --panel: #0a0e16;
+    --panel2: #0f1521;
+    --panel3: #05080d;
+    --hover: #141c2c;
+    --line: #1c2536;
+    --line2: #131a29;
+    --text: #d6dbe6;
+    --dim: #6b7690;
+    --red: #ff5d5d;
+    --blue: #5da9ff;
+    --gold: #f5c542;
+    --up: #19d67c;
+    --down: #ff4d4d;
+    --warn-bg: #2a1d10;
+    --warn-border: #5a3d1a;
+    --warn-text: #e8b06a;
+    --rule: #2a3650;
+    --ink: #e7ebf4;
+    --scanline: rgba(255, 255, 255, 0.022);
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  }
+  :root[data-theme="light"] {
+    --bg: #efe9db;
+    --bg-deep: #e6ddc8;
+    --head-bg: #f7f2e4;
+    --panel: #f9f5ea;
+    --panel2: #efe8d5;
+    --panel3: #f3eddd;
+    --hover: #e8dfc8;
+    --line: #cfc3a6;
+    --line2: #ded3b9;
+    --text: #2b2722;
+    --dim: #84785f;
+    --red: #b3362a;
+    --blue: #1f5fa8;
+    --gold: #8f6e0e;
+    --up: #14743f;
+    --down: #b3362a;
+    --warn-bg: #f3e2bd;
+    --warn-border: #c9a35a;
+    --warn-text: #6b4d12;
+    --rule: #2b2722;
+    --ink: #1c1914;
+    --scanline: transparent;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 var(--serif);
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999;
+    background: repeating-linear-gradient(0deg, var(--scanline) 0 1px, transparent 1px 3px);
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .dim { color: var(--dim); }
+  .cred { color: var(--red); } .cblue { color: var(--blue); }
+  .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
+  .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+  /* ---- masthead ------------------------------------------------------------ */
+  .masthead { background: var(--head-bg); border-bottom: 3px double var(--rule); padding: 14px 22px 10px; }
+  .ears { display: flex; align-items: center; gap: 14px; max-width: 1280px; margin: 0 auto; }
+  .ear {
+    flex: 1; font: 11px var(--mono); letter-spacing: 2px; color: var(--dim);
+  }
+  .ear:last-child { text-align: right; }
+  .ear a, .ear button {
+    border: 1px solid var(--line); border-radius: 6px; padding: 3px 11px;
+    background: var(--panel2); color: var(--gold); font: 11px var(--mono);
+    letter-spacing: 2px; cursor: pointer; white-space: nowrap;
+  }
+  .ear a:hover, .ear button:hover { border-color: var(--gold); text-decoration: none; }
+  .mast-title {
+    flex: 3; text-align: center; font-family: var(--serif); font-weight: 700;
+    font-size: clamp(28px, 4.6vw, 52px); letter-spacing: 6px; color: var(--ink);
+    text-transform: uppercase; line-height: 1.05; white-space: nowrap;
+  }
+  .mast-title .blade { color: var(--gold); }
+  .mast-sub {
+    max-width: 1280px; margin: 6px auto 0; display: flex; justify-content: space-between;
+    border-top: 1px solid var(--line); padding-top: 5px;
+    font: 10.5px var(--mono); letter-spacing: 1.6px; color: var(--dim); text-transform: uppercase;
+  }
+
+  /* ---- season banner --------------------------------------------------------- */
+  .banner {
+    max-width: 1280px; margin: 12px auto 0; padding: 0 22px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  }
+  .banner .cell {
+    border: 1px solid var(--rule); border-left: none; padding: 8px 14px; background: var(--panel);
+  }
+  .banner .cell:first-child { border-left: 1px solid var(--rule); border-radius: 8px 0 0 8px; }
+  .banner .cell:last-child { border-radius: 0 8px 8px 0; }
+  .banner .k { font: 9.5px var(--mono); letter-spacing: 2.4px; color: var(--gold); text-transform: uppercase; }
+  .banner .v { font-size: 19px; font-weight: 700; line-height: 1.25; color: var(--ink); }
+  .banner .v .num { font-size: 18px; }
+  .banner .s { font-size: 11.5px; color: var(--dim); }
+  @media (max-width: 900px) { .banner { grid-template-columns: 1fr 1fr; } .banner .cell { border-left: 1px solid var(--rule); } }
+
+  .warnbar { max-width: 1236px; background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); border-radius: 8px; padding: 6px 14px; margin: 10px auto 0; font: 12px var(--mono); }
+
+  .sheet { max-width: 1280px; margin: 0 auto; padding: 6px 22px 30px; }
+
+  /* ---- lead story ------------------------------------------------------------ */
+  .lead { border-bottom: 1px solid var(--rule); padding: 18px 0 16px; }
+  .kicker { font: 11px var(--mono); letter-spacing: 4px; color: var(--red); text-transform: uppercase; }
+  .kicker::before { content: "■ "; }
+  .headline {
+    font-family: var(--serif); font-weight: 800; color: var(--ink);
+    font-size: clamp(30px, 5.4vw, 58px); line-height: 1.04; margin: 8px 0 10px;
+    letter-spacing: -0.5px; text-wrap: balance;
+  }
+  .standfirst { font-size: 17.5px; line-height: 1.5; color: var(--text); max-width: 62rem; font-style: italic; }
+  .byline { margin-top: 10px; display: flex; gap: 16px; align-items: center; font: 11px var(--mono); letter-spacing: 1.6px; color: var(--dim); text-transform: uppercase; }
+  .watchlink {
+    border: 1px solid var(--gold); color: var(--gold); border-radius: 6px; padding: 4px 14px;
+    font: 12px var(--mono); letter-spacing: 2px; cursor: pointer; display: inline-block;
+  }
+  .watchlink:hover { background: var(--gold); color: var(--bg); text-decoration: none; }
+
+  /* ---- section frames --------------------------------------------------------- */
+  .sec { padding: 16px 0 6px; border-bottom: 1px solid var(--line); }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .sec-head h2 {
+    margin: 0; font-family: var(--serif); font-size: 21px; font-weight: 800;
+    letter-spacing: 1px; color: var(--ink); text-transform: uppercase;
+    border-bottom: 3px solid var(--gold); padding-bottom: 2px;
+  }
+  .sec-head .deck { font-size: 12.5px; color: var(--dim); font-style: italic; }
+  .chartnote { color: var(--dim); font: 11px var(--mono); margin: 4px 0; }
+  #ch-climb svg { width: 100%; height: auto; display: block; background: var(--panel3); border: 1px solid var(--line); border-radius: 8px; }
+  #ch-climb svg text { font-family: var(--mono); }
+
+  /* ---- rivalries + tonight grid ---------------------------------------------- */
+  .row2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; border-bottom: 1px solid var(--line); }
+  @media (max-width: 980px) { .row2 { grid-template-columns: 1fr; } }
+  .row2 > .sec { border-bottom: none; }
+  .row2 > aside.sec { border-left: 1px solid var(--line); padding-left: 22px; }
+  @media (max-width: 980px) { .row2 > aside.sec { border-left: none; padding-left: 0; } }
+
+  .rivgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .rivcard { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); padding: 10px 12px; cursor: pointer; }
+  .rivcard:hover { background: var(--hover); border-color: var(--gold); }
+  .rivcard .rt { font-family: var(--serif); font-weight: 800; font-size: 16px; color: var(--ink); line-height: 1.2; }
+  .rivcard .rr { font: 13px var(--mono); margin: 4px 0 6px; }
+  .rivbar { display: flex; height: 9px; border-radius: 5px; overflow: hidden; border: 1px solid var(--line2); }
+  .rivbar .w { background: var(--red); } .rivbar .l { background: var(--blue); } .rivbar .d0 { background: var(--dim); opacity: .5; }
+  .rivcard .rm { font: 10px var(--mono); color: var(--dim); margin-top: 6px; letter-spacing: 1px; }
+  .rivtag { font: 9px var(--mono); letter-spacing: 2px; border: 1px solid var(--line); border-radius: 9px; padding: 1px 7px; color: var(--dim); }
+  .rivtag.hot { color: var(--red); border-color: var(--red); }
+  .rivtag.even { color: var(--gold); border-color: var(--gold); }
+
+  /* ---- tonight's card ---------------------------------------------------------- */
+  .livebox { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; background: var(--panel); cursor: pointer; }
+  .livebox.on { border-color: var(--down); box-shadow: 0 0 0 1px var(--down); }
+  .livebox:hover { background: var(--hover); }
+  .livebox .tag { font: 10px var(--mono); letter-spacing: 3px; }
+  .livebox .reddot { color: var(--down); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .livebox .names { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+  .livebox .who { font-family: var(--serif); font-weight: 800; font-size: 19px; }
+  .livebox .eng { font: 10px var(--mono); color: var(--dim); }
+  .livebox .score { font: 700 26px var(--mono); color: var(--gold); }
+  .livebox .mchips { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; font: 11px var(--mono); }
+  .livebox .mchip { border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; background: var(--panel2); }
+  .deskrow { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; border-bottom: 1px dashed var(--line2); padding: 7px 0; font-size: 13px; }
+  .deskrow .k { font: 10px var(--mono); letter-spacing: 2px; color: var(--dim); text-transform: uppercase; }
+  .passbar { height: 8px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; background: var(--panel3); margin-top: 5px; }
+  .passbar > div { height: 100%; background: var(--up); }
+
+  /* ---- gun meter ---------------------------------------------------------------- */
+  .gunstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .gcell { border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; background: var(--panel); position: relative; }
+  .gcell .gname { font-family: var(--serif); font-weight: 800; font-size: 15px; color: var(--ink); }
+  .gcell .gnum { font: 700 20px var(--mono); color: var(--gold); }
+  .gcell .gsub { font: 10px var(--mono); color: var(--dim); letter-spacing: 1px; }
+  .gcell .gbar { height: 7px; border-radius: 4px; background: var(--panel3); border: 1px solid var(--line2); overflow: hidden; margin: 5px 0 4px; }
+  .gcell .gbar > div { height: 100%; background: var(--blue); }
+  .gcell.hot { border-color: var(--gold); }
+  .gcell .hourbadge {
+    position: absolute; top: -9px; right: 10px; background: var(--gold); color: var(--bg);
+    font: 700 9px var(--mono); letter-spacing: 1.5px; border-radius: 8px; padding: 2px 8px;
+  }
+
+  .presses { font: 11px var(--mono); letter-spacing: 1px; color: var(--dim); padding: 12px 0 0; text-align: center; }
+  .presses b { color: var(--text); }
+  footer { color: var(--dim); font: 11px var(--mono); text-align: center; padding: 14px 0 26px; }
+  #d3tip {
+    position: fixed; z-index: 1000; pointer-events: none; display: none;
+    background: var(--panel2); color: var(--text); border: 1px solid var(--gold);
+    border-radius: 6px; padding: 5px 9px; font: 11px/1.5 var(--mono); max-width: 320px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35); white-space: pre-line;
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+<header class="masthead">
+  <div class="ears">
+    <span class="ear"><a href="index.html" title="the stock-ticker view">📈 THE FLOOR</a></span>
+    <div class="mast-title">The <span class="blade">Skyreach</span> Desk</div>
+    <span class="ear"><button id="themeBtn" title="toggle light/dark">☀ / 🌙</button></span>
+  </div>
+  <div class="mast-sub"><span>all the arena that's fit to print</span><span id="edition">loading…</span><span>stories, not prices</span></div>
+</header>
+<div class="banner" id="banner"></div>
+<div id="warnbar" style="display:none" class="warnbar"></div>
+<main class="sheet">
+  <section class="lead" id="lead"><span class="dim">setting type…</span></section>
+  <section class="sec" id="climbSec">
+    <div class="sec-head"><h2>The Climb</h2><span class="deck">two bots that LEARNED to fight, against a field that was written — rank over time, weight-ships pinned</span></div>
+    <div id="ch-climb"></div>
+    <div class="chartnote" id="climbNote"></div>
+  </section>
+  <div class="row2">
+    <section class="sec"><div class="sec-head"><h2>Rivalries</h2><span class="deck">who owns whom, and where nobody blinks — click a card to watch their latest meeting</span></div><div class="rivgrid" id="rivalries"></div></section>
+    <aside class="sec"><div class="sec-head"><h2>Tonight's Card</h2></div><div id="tonight"></div></aside>
+  </div>
+  <section class="sec"><div class="sec-head"><h2>Gun Meter</h2><span class="deck">what the killing was done with</span></div><div class="gunstrip" id="gunmeter"></div></section>
+  <div class="presses" id="presses"></div>
+</main>
+<div id="d3tip"></div>
+<footer>THE SKYREACH DESK · second dashboard of the Claude Arena · refetches data.json every 5s · replays need <span class="num">pnpm play</span> on :5173 · <a href="index.html">back to the floor 📈</a></footer>
+<script>
+'use strict';
+// ============================ shared helpers ===================================
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const attr = (s) => esc(s).replace(/`/g, '');
+const ago = (iso) => {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!isFinite(ms)) return iso;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'moments ago';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + 'h ' + (m % 60) + 'm ago';
+  return Math.floor(h / 24) + 'd ago';
+};
+function fmtDur(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ' + (s % 60) + 's';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + 'h ' + (m % 60) + 'm';
+  return Math.floor(h / 24) + 'd';
+}
+function openUrl(u) { if (u) window.open(u, '_blank'); }
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-watch]');
+  if (!el) return;
+  if (e.target.closest('a, button')) return;
+  openUrl(el.getAttribute('data-watch'));
+});
+/** Stable string hash — picks a headline template per story id so the lead
+ *  doesn't read identical every build, but doesn't flicker between refreshes. */
+function hashStr(s) {
+  let h = 2166136261;
+  for (const c of String(s)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+  return h >>> 0;
+}
+const pickT = (arr, id) => arr[hashStr(id) % arr.length];
+
+// ---- theme (shared localStorage key with the ticker) --------------------------
+function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
+function applyTheme(t, persist) {
+  document.documentElement.setAttribute('data-theme', t);
+  if (persist) { try { localStorage.setItem('arena-theme', t); } catch {} }
+  document.getElementById('themeBtn').textContent = t === 'light' ? '🌙 NIGHT DESK' : '☀ MORNING EDITION';
+  if (lastData) render(lastData);
+}
+(function initTheme() {
+  let t = null;
+  try { t = new URLSearchParams(location.search).get('theme'); } catch {}
+  if (t !== 'light' && t !== 'dark') { try { t = localStorage.getItem('arena-theme'); } catch {} }
+  if (t !== 'light' && t !== 'dark') {
+    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function palette() {
+  return {
+    text: cssVar('--text'), ink: cssVar('--ink'), dim: cssVar('--dim'), line: cssVar('--line'),
+    gold: cssVar('--gold'), up: cssVar('--up'), down: cssVar('--down'),
+    blue: cssVar('--blue'), red: cssVar('--red'), panel3: cssVar('--panel3'),
+  };
+}
+const tipEl = () => document.getElementById('d3tip');
+function showTip(ev, text) {
+  const t = tipEl();
+  t.textContent = text;
+  t.style.display = 'block';
+  t.style.left = Math.min(ev.clientX + 14, window.innerWidth - 330) + 'px';
+  t.style.top = (ev.clientY + 12) + 'px';
+}
+function hideTip() { tipEl().style.display = 'none'; }
+
+// ============================ story desk (derivations) ==========================
+const idOfSide = (s) => {
+  const t = s.tweaks || {};
+  const sig = Object.keys(t).sort().map((k) => `${k}=${t[k]}`).join(',') || 'stock';
+  return `${String(s.coach).toUpperCase()}|${s.engine}|${sig}`;
+};
+const watchOf = (d, dataset) => {
+  const f = (d.fights || []).find((x) => x.dirName === dataset);
+  return f && f.matches[0] ? f.matches[0].watchUrl : '';
+};
+
+/** Belt status from LADDER.md + the title-bout record in crucibles.jsonl. */
+function beltStatus(d) {
+  const md = String(d.ladderMarkdown || '');
+  // anchor on the "## 🏆 Current champion" HEADING, not the intro prose
+  const sec = /##[^\n]*current champion[^\n]*\n([^]*?)(\n##|$)/i.exec(md);
+  const body = sec ? sec[1] : md;
+  const vacant = /\*\*VACANT\*\*/i.test(body);
+  let champ = null;
+  if (!vacant) {
+    const m = /\*\*([A-Z][A-Z]+)\b/.exec(body);
+    champ = m ? m[1] : null;
+  }
+  const bouts = (d.crucibles || []).filter((c) => c.kind === 'title-bout' && c.series && c.series.winner);
+  const claims = bouts.filter((c) => c.challenger && c.series.winner === c.challenger.coach);
+  return {
+    vacant, champ,
+    lastBout: bouts.length ? bouts[bouts.length - 1] : null,
+    claim: claims.length ? claims[claims.length - 1] : null, // newest successful challenge
+  };
+}
+const claimScore = (c) =>
+  `${c.series.challenger}–${c.series.champion}${c.series.draws ? `–${c.series.draws}d` : ''}`;
+
+/** THE LEAD — auto-editorial. Strict priority: season end > title bout >
+ *  belt change > biggest 2h upset > longest live win streak > latest tape. */
+function leadStory(d) {
+  const now = Date.now();
+  const bs = beltStatus(d);
+  const ss = d.desk && d.desk.seasonState;
+
+  // 1. the season bell has rung
+  if (ss && ss.endsAt && now > new Date(ss.endsAt).getTime()) {
+    const top = (d.board || [])[0];
+    const who = bs.champ || (bs.claim ? bs.claim.challenger.coach : (top ? top.coach : 'NOBODY'));
+    const id = 'se:' + ss.season;
+    return {
+      kicker: 'SEASON FINAL', id,
+      headline: pickT([
+        `THE BELL RINGS ON SEASON ${ss.season}: ${who} STANDS TALLEST`,
+        `SEASON ${ss.season} IS IN THE BOOKS — AND IT BELONGS TO ${who}`,
+        `FULL TIME, SEASON ${ss.season}: ${who} TAKES THE HONORS`,
+      ], id),
+      stand: `The season-${ss.season} window closed ${ago(ss.endsAt)}. ` +
+        (bs.champ ? `${bs.champ} holds the belt at the bell.`
+          : bs.claim ? `The belt was never formally filled — ${bs.claim.challenger.coach}'s ${claimScore(bs.claim)} title-bout claim is the strongest paper in the room.`
+          : 'The belt sits vacant; the decay board settles the argument.') +
+        (top ? ` The board's last word: ${top.coach}·${top.engine} at #1, score ${Number(top.score).toFixed(2)}.` : ''),
+      watch: bs.claim ? watchOf(d, bs.claim.dataset) : (top ? top.lastUrl : ''),
+      ts: ss.endsAt, why: 'season ended',
+    };
+  }
+
+  // 2. the latest title bout (kind:'title-bout' crucible with a decided series)
+  const tb = bs.lastBout;
+  if (tb && now - new Date(tb.ts).getTime() < 6 * 3600e3) {
+    const ch = tb.challenger.coach, cp = tb.champion.coach;
+    const chalWon = tb.series.winner === ch;
+    const champWon = tb.series.winner === cp;
+    const s = claimScore(tb); // challenger–champion
+    const s2 = `${tb.series.champion}–${tb.series.challenger}${tb.series.draws ? `–${tb.series.draws}d` : ''}`;
+    const id = 'tb:' + tb.dataset;
+    const ENG = (e) => String(e || '').toUpperCase();
+    const claimNote = bs.claim && bs.claim !== tb
+      ? ` And the paperwork war isn't settled: ${bs.claim.challenger.coach}'s ${claimScore(bs.claim)} claim from ${ago(bs.claim.ts)} is still on the desk.`
+      : '';
+    if (!chalWon && !champWon) {
+      // a split — the commissioner records winner:'split' when the series ties
+      return {
+        kicker: bs.vacant ? 'TITLE BOUT · BELT VACANT' : 'TITLE BOUT', id,
+        headline: pickT([
+          `NO DECISION: ${cp} AND ${ch} SPLIT THE TITLE BOUT, ${s2}`,
+          `STALEMATE OVER THE STRAP — ${cp} ${s2} ${ch}`,
+          `THE BELT MOVES FOR NO ONE: ${cp} AND ${ch} END LEVEL`,
+        ], id),
+        stand: `${cp}'s ${tb.champion.engine} and ${ch}'s ${tb.challenger.engine} fought to a ${s2} split at arena #${tb.arena} ${ago(tb.ts)} — ${bs.vacant ? 'the vacancy stands and ' : ''}nothing is settled.${claimNote}`,
+        watch: watchOf(d, tb.dataset), ts: tb.ts, why: 'title bout — split decision',
+      };
+    }
+    if (chalWon) {
+      return {
+        kicker: bs.vacant ? 'TITLE BOUT · BELT VACANT' : 'TITLE BOUT', id,
+        headline: pickT([
+          `${ch} STAKES A ${s} CLAIM ON THE ${bs.vacant ? 'VACANT ' : ''}BELT`,
+          `${ch}'S ${ENG(tb.challenger.engine)} BREAKS THE ${ENG(tb.champion.engine)}, ${s}`,
+          `THE STRAP SHIVERS: ${ch} OVER ${cp} IN THE OFFICIAL CHALLENGE`,
+          `${ch} TAKES THE TITLE BOUT, ${s} — ${cp} HAS NO ANSWER`,
+        ], id),
+        stand: (bs.vacant ? `Season ${ss ? ss.season : '?'}'s belt is still VACANT, which makes every title bout a land grab. ` : '') +
+          `The commissioner put ${cp}'s ${tb.champion.engine} — ${bs.vacant ? 'the presumptive champion' : 'the champion'} — on the block against ${ch}'s ${tb.challenger.engine} at arena #${tb.arena}, and the challenger took the series ${s} ${ago(tb.ts)}.${claimNote}`,
+        watch: watchOf(d, tb.dataset), ts: tb.ts, why: 'title bout — challenger won',
+      };
+    }
+    return {
+      kicker: bs.vacant ? 'TITLE BOUT · BELT VACANT' : 'TITLE DEFENSE', id,
+      headline: pickT([
+        `${cp} TURNS BACK ${ch}, ${s2}`,
+        `THE ${ENG(tb.champion.engine)} HOLDS THE LINE: ${ch} DENIED ${s2}`,
+        `NO CORONATION TONIGHT — ${cp} REPELS ${ch}'S TITLE BID`,
+        `${cp} ANSWERS THE CHALLENGE: ${ch} SENT HOME ${s2}`,
+      ], id),
+      stand: `${cp}'s ${tb.champion.engine} met ${ch}'s ${tb.challenger.engine} over the ${bs.vacant ? 'vacant ' : ''}strap at arena #${tb.arena} and closed the series ${s2} ${ago(tb.ts)}.${claimNote}`,
+      watch: watchOf(d, tb.dataset), ts: tb.ts, why: 'title bout — champion held',
+    };
+  }
+
+  // 3. a belt change on the LADDER fight record
+  const reigns = d.beltLineage || [];
+  const cur = reigns[reigns.length - 1];
+  if (cur && cur.crown && now - new Date(cur.from).getTime() < 6 * 3600e3) {
+    const prev = reigns[reigns.length - 2];
+    const id = 'bc:' + cur.crown.dataset;
+    return {
+      kicker: 'NEW CHAMPION', id,
+      headline: pickT([
+        `NEW HANDS ON THE BELT: ${cur.coach} TAKES IT ${cur.crown.score}`,
+        `${cur.coach} IS YOUR CHAMPION — ${cur.crown.score} AT ARENA #${cur.crown.arena}`,
+        `THE LADDER TURNS: ${cur.coach} DETHRONES ${prev ? prev.coach : 'THE FIELD'}`,
+      ], id),
+      stand: `${cur.coach} beat ${prev ? prev.coach : 'the holder'} ${cur.crown.score} in an official challenge at arena #${cur.crown.arena} ${ago(cur.from)} and walked off with the belt.`,
+      watch: cur.crown.watchUrl, ts: cur.from, why: 'belt changed hands on the ladder',
+    };
+  }
+
+  // 4. biggest upset of the last 2h (winner's decayed score far below loser's)
+  const bmap = new Map((d.board || []).map((r) => [r.key, r]));
+  let up = null;
+  for (const f of d.fights || []) {
+    const ts = new Date(f.createdAt || 0).getTime();
+    if (!isFinite(ts) || now - ts > 2 * 3600e3) continue;
+    const st = f.standings;
+    if (!st || !st.red || st.red.wins === st.blue.wins) continue;
+    const wSide = st.red.wins > st.blue.wins ? f.sides[0] : f.sides[1];
+    const lSide = st.red.wins > st.blue.wins ? f.sides[1] : f.sides[0];
+    const wRow = bmap.get(idOfSide(wSide)), lRow = bmap.get(idOfSide(lSide));
+    if (!wRow || !lRow) continue;
+    const gap = (lRow.score ?? 0) - (wRow.score ?? 0);
+    if (gap > 1 && (!up || gap > up.gap)) up = { f, wSide, lSide, wRow, lRow, gap, st };
+  }
+  if (up) {
+    const id = 'up:' + up.f.dirName;
+    const sc = up.st.red.wins > up.st.blue.wins
+      ? `${up.st.red.wins}–${up.st.blue.wins}` : `${up.st.blue.wins}–${up.st.red.wins}`;
+    return {
+      kicker: 'UPSET', id,
+      headline: pickT([
+        `${up.wSide.coach} SHOCKS ${up.lSide.coach}, ${sc}`,
+        `NOBODY SAW IT: ${up.wSide.coach} DROPS ${up.lSide.coach} AT ARENA #${up.f.arenaSeed}`,
+        `FORM GUIDE, SHREDDED — ${up.wSide.coach} OVER ${up.lSide.coach} ${sc}`,
+      ], id),
+      stand: `${up.lSide.coach}'s ${up.lSide.engine} came in carrying a decayed score of ${Number(up.lRow.score).toFixed(2)} against ${up.wSide.coach}'s ${Number(up.wRow.score).toFixed(2)} — a ${up.gap.toFixed(1)}-point class gap on the board — and lost the series anyway, ${sc} at arena #${up.f.arenaSeed} ${ago(up.f.createdAt)}.`,
+      watch: up.f.matches[0] ? up.f.matches[0].watchUrl : '', ts: up.f.createdAt,
+      why: `biggest 2h upset (board gap ${up.gap.toFixed(1)})`,
+    };
+  }
+
+  // 5. the longest live win streak on the board
+  let sk = null;
+  for (const r of d.board || []) {
+    if (r.streak && r.streak.res === 'w' && r.streak.n >= 3 && (!sk || r.streak.n > sk.streak.n)) sk = r;
+  }
+  if (sk) {
+    const id = 'st:' + sk.key + ':' + sk.streak.n;
+    return {
+      kicker: 'THE STREAK', id,
+      headline: pickT([
+        `${sk.coach} MAKES IT ${sk.streak.n} STRAIGHT`,
+        `NOBODY IS BEATING ${sk.coach} RIGHT NOW — ${sk.streak.n} IN A ROW`,
+        `${sk.streak.n} AND COUNTING: ${sk.coach}'S ${String(sk.engine).toUpperCase()} STAYS PERFECT`,
+      ], id),
+      stand: `${sk.coach}'s ${sk.engine}${sk.tweaksSig !== 'stock' ? ` (${sk.tweaksSig})` : ''} has won ${sk.streak.n} consecutive series and sits #${sk.rank} on the board at score ${Number(sk.score).toFixed(2)}, career ${sk.w}–${sk.l}. Somebody go fight them.`,
+      watch: sk.lastUrl, ts: sk.lastAt, why: `longest live win streak (${sk.streak.n})`,
+    };
+  }
+
+  // fallback: the freshest tape
+  const f = (d.fights || [])[0];
+  if (!f) return null;
+  const st = f.standings;
+  const sc = st ? `${st.red.wins}–${st.blue.wins}` : '?';
+  return {
+    kicker: 'AROUND THE GROUNDS', id: 'fb:' + f.dirName,
+    headline: `${f.sides[0].coach} ${sc} ${f.sides[1].coach} AT ARENA #${f.arenaSeed}`,
+    stand: `Quiet hour at the desk — the freshest tape has ${f.sides[0].coach}'s ${f.sides[0].engine} against ${f.sides[1].coach}'s ${f.sides[1].engine}, ${ago(f.createdAt)}.`,
+    watch: f.matches[0] ? f.matches[0].watchUrl : '', ts: f.createdAt, why: 'fallback — freshest fight',
+  };
+}
+
+function leadHtml(d) {
+  const s = leadStory(d);
+  if (!s) return '<span class="dim">nothing on the wire yet</span>';
+  window.__leadWhy = s.why; // surfaced for verification / curiosity
+  return `<div class="kicker">${esc(s.kicker)}</div>
+    <h1 class="headline">${esc(s.headline)}</h1>
+    <p class="standfirst">${esc(s.stand)}</p>
+    <div class="byline">
+      ${s.watch ? `<a class="watchlink" href="${attr(s.watch)}" target="_blank">▶ WATCH THE TAPE</a>` : ''}
+      <span>from the skyreach desk</span><span class="num">${esc(ago(s.ts))}</span>
+    </div>`;
+}
+
+// ============================ masthead + banner =================================
+function bannerHtml(d) {
+  const bs = beltStatus(d);
+  const ss = d.desk && d.desk.seasonState;
+  const cells = [];
+  // season
+  cells.push(`<div class="cell"><div class="k">The Season</div>
+    <div class="v">${ss ? `SEASON ${esc(ss.season)}` : '—'}</div>
+    <div class="s">${ss && ss.startedAt ? `opened ${esc(ago(ss.startedAt))}` : 'season clock not running'}</div></div>`);
+  // bell countdown
+  const ended = ss && ss.endsAt && Date.now() > new Date(ss.endsAt).getTime();
+  cells.push(`<div class="cell"><div class="k">The Bell</div>
+    <div class="v num">${ss && ss.endsAt ? (ended ? 'RUNG' : `<span data-until="${attr(ss.endsAt)}">…</span>`) : '—'}</div>
+    <div class="s">${ss && ss.endsAt ? (ended ? `season closed ${esc(ago(ss.endsAt))}` : 'until the season closes') : ''}</div></div>`);
+  // belt
+  let beltV, beltS;
+  if (bs.champ) {
+    beltV = `🏆 ${esc(bs.champ)}`;
+    beltS = bs.lastBout ? `last defense ${esc(ago(bs.lastBout.ts))}` : 'reigning champion';
+  } else {
+    beltV = 'VACANT';
+    beltS = bs.claim
+      ? `${esc(bs.claim.challenger.coach)} holds a ${esc(claimScore(bs.claim))} claim (${esc(ago(bs.claim.ts))})`
+      : 'no claim on the desk yet';
+  }
+  cells.push(`<div class="cell"><div class="k">The Belt</div><div class="v">${beltV}</div><div class="s">${beltS}</div></div>`);
+  // last season
+  const ls = d.desk && d.desk.lastSeason;
+  cells.push(`<div class="cell"><div class="k">Last Season</div>
+    <div class="v">${ls && ls.winner ? `${esc(ls.winner)}${ls.engine ? ` <span class="dim" style="font-size:13px">(${esc(ls.engine)})</span>` : ''}` : (ls && ls.note ? '<span style="font-size:13px">archived</span>' : '—')}</div>
+    <div class="s">${ls ? (ls.winner ? `closed season 1 with the belt · ${esc(ls.source)}` : esc((ls.note || '').slice(0, 90))) : 'no archive found'}</div></div>`);
+  return cells.join('');
+}
+
+// ============================ the climb (d3) ====================================
+const LEARNED = { neural: { label: 'MIMIC — behavior-cloned from 11 doctrines' },
+                  disciple: { label: 'DISCIPLE — distilled from the champion alone' } };
+function drawClimb(d) {
+  const el = document.getElementById('ch-climb');
+  const note = document.getElementById('climbNote');
+  if (!el) return;
+  if (typeof d3 === 'undefined') { el.innerHTML = '<div class="chartnote">⚠ d3 unavailable (CDN unreachable) — chart disabled</div>'; return; }
+  const hist = d.rankHistory || [];
+  if (hist.length < 2) { el.innerHTML = '<div class="chartnote">not enough rank history yet</div>'; return; }
+  const P = palette();
+  const idOf = (r) => `${String(r.coach).toUpperCase()}|${r.engine}|${r.tweaksSig}`;
+  const series = new Map();
+  for (const s of hist) {
+    const t = new Date(s.ts);
+    for (const r of s.ranks) {
+      const id = idOf(r);
+      if (!series.has(id)) series.set(id, { id, coach: r.coach, engine: r.engine, pts: [] });
+      series.get(id).pts.push({ t, r: r.rank });
+    }
+  }
+  const learned = [...series.values()].filter((s) => LEARNED[s.engine]);
+  const ghosts = [...series.values()].filter((s) => !LEARNED[s.engine] && s.pts.length > 1);
+  const maxRank = Math.max(...hist.map((s) => s.ranks.length), 2);
+  const W = 1200, H = 430, m = { t: 30, r: 170, b: 30, l: 42 };
+  const x = d3.scaleTime().domain(d3.extent(hist, (s) => new Date(s.ts))).range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain([1, maxRank]).range([m.t, H - m.b]); // rank 1 on top
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  const styleAxis = (g) => {
+    g.selectAll('text').attr('fill', P.dim).attr('font-size', 10);
+    g.selectAll('line').attr('stroke', P.line);
+    g.selectAll('path.domain').attr('stroke', P.line);
+  };
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).ticks(8).tickFormat(d3.timeFormat('%H:%M'))).call(styleAxis);
+  svg.append('g').attr('transform', `translate(${m.l},0)`)
+    .call(d3.axisLeft(y).ticks(Math.min(maxRank, 12)).tickFormat((v) => '#' + v)).call(styleAxis);
+  svg.append('text').attr('x', m.l + 4).attr('y', m.t - 8).attr('fill', P.dim).attr('font-size', 10)
+    .text('board rank (1 = top) · the written field in grey, the LEARNED bots in color');
+  const line = d3.line().x((p) => x(p.t)).y((p) => y(p.r)).curve(d3.curveStepAfter);
+  // ghosted field
+  for (const s of ghosts) {
+    svg.append('path').datum(s.pts).attr('fill', 'none')
+      .attr('stroke', P.dim).attr('stroke-width', 1).attr('stroke-opacity', 0.16)
+      .attr('d', line)
+      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n(the written field)`))
+      .on('mouseleave', hideTip);
+  }
+  // weight-ship pins (evolve gates; ts = checkpoint mtime)
+  const ships = ((d.desk && d.desk.evolveShips) || []).filter((e) => e.ts);
+  const [t0, t1] = x.domain();
+  let pin = 0;
+  for (const e of ships) {
+    const t = new Date(e.ts);
+    if (t < t0 || t > t1) continue;
+    const col = e.shipped ? P.up : P.down;
+    svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', m.t - 4).attr('y2', H - m.b)
+      .attr('stroke', col).attr('stroke-opacity', 0.45).attr('stroke-dasharray', '3,4');
+    svg.append('text').attr('x', x(t) + 3).attr('y', m.t + 10 + (pin % 3) * 11)
+      .attr('fill', col).attr('font-size', 9)
+      .text(`g${e.gen}${e.shipped ? ' ⚡shipped' : ' held'}`)
+      .style('cursor', 'default')
+      .on('mousemove', (ev) => showTip(ev, `evolve gate — gen ${e.gen}\n${e.gate}\n${e.shipped ? 'weights SHIPPED to the neural engine' : 'gate failed — weights held back'}\n${ago(e.ts)}`))
+      .on('mouseleave', hideTip);
+    pin += 1;
+  }
+  // the learned climbers — glow underlay + crisp line + debut + end label
+  const colors = { neural: P.blue, disciple: P.gold };
+  for (const s of learned) {
+    const col = colors[s.engine] || P.up;
+    svg.append('path').datum(s.pts).attr('fill', 'none')
+      .attr('stroke', col).attr('stroke-width', 7).attr('stroke-opacity', 0.18).attr('d', line);
+    svg.append('path').datum(s.pts).attr('fill', 'none')
+      .attr('stroke', col).attr('stroke-width', 2.4).attr('d', line)
+      .style('cursor', 'pointer')
+      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n${LEARNED[s.engine].label}\ndebut #${s.pts[0].r} → now #${s.pts[s.pts.length - 1].r}\nbest #${Math.min(...s.pts.map((p) => p.r))} over ${s.pts.length} snapshots`))
+      .on('mouseleave', hideTip);
+    const first = s.pts[0], last = s.pts[s.pts.length - 1];
+    svg.append('circle').attr('cx', x(first.t)).attr('cy', y(first.r)).attr('r', 3.5).attr('fill', col);
+    svg.append('text').attr('x', x(first.t) + 5).attr('y', y(first.r) + 12)
+      .attr('fill', col).attr('font-size', 9).text(`debut #${first.r}`);
+    svg.append('circle').attr('cx', x(last.t)).attr('cy', y(last.r)).attr('r', 3.5).attr('fill', col);
+    svg.append('text').attr('x', x(last.t) + 6).attr('y', y(last.r) + 3)
+      .attr('fill', col).attr('font-size', 11).attr('font-weight', 'bold')
+      .text(`${s.coach}·${s.engine} #${last.r}`);
+  }
+  el.replaceChildren(svg.node());
+  if (note) {
+    const shipped = ships.filter((e) => e.shipped).length;
+    const shipNote = pin > 0
+      ? ` · ${shipped}/${ships.length} evolve gates shipped weights (pins: green shipped, red held)`
+      : (ships.length ? ` · ${shipped}/${ships.length} evolve gates shipped weights (all before this history window)` : '');
+    note.textContent = learned.length
+      ? `${learned.map((s) => `${s.coach} (${s.engine}): #${s.pts[0].r} at debut → #${s.pts[s.pts.length - 1].r} now`).join(' · ')}` + shipNote
+      : 'no learned configs on the board yet — the climb starts when MIMIC or DISCIPLE files a card';
+  }
+}
+
+// ============================ rivalries =========================================
+function latestMeeting(d, a, b) {
+  for (const f of d.fights || []) {
+    const ea = f.sides[0].engine, eb = f.sides[1].engine;
+    if ((ea === a && eb === b) || (ea === b && eb === a)) {
+      return { url: f.matches[0] ? f.matches[0].watchUrl : '', at: f.createdAt };
+    }
+  }
+  return null;
+}
+function rivalriesHtml(d) {
+  const h2h = (d.analytics && d.analytics.h2h) || {};
+  const engines = Object.keys(h2h).sort();
+  const pairs = [];
+  for (let i = 0; i < engines.length; i++) {
+    for (let j = i + 1; j < engines.length; j++) {
+      const a = engines[i], b = engines[j];
+      const rec = (h2h[a] || {})[b];
+      if (!rec) continue;
+      const n = rec.w + rec.l + rec.d;
+      if (n < 3) continue;
+      let A = a, B = b, w = rec.w, l = rec.l;
+      if (l > w) { A = b; B = a; const t = w; w = l; l = t; }
+      pairs.push({ A, B, w, l, dr: rec.d, n, margin: (w - l) / n });
+    }
+  }
+  if (!pairs.length) return '<div class="chartnote">not enough head-to-head sample yet</div>';
+  const lop = [...pairs].sort((x, y) => (y.margin - x.margin) || (y.n - x.n));
+  const con = [...pairs].sort((x, y) => (x.margin - y.margin) || (y.n - x.n));
+  const seen = new Set(), picks = [];
+  const take = (arr, k, tag, ok) => {
+    let got = 0;
+    for (const p of arr) {
+      if (got >= k || picks.length >= 8) break;
+      const key = [p.A, p.B].sort().join('|');
+      if (seen.has(key) || !ok(p)) continue;
+      seen.add(key); picks.push({ ...p, tag }); got += 1;
+    }
+  };
+  take(lop, 4, 'lop', (p) => p.margin >= 0.4);
+  take(con, 4, 'even', (p) => p.margin <= 0.25);
+  take(lop, 8 - picks.length, 'lop', () => true); // backfill to at least 6
+  const U = (s) => String(s).toUpperCase();
+  return picks.map((p) => {
+    const id = `rv:${p.A}:${p.B}`;
+    const title = p.tag === 'even'
+      ? pickT([`${U(p.A)} vs ${U(p.B)}: DEAD EVEN`, `NOBODY BLINKS: ${U(p.A)} / ${U(p.B)}`, `COIN-FLIP SERIES: ${U(p.A)} × ${U(p.B)}`], id)
+      : p.margin >= 0.7
+        ? pickT([`${U(p.A)} OWNS ${U(p.B)}`, `${U(p.B)} CANNOT SOLVE ${U(p.A)}`, `TOTAL OWNERSHIP: ${U(p.A)} OVER ${U(p.B)}`], id)
+        : pickT([`${U(p.A)} HAS ${U(p.B)}'S NUMBER`, `${U(p.A)} KEEPS BEATING ${U(p.B)}`, `EDGE: ${U(p.A)} OVER ${U(p.B)}`], id);
+    const meet = latestMeeting(d, p.A, p.B);
+    const wp = (p.w / p.n * 100).toFixed(0), lp = (p.l / p.n * 100).toFixed(0), dp = (p.dr / p.n * 100).toFixed(0);
+    return `<div class="rivcard"${meet && meet.url ? ` data-watch="${attr(meet.url)}"` : ''}>
+      <span class="rivtag ${p.tag === 'even' ? 'even' : 'hot'}">${p.tag === 'even' ? 'CONTESTED' : 'LOPSIDED'}</span>
+      <div class="rt">${esc(title)}</div>
+      <div class="rr num"><span class="cred">${p.w}</span>–<span class="cblue">${p.l}</span>${p.dr ? `–${p.dr}d` : ''} <span class="dim">over ${p.n} series</span></div>
+      <div class="rivbar"><span class="w" style="flex:0 0 ${wp}%"></span><span class="d0" style="flex:0 0 ${dp}%"></span><span class="l" style="flex:0 0 ${lp}%"></span></div>
+      <div class="rm">${meet ? `▶ latest meeting ${esc(ago(meet.at))} — click to watch` : 'no tape on file'}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================ tonight's card ====================================
+function tonightHtml(d) {
+  const lv = d.live;
+  let liveBox = '';
+  if (lv && lv.red) {
+    const running = lv.status !== 'done';
+    const s = lv.series || { red: 0, blue: 0, draws: 0 };
+    const chips = (lv.matches || []).map((m) =>
+      `<span class="mchip">M${m.n} <b class="${m.winnerTeam === 1 ? 'cred' : m.winnerTeam === 2 ? 'cblue' : 'flat'}">${m.winnerTeam ? esc(m.winnerCoach ?? '') : 'DRAW'}</b> ${m.redKills}–${m.blueKills}</span>`).join('');
+    liveBox = `<div class="livebox${running ? ' on' : ''}" data-watch="${attr(lv.watchUrl ?? '')}">
+      <div class="tag">${running ? '<span class="reddot">●</span> <span class="down">LIVE NOW</span>' : '<span class="dim">LATEST SERIES — FINAL</span>'} <span class="dim">· arena #${esc(lv.arenaSeed)}</span></div>
+      <div class="names"><span class="who cred">${esc(lv.red.coach)}</span><span class="eng">${esc(lv.red.engine)}</span>
+        <span class="score">${s.red}–${s.blue}</span>
+        <span class="who cblue">${esc(lv.blue.coach)}</span><span class="eng">${esc(lv.blue.engine)}</span></div>
+      <div class="mchips">${chips || '<span class="dim" style="font:11px var(--mono)">first match under way…</span>'}</div>
+    </div>`;
+  } else {
+    const f = (d.fights || [])[0];
+    if (f) {
+      const st = f.standings;
+      liveBox = `<div class="livebox" data-watch="${attr(f.matches[0] ? f.matches[0].watchUrl : '')}">
+        <div class="tag dim">FRESHEST TAPE · ${esc(ago(f.createdAt))}</div>
+        <div class="names"><span class="who cred">${esc(f.sides[0].coach)}</span>
+          <span class="score">${st ? `${st.red.wins}–${st.blue.wins}` : '?'}</span>
+          <span class="who cblue">${esc(f.sides[1].coach)}</span></div>
+      </div>`;
+    }
+  }
+  const rows = [];
+  // the commissioner's next move
+  const cm = d.commissioner || {};
+  if (cm.stateMtime && cm.cycleMs) {
+    const next = new Date(new Date(cm.stateMtime).getTime() + cm.cycleMs).toISOString();
+    rows.push(`<div class="deskrow"><span class="k">Commissioner</span><span class="num">next action in <b class="flat" data-until="${attr(next)}">…</b></span></div>`);
+  } else {
+    rows.push(`<div class="deskrow"><span class="k">Commissioner</span><span class="dim">daemon not running</span></div>`);
+  }
+  // the grinder's pass
+  const lg = d.desk && d.desk.league;
+  if (lg && lg.pairings) {
+    const pct = Math.min(100, (lg.cycleInPass / lg.pairings) * 100);
+    const next = new Date(new Date(lg.lastPairingAt).getTime() + lg.paceMs).toISOString();
+    rows.push(`<div class="deskrow" style="display:block">
+      <div style="display:flex;justify-content:space-between"><span class="k">The Grinder</span>
+      <span class="num">pairing <b>${lg.cycleInPass}</b>/${lg.pairings} <span class="dim">· pass of ${lg.engines} engines · next in <b class="flat" data-until="${attr(next)}">…</b></span></span></div>
+      <div class="passbar"><div style="width:${pct.toFixed(1)}%"></div></div>
+      <div class="dim" style="font:10px var(--mono);margin-top:3px">${lg.cycle} pairings ground all-time — every one of them training data</div>
+    </div>`);
+  } else {
+    rows.push(`<div class="deskrow"><span class="k">The Grinder</span><span class="dim">league daemon not running</span></div>`);
+  }
+  return liveBox + rows.join('');
+}
+
+// ============================ gun meter =========================================
+const GUNS = {
+  AK74: { icon: '🔫', name: 'AK-74', note: 'the shared rifle' },
+  SPAS12: { icon: '💥', name: 'SPAS-12', note: 'wildcard shotgun' },
+  BARRETT: { icon: '🎯', name: 'Barrett', note: 'wildcard one-shot' },
+};
+function gunMeterHtml(d) {
+  const g = d.gunBoards;
+  if (!g) return '<div class="chartnote">no kill tape yet</div>';
+  const order = ['AK74', 'SPAS12', 'BARRETT'].filter((w) => g[w]);
+  if (!order.length) return '<div class="chartnote">no kill tape yet</div>';
+  const total = order.reduce((n, w) => n + g[w].total, 0) || 1;
+  const hour = (d.desk && d.desk.gunHour) || { tally: {}, top: null };
+  return order.map((w) => {
+    const meta = GUNS[w] || { icon: '·', name: w, note: '' };
+    const b = g[w];
+    const isHot = hour.top && hour.top.weapon === w && hour.top.kills > 0;
+    const hourKills = hour.tally[w] ?? 0;
+    const top = b.rows[0];
+    return `<div class="gcell${isHot ? ' hot' : ''}">
+      ${isHot ? `<span class="hourbadge">GUN OF THE HOUR · ${hour.top.kills}</span>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span class="gname">${meta.icon} ${esc(meta.name)}</span><span class="gnum">${b.total.toLocaleString()}</span></div>
+      <div class="gbar"><div style="width:${(b.total / total * 100).toFixed(1)}%"></div></div>
+      <div class="gsub">${(b.total / total * 100).toFixed(1)}% of all kills · ${hourKills} this hour · ${esc(meta.note)}${top ? ` · top: ${esc(top.coach)} (${top.kills})` : ''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ============================ presses strip =====================================
+function pressesHtml(d) {
+  const c = d.desk && d.desk.corpus;
+  if (!c) return '';
+  const rows = c.estRows >= 1e6 ? (c.estRows / 1e6).toFixed(1) + 'M' : Math.round(c.estRows / 1e3) + 'k';
+  return `THE PRESSES — <b>${c.datasets.toLocaleString()}</b> datasets · <b>${c.matches.toLocaleString()}</b> matches ·
+    ~<b>${rows}</b> replay rows (est) · <b>${c.gb}</b> GB on disk · <b>${c.matchesLastHour}</b> matches in the last hour
+    — every line of it is training data`;
+}
+
+// ============================ render loop =======================================
+let lastData = null;
+function render(d) {
+  lastData = d;
+  const now = new Date(d.generatedAt);
+  document.getElementById('edition').textContent =
+    `${now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} · set ${ago(d.generatedAt)}`;
+  const wb = document.getElementById('warnbar');
+  if (d.warnings && d.warnings.length) {
+    wb.style.display = '';
+    wb.innerHTML = '⚠ builder warnings: ' + d.warnings.map(esc).join(' · ');
+  } else wb.style.display = 'none';
+  document.getElementById('banner').innerHTML = bannerHtml(d);
+  document.getElementById('lead').innerHTML = leadHtml(d);
+  document.getElementById('rivalries').innerHTML = rivalriesHtml(d);
+  document.getElementById('tonight').innerHTML = tonightHtml(d);
+  document.getElementById('gunmeter').innerHTML = gunMeterHtml(d);
+  document.getElementById('presses').innerHTML = pressesHtml(d);
+  try { drawClimb(d); } catch (e) {
+    const el = document.getElementById('ch-climb');
+    if (el) el.innerHTML = `<div class="chartnote">chart failed: ${esc(e.message)}</div>`;
+  }
+}
+
+document.getElementById('themeBtn').addEventListener('click', () =>
+  applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true));
+document.getElementById('themeBtn').textContent =
+  currentTheme() === 'light' ? '🌙 NIGHT DESK' : '☀ MORNING EDITION';
+
+let lastGenerated = null;
+async function tick() {
+  try {
+    const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (d.generatedAt !== lastGenerated) { lastGenerated = d.generatedAt; render(d); }
+  } catch (e) {
+    document.getElementById('edition').textContent = 'wire down: ' + e.message + ' (retrying)';
+  }
+}
+tick();
+setInterval(tick, 5000);
+// ticking clocks: data-until counts down, data-since counts up
+setInterval(() => {
+  for (const el of document.querySelectorAll('[data-until]')) {
+    const t = new Date(el.getAttribute('data-until')).getTime();
+    if (isFinite(t)) el.textContent = t > Date.now() ? fmtDur(t - Date.now()) : 'any moment';
+  }
+  for (const el of document.querySelectorAll('[data-since]')) {
+    const t = new Date(el.getAttribute('data-since')).getTime();
+    if (isFinite(t)) el.textContent = fmtDur(Date.now() - t);
+  }
+}, 1000);
+</script>
+</body>
+</html>
