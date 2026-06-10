@@ -138,6 +138,12 @@ export interface GameOptions {
    * can pass a parsed-from-URL value under exactOptionalPropertyTypes.)
    */
   aiEngine?: string | undefined;
+  /**
+   * Team dynamics (goal node 154): red (1) vs blue (2). Defaults to ON when
+   * the match is mixed-engine (teams follow engine groups — engine warfare)
+   * and OFF otherwise (FFA). Uniform matches with teams alternate bots.
+   */
+  teams?: boolean | undefined;
 }
 
 /** A renderable view of a bullet (matches fx.BulletView). */
@@ -201,6 +207,10 @@ export class Game {
   private engines: BotEngine[];
   /** Per-bot engine id (mixed matches assign round-robin). */
   private readonly botEngine = new Map<number, string>();
+  /** Per-sprite team (1 red / 2 blue); empty in FFA. Survives respawns. */
+  private readonly botTeam = new Map<number, number>();
+  /** Whether this match runs red-vs-blue teams. */
+  readonly teamsEnabled: boolean;
 
   constructor(opts: GameOptions = {}) {
     this.world = createWorld();
@@ -240,14 +250,33 @@ export class Game {
     // ('classic,pilot') — a list splits the bots round-robin into a MIXED
     // match where the engines fight each other in the same arena.
     this.engines = Game.resolveEngines(opts.aiEngine);
+    this.teamsEnabled = opts.teams ?? this.engineGroups().length > 1;
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
       const index = this.playerIndex + 1 + b;
-      this.spawnSprite(index, this.spawnFor(index));
       const engine = this.engines[b % this.engines.length]!;
       this.botEngine.set(index, engine.id);
+      if (this.teamsEnabled) this.botTeam.set(index, this.teamFor(b, engine.id));
+      this.spawnSprite(index, this.spawnFor(index));
       this.bots.push({ index, brain: engine.createBrain() });
     }
+  }
+
+  /**
+   * Team for bot slot `b`: in mixed matches teams FOLLOW the engines (engine
+   * warfare — red is group 0, blue group 1); uniform matches alternate.
+   */
+  private teamFor(b: number, engineId: string): number {
+    const groups = this.engineGroups();
+    if (groups.length > 1) {
+      return (groups.indexOf(engineId) % 2) + 1;
+    }
+    return (b % 2) + 1;
+  }
+
+  /** Team of sprite `index` (0 = FFA / no team). */
+  teamOf(index: number): number {
+    return this.botTeam.get(index) ?? 0;
   }
 
   /** Parse 'a' or 'a,b,...' into engine instances (unknown ids → classic). */
@@ -291,6 +320,12 @@ export class Game {
     this.bots.forEach((bot, b) => {
       const engine = this.engines[b % this.engines.length]!;
       this.botEngine.set(bot.index, engine.id);
+      if (this.teamsEnabled) {
+        const team = this.teamFor(b, engine.id);
+        this.botTeam.set(bot.index, team);
+        const s = this.world.sprites[bot.index];
+        if (s !== undefined) s.team = team;
+      }
       bot.brain = engine.createBrain();
     });
   }
@@ -355,6 +390,8 @@ export class Game {
     };
     // Fresh life — stale attribution must not credit a long-gone shooter.
     s.lastHitBy = 0;
+    // Team persists across respawns (0 = FFA).
+    s.team = this.botTeam.get(index) ?? 0;
     this.nextFireTick[index] = 0;
     this.respawnIn[index] = 0;
     this.ammo[index] = MAG_SIZE;

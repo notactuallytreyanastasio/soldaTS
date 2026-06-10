@@ -113,3 +113,60 @@ describe('play mode under the adapter (regression)', () => {
     expect(game.playerAmmo()).toBeGreaterThan(0);
   });
 });
+
+describe('team dynamics (red vs blue, goal node 154)', () => {
+  it('mixed matches put each engine on its own team', () => {
+    const game = new Game({
+      seed: 5,
+      spawns: ARENA_SPAWNS,
+      botCount: 4,
+      spectate: true,
+      aiEngine: 'classic,pilot',
+    });
+    expect(game.teamsEnabled).toBe(true);
+    const teams = game.botIndices().map((i) => game.teamOf(i));
+    expect(teams).toEqual([1, 2, 1, 2]); // classic=red, pilot=blue
+    // The sim sprites carry the team (renderer + targeting read it).
+    for (const i of game.botIndices()) {
+      expect(game.world.sprites[i]?.team).toBe(game.teamOf(i));
+    }
+  });
+
+  it('uniform matches stay FFA unless ?teams forces them', () => {
+    const ffa = new Game({ seed: 5, spawns: ARENA_SPAWNS, botCount: 4, spectate: true });
+    expect(ffa.teamsEnabled).toBe(false);
+    expect(ffa.botIndices().every((i) => ffa.teamOf(i) === 0)).toBe(true);
+
+    const teamed = new Game({
+      seed: 5,
+      spawns: ARENA_SPAWNS,
+      botCount: 4,
+      spectate: true,
+      teams: true,
+    });
+    expect(teamed.botIndices().map((i) => teamed.teamOf(i))).toEqual([1, 2, 1, 2]);
+  });
+
+  it('a team match sustains cross-team kills only', () => {
+    const game = new Game({
+      seed: 13,
+      spawns: ARENA_SPAWNS,
+      botCount: 4,
+      spectate: true,
+      aiEngine: 'classic,pilot',
+    });
+    const kills: { killer: number; victim: number }[] = [];
+    game.onKill = (killer, victim): void => {
+      kills.push({ killer, victim });
+    };
+    for (let t = 0; t < 6000; t++) game.tick(1 / 60);
+    expect(kills.length).toBeGreaterThan(0);
+    // Friendly fire is off and teammates are never targeted: every
+    // attributed kill crosses teams.
+    for (const k of kills) {
+      if (k.killer > 0 && k.killer !== k.victim) {
+        expect(game.teamOf(k.killer)).not.toBe(game.teamOf(k.victim));
+      }
+    }
+  });
+});

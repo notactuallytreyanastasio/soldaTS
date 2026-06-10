@@ -319,6 +319,17 @@ export function checkSpriteCollision(
     if (sprite === undefined || !sprite.active) {
       continue;
     }
+    // GLUE (team dynamics, node 154): friendly fire is OFF in team modes —
+    // a bullet passes through the owner's teammates (team 0 = FFA hits all).
+    const owner = world.sprites[bullet.owner];
+    if (
+      owner !== undefined &&
+      owner.team > 0 &&
+      sprite.team === owner.team &&
+      j !== bullet.owner
+    ) {
+      continue;
+    }
 
     const center: Vec2 = { x: sp.posX[j] ?? 0, y: sp.posY[j] ?? 0 };
 

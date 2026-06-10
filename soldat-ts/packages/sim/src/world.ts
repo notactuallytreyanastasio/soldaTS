@@ -78,6 +78,7 @@ function emptySprite(): Sprite {
     active: false,
     deadMeat: false,
     lastHitBy: 0,
+    team: 0,
     dummy: false,
     style: 0,
     num: 0,

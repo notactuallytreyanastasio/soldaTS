@@ -251,6 +251,9 @@ export function findTarget(world: World, selfNum: number): number {
     if (other === undefined || !other.active) continue;
     // PORT: AI.pas:552-554 — skip the dead (DeadKill refinement DEFERRED).
     if (other.deadMeat) continue;
+    // PORT: AI.pas team refinement (previously deferred): teammates are not
+    // targets when both sides carry a real team (0 = FFA, fights everyone).
+    if (self.team > 0 && other.team === self.team) continue;
     // PORT: AI.pas:550 — invisible sprites aren't seen (alpha 255 = opaque).
     if (other.alpha !== 255 && other.holdedThing === 0) continue;
 

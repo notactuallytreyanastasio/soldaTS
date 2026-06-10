@@ -59,6 +59,12 @@ export interface Sprite {
   // that pipeline, so the last damaging hit is recorded here and the death
   // consumer (client respawn upkeep) reads it when deadMeat flips.
   lastHitBy: number;
+  /**
+   * GLUE (team dynamics, goal node 154): 0 = FFA, 1 = red (alpha),
+   * 2 = blue (bravo). Pascal keeps team on TSprite too (Sprites.pas Player
+   * record); the port deferred it until team modes landed.
+   */
+  team: number;
   dummy: boolean; // PORT: Sprites.pas:108
   style: number; // PORT: Sprites.pas:109 — Byte
   num: number; // PORT: Sprites.pas:110 — Byte

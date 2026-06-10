@@ -46,6 +46,8 @@ import {
 } from './director';
 import { MatchRecorder } from './telemetry';
 import { engineIds } from '../ai';
+import { parseTournament, showTournament } from './tournament';
+import { LeaderboardPanel, type FighterRow } from '../ui/leaderboard';
 
 // ---------------------------------------------------------------------------
 // Synthetic map
@@ -184,16 +186,28 @@ const SPECTATE_MAX_BOTS = 12;
  */
 export function parseSpectate(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
-): { spectate: boolean; botCount: number; aiEngine: string | undefined } {
+): {
+  spectate: boolean;
+  botCount: number;
+  aiEngine: string | undefined;
+  seed: number;
+  teams: boolean | undefined;
+} {
   const params = new URLSearchParams(search);
   const aiEngine = params.get('ai') ?? undefined;
+  // ?seed=N: the sim is deterministic — distinct seeds make distinct matches
+  // (the tournament runs four games on four seeds).
+  const seedRaw = parseInt(params.get('seed') ?? '', 10);
+  const seed = Number.isFinite(seedRaw) ? seedRaw : 1;
+  // ?teams forces red-vs-blue on; Game defaults teams ON for mixed engines.
+  const teams = params.has('teams') ? true : undefined;
   if (params.has(PLAY_QUERY_PARAM)) {
-    return { spectate: false, botCount: 3, aiEngine };
+    return { spectate: false, botCount: 3, aiEngine, seed, teams };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
   const botCount =
     Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
-  return { spectate: true, botCount, aiEngine };
+  return { spectate: true, botCount, aiEngine, seed, teams };
 }
 
 /**
@@ -346,6 +360,12 @@ async function main(): Promise<void> {
     showDuel(duel);
     return;
   }
+  // Tournament mode: 4 mixed-AI team games + an aggregated leaderboard.
+  const tournament = parseTournament();
+  if (tournament !== null) {
+    showTournament(tournament);
+    return;
+  }
 
   const mount = document.getElementById('app');
   if (mount === null) {
@@ -362,7 +382,7 @@ async function main(): Promise<void> {
   // built-in Skyreach aerial arena — the jetpack-dogfight level the bot match
   // is tuned for — unless ?map= explicitly asks for a stock map. Play mode
   // keeps the stock-map default.
-  const { spectate, botCount, aiEngine } = parseSpectate();
+  const { spectate, botCount, aiEngine, seed, teams } = parseSpectate();
   const explicitMap = new URLSearchParams(window.location.search).has('map');
   let map: PmsMap;
   let spawns: readonly { x: number; y: number }[];
@@ -408,7 +428,7 @@ async function main(): Promise<void> {
 
   // --- Game: sim world + local player + bots ---------------------------
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
-  const game = new Game({ seed: 1, spawns, botCount, spectate, aiEngine });
+  const game = new Game({ seed, spawns, botCount, spectate, aiEngine, teams });
   // Attach the sim collision map so sprites collide with the floor (and, in
   // spectate mode, the map's bot waypoints so targetless bots patrol).
   game.loadMap(map);
@@ -446,7 +466,9 @@ async function main(): Promise<void> {
     });
   }
 
+  const deaths = new Map<number, number>();
   game.onKill = (killer, victim): void => {
+    deaths.set(victim, (deaths.get(victim) ?? 0) + 1);
     recorder?.recordKill(killer, victim);
     applyKill(
       board,
@@ -527,6 +549,17 @@ async function main(): Promise<void> {
   }
   // Big engine banner: which brain drives this window (updates on hot-swap).
   const updateEngineBanner = spectate ? showEngineBanner(game) : (): void => {};
+  // Displayed leaderboard (L toggles): live K/D ranking of every fighter.
+  const leaderboard = spectate ? new LeaderboardPanel() : null;
+  const leaderboardRows = (): FighterRow[] =>
+    game.botIndices().map((i) => ({
+      index: i,
+      name: nameOf(i),
+      engine: game.engineGroups().length > 1 ? game.engineOf(i) : '',
+      team: game.teamOf(i),
+      kills: board.kills.get(i) ?? 0,
+      deaths: deaths.get(i) ?? 0,
+    }));
 
   const player = game.world.sprites[game.playerIndex];
   if (player === undefined) {
@@ -640,6 +673,8 @@ async function main(): Promise<void> {
         director.setManual(live[prev] ?? director.followed, tick);
       } else if (key === 'a' || key === '0') {
         director.setAuto();
+      } else if (key === 'l') {
+        if (leaderboard !== null) leaderboard.visible = !leaderboard.visible;
       } else if (key === 'e') {
         // HOT-SWAP the brains: cycle classic → pilot → ... → MIXED (all
         // engines splitting the bots in one arena) → classic. Sprites,
@@ -766,6 +801,10 @@ async function main(): Promise<void> {
       };
     }
     hud.update(hudState);
+    // Leaderboard refresh (cheap, but no need for 120 Hz DOM writes).
+    if (leaderboard !== null && game.world.mainTickCounter % 30 === 0) {
+      leaderboard.update(leaderboardRows());
+    }
 
     if (app !== undefined) {
       requestAnimationFrame(frame);
