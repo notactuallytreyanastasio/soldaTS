@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "E-rt1",
+  "engine": "angler",
+  "tweaks": { "HUNT_RETARGET": 1 },
+  "rationale": "Probe: per-tick hunter retarget — convergence parity with the orca wave (the v2 title lesson)."
+}

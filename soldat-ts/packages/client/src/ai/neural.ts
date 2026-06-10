@@ -68,23 +68,40 @@ export const NEURAL_DEFAULTS: Readonly<NeuralConfig> = {
 
 const NB = BUTTON_HEADS.length; // 7 button logits; outputs 7..8 are the aim vector
 
-/** Forward pass through the generated weights: tanh hiddens, raw outputs.
+/** A complete weight set in the exact shape neuralWeights.ts exports —
+ *  the seam phase-2 evolution uses to run CANDIDATE weights through the
+ *  same brain (see createNeuralEngineWithWeights below). */
+export interface NeuralNet {
+  readonly dims: readonly number[];
+  readonly weights: readonly (readonly number[])[];
+  readonly biases: readonly (readonly number[])[];
+}
+
+/** The committed (shipped) weights as a NeuralNet — the imitation baseline
+ *  evolution starts from and is gated against. */
+export const NEURAL_SHIPPED_NET: NeuralNet = {
+  dims: NEURAL_DIMS,
+  weights: NEURAL_WEIGHTS,
+  biases: NEURAL_BIASES,
+};
+
+/** Forward pass through a weight set: tanh hiddens, raw outputs.
  *  Buffers are per-brain so brains never share mutable state. */
-class Policy {
+export class NeuralPolicy {
   private readonly h: Float64Array[] = [];
 
-  constructor() {
-    for (let l = 1; l < NEURAL_DIMS.length; l++) {
-      this.h.push(new Float64Array(NEURAL_DIMS[l] ?? 0));
+  constructor(private readonly net: NeuralNet = NEURAL_SHIPPED_NET) {
+    for (let l = 1; l < net.dims.length; l++) {
+      this.h.push(new Float64Array(net.dims[l] ?? 0));
     }
   }
 
   run(features: readonly number[]): Float64Array {
     let input: readonly number[] | Float64Array = features;
     for (let l = 0; l < this.h.length; l++) {
-      const w = NEURAL_WEIGHTS[l] ?? [];
-      const b = NEURAL_BIASES[l] ?? [];
-      const fanIn = NEURAL_DIMS[l] ?? 0;
+      const w = this.net.weights[l] ?? [];
+      const b = this.net.biases[l] ?? [];
+      const fanIn = this.net.dims[l] ?? 0;
       const o = this.h[l] as Float64Array;
       const last = l === this.h.length - 1;
       for (let j = 0; j < o.length; j++) {
@@ -103,9 +120,14 @@ const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 
 class NeuralBrain implements BotBrain {
   private readonly roam: RoamState = createRoamState();
-  private readonly policy = new Policy();
+  private readonly policy: NeuralPolicy;
 
-  constructor(private readonly cfg: NeuralConfig) {}
+  constructor(
+    private readonly cfg: NeuralConfig,
+    net: NeuralNet = NEURAL_SHIPPED_NET,
+  ) {
+    this.policy = new NeuralPolicy(net);
+  }
 
   tick(botIndex: number, ctx: BotEngineContext): void {
     const { world } = ctx;
@@ -198,5 +220,30 @@ export function createNeuralEngine(tweaks?: EngineTweaks): BotEngine {
       'THE LEARNED PLAYER — behavior-cloned MLP over the arena replay corpus: ten doctrines distilled into one forward pass; sees the 2 nearest enemies relative, thresholds 7 button heads, aims along a learned unit vector',
     tweaks: cfg,
     createBrain: (): BotBrain => new NeuralBrain(cfg),
+  };
+}
+
+/**
+ * Evolve-time seam (action node 347): the SAME brain running an injected
+ * weight set under an alternate engine id. tools/evolve.mjs registers these
+ * ('neural-cand', 'neural-past', ...) to pit candidate/snapshot weights
+ * against the champions and each other through the ordinary registry — the
+ * Game groups teams by engine id, so distinct ids are also what makes
+ * self-vs-self matches possible. INERT for normal play: nothing in the
+ * static registry (ai/index.ts) calls this, so shipped behavior and recorded
+ * datasets are untouched.
+ */
+export function createNeuralEngineWithWeights(
+  id: string,
+  net: NeuralNet,
+  tweaks?: EngineTweaks,
+): BotEngine {
+  const cfg = resolveTweaks(id, NEURAL_DEFAULTS, tweaks);
+  return {
+    id,
+    strategy:
+      'THE LEARNED PLAYER (injected weights) — neural forward pass over a candidate/snapshot weight set, used by evolution self-play',
+    tweaks: cfg,
+    createBrain: (): BotBrain => new NeuralBrain(cfg, net),
   };
 }

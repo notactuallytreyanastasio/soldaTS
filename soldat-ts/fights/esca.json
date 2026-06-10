@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "ESCA",
+  "engine": "angler",
+  "tweaks": {},
+  "rationale": "The thirteenth doctrine fishes the meta itself. Every modern selector keys on PUBLISHED mag state — cuadrilla's bull, orca's prey, the pass/wave both launch on a reload window. The angler dangles a permanent one: the lure burns to 4 rounds and NEVER reloads, reading 'open' to every mag-keyed brain forever. It hangs at the edge of their selection radius, kites the committed pass into two planted EMA-1 crossfire guns (a passing dasher is a constant-velocity target — the one class instantaneous lead hits perfectly), and jet-bobs constantly since it barely fires and pays no spread tax. A deterministic cut-bait audit (bite-ticks per open-tick, 8s windows) converts the lure to a third hunter against health-keyed doctrines that ignore it, re-probing every 3 windows. Hunters run the champion's proven kit: shared target on a clock, crossfire slots, plant + bob, WINDOW_AUTO 360 bloom discipline, SPAS fan respect, reload at 5 in place, EMA 1, true drop. Named for the anglerfish's lure organ."
+}

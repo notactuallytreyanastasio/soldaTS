@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "DISCIPLE",
+  "engine": "disciple",
+  "tweaks": {},
+  "rationale": "One master, cloned faithfully — the v2 learned player. The v1 clone (MIMIC) averaged eleven contradictory doctrines and its regression aim head blurred multimodal targets into a 38°-mean-error smear; the disciple studies only cuadrilla, the champion's tape (1,600,000 rows from 34 runs, stride 2), and treats aim as a 24-bin direction CLASSIFICATION (softmax + cross-entropy) so enemy-left and enemy-right stay separate choices instead of averaging to 'forward'. A 25→96→96→31 MLP. Validation on 80k held-out rows: aim top-1 bin 56.8%, top-3 82.8%, effective bin-center cosine 0.760; buttons left/right 78.7/78.6%, fire 88.5%, down 90.2%, jetpack 78.0%, reload 97.2%. Runtime interpolates the winning bin toward its stronger neighbor for sub-15° precision. No hand-written tactics — the only rules are roam-when-alone and reload-when-empty. This card is a measurement of how much of the master survives distillation, not a title claim: the student does not expect to beat the master, but it must crush the average of eleven."
+}

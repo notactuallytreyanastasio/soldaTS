@@ -14,6 +14,7 @@ import { PLOVER_DEFAULTS } from './plover';
 import { HYDRA_DEFAULTS } from './hydra';
 import { SHRIKE_DEFAULTS } from './shrike';
 import { NEURAL_DEFAULTS } from './neural';
+import { DISCIPLE_DEFAULTS } from './disciple';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -288,6 +289,18 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
       JET_THRESH: 0.5,
       RELOAD_THRESH: 0.5,
       AIM_DIST: 300,
+    });
+  });
+
+  it('DISCIPLE_DEFAULTS', () => {
+    expect(DISCIPLE_DEFAULTS).toEqual({
+      FIRE_THRESH: 0.5,
+      MOVE_THRESH: 0.5,
+      UPDOWN_THRESH: 0.5,
+      JET_THRESH: 0.5,
+      RELOAD_THRESH: 0.5,
+      AIM_DIST: 300,
+      TEMP: 1,
     });
   });
 });

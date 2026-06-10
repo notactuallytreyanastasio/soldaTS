@@ -15,6 +15,8 @@ import { createShrikeEngine } from './shrike';
 import { createCuadrillaEngine } from './cuadrilla';
 import { createOrcaEngine } from './orca';
 import { createNeuralEngine } from './neural';
+import { createAnglerEngine } from './angler';
+import { createDiscipleEngine } from './disciple';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -28,6 +30,8 @@ registerEngine('shrike', createShrikeEngine);
 registerEngine('cuadrilla', createCuadrillaEngine);
 registerEngine('orca', createOrcaEngine);
 registerEngine('neural', createNeuralEngine);
+registerEngine('angler', createAnglerEngine);
+registerEngine('disciple', createDiscipleEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -41,4 +45,13 @@ export { HYDRA_DEFAULTS, type HydraConfig } from './hydra';
 export { SHRIKE_DEFAULTS, type ShrikeConfig } from './shrike';
 export { CUADRILLA_DEFAULTS, type CuadrillaConfig } from './cuadrilla';
 export { ORCA_DEFAULTS, type OrcaConfig } from './orca';
-export { NEURAL_DEFAULTS, type NeuralConfig } from './neural';
+export {
+  NEURAL_DEFAULTS,
+  NEURAL_SHIPPED_NET,
+  NeuralPolicy,
+  createNeuralEngineWithWeights,
+  type NeuralConfig,
+  type NeuralNet,
+} from './neural';
+export { ANGLER_DEFAULTS, type AnglerConfig } from './angler';
+export { DISCIPLE_DEFAULTS, type DiscipleConfig } from './disciple';
