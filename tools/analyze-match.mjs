@@ -1,18 +1,22 @@
 #!/usr/bin/env node
 // Match telemetry analyzer — turns a soldat-match-telemetry/1 dump into a
 // readable gameplay report. Usage:
-//   node tools/analyze-match.mjs <match.json>
+//   node tools/analyze-match.mjs <match.json[.gz]>
 // Get a dump from a spectate session (?spectate): press T to download, or via
-// CDP: JSON.stringify(window.__match.dump()).
+// CDP: JSON.stringify(window.__match.dump()). Dataset telemetry is gzipped
+// (match-N.telemetry.json.gz) — both forms are accepted here.
 
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 
 const path = process.argv[2];
 if (!path) {
-  console.error('usage: node tools/analyze-match.mjs <match.json>');
+  console.error('usage: node tools/analyze-match.mjs <match.json[.gz]>');
   process.exit(1);
 }
-const m = JSON.parse(readFileSync(path, 'utf8'));
+const buf = readFileSync(path);
+const raw = buf[0] === 0x1f && buf[1] === 0x8b ? gunzipSync(buf) : buf;
+const m = JSON.parse(raw.toString('utf8'));
 if (m.schema !== 'soldat-match-telemetry/1') {
   console.error(`unknown schema: ${m.schema}`);
   process.exit(1);

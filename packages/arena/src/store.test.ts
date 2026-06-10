@@ -71,10 +71,10 @@ describe('writeRun + buildManifest + buildSummary', () => {
       'manifest.json',
       'match-1.events.jsonl.gz',
       'match-1.replay.jsonl.gz',
-      'match-1.telemetry.json',
+      'match-1.telemetry.json.gz',
       'match-2.events.jsonl.gz',
       'match-2.replay.jsonl.gz',
-      'match-2.telemetry.json',
+      'match-2.telemetry.json.gz',
       'summary.json',
     ]);
   });
