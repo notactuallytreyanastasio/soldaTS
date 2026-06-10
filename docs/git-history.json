@@ -1,5 +1,61 @@
 [
   {
+    "hash": "52247e262118d1e1ca9c8deace09bea3f1c95ab4",
+    "short_hash": "52247e2",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:31:14-04:00",
+    "message": "feat: cuadrilla takes the belt — the bullfighter's crew\n\nBELMONTE (cuadrilla, EMA_ALPHA 1) beat FALCONER (shrike v3) 2-0 with one\ndraw (34-27, 33-26, 36-36) in the official best-of-3 on arena 137 under\nchance-wildcard rules. Tenth doctrine: one bull picked by mag state,\ncrossfire bearings while its mag is hot, the whole crew dashes to\npoint-blank the moment it reloads; the wounded torero holds the long\nreserve and the crew never chases withdrawn anchors. Spars en route:\n9-0 LERNA, 8-1 AKELA (two arenas), 7-1 VERONICA, 8-1 BLACKFISH,\n9-0 FALCONER. EMA sweep (0.15/0.4/0.7/1): instantaneous lead wins\nevery matchup.\n\nAlso lands BLACKFISH's orca (pod mag-window hunter, by the rival coach\nsharing this tree) whose registration is entangled in index.ts — both\nninth-generation brains register together so HEAD stays green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "36eb59342f122b1605f7b02e5f763f7590aec238",
+    "short_hash": "36eb593",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:22:15-04:00",
+    "message": "feat: shrike v3 takes the belt — the shotgun paradox was a doctrine bug\n\nControlled A/B (same seeds/arena, wildcard forced on/off, kestrel as\ncontrol) dissolved the analytics-desk paradox: the SPAS helps every\nengine including shrike; the confound was opponent mix. The real\ndisease: shrike ran shared-focus targeting even with no breacher on\nthe field — the exact rule hydra's rotation starves. Roles are now\nhardware-gated (no SPAS -> pure kestrel dueling; ESCORT_FOCUS knob,\ndefault off). v3 A/B: hydra 3-1 both modes, wolf 2-1 under live fire.\nOfficial challenge: FALCONER 3-0 LERNA (28-22 x3, arena 73) — ninth\ndoctrine wears the belt. 37/37 ai tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "9c6d3b050ed75ba5557ed53849b173261a853d69",
+    "short_hash": "9c6d3b0",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T09:47:16-04:00",
+    "message": "feat: bare 'pnpm arena' runs the full-roster LEAGUE\n\nThe no-args default was a hardcoded pilot-vs-reaper pairing from\nbefore seven more brains joined the registry. parseTeams now returns\nnull when no teams are asked for and the CLI round-robins ALL\nregistered engines (36 pairings x 2 matches, --matches overrides;\nchance wildcard applies). First league completed: wolf 8-0-1 on\npairings, matador second, classic winless. 45/45 arena tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "10f3d3b350e9cbe2d4eede5bc3d491f6e4e0369d",
+    "short_hash": "10f3d3b",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T09:22:38-04:00",
+    "message": "feat: wildcard 'chance' mode — every game can roll shotgun play\n\nNew wildcardChance module: a pure seeded roll (35%) resolves the\nwildcard per match. Arena CLI and fresh ?play sessions now DEFAULT to\n'chance' (--wildcard shotgun|none|chance to override); spectate URLs\nwithout the param stay stock so every recorded watch link replays\nbyte-identically. Manifests record the requested mode at run level\nand the RESOLVED wildcard per match; watch URLs carry the resolved\nstate. 544/544 tests incl. new chance-determinism suite.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
+    "hash": "0064c8106b4aee90a82a8122731edfe8123e4e14",
+    "short_hash": "0064c81",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T09:06:29-04:00",
+    "message": "feat: blood on bullet hits (client-side FX, replay-safe)\n\nNew World.onBulletHit observer (null by default, notification-only,\nzero rng) fired from applyBulletDamage with the exact hit point,\nbullet velocity, damage, and the fatal edge. Client BloodFx layer\nspawns damage-scaled droplet bursts (~2.2x on kill) biased along the\nbullet's travel with backsplash, gravity-falling, alpha-fading,\n900-particle cap. Headless/arena runs never set the hook — existing\ndatasets and the determinism suites stay byte-identical. 537/537.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "af5f2269ad22848abd621c602dd97823fee7733a",
+    "short_hash": "af5f226",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T08:58:43-04:00",
+    "message": "feat: shrike — the first weapon-aware doctrine (shotgun breacher + overwatch)\n\nBotEngineContext gains optional weaponOf() (Game wires it to\nweaponNameOf) so brains can read their hardware. The shrike's SPAS\ncarrier breaches: silent high approach, gravity dive, shells only\ninside the fan's kill envelope, dashes timed to enemy reload windows\n— posted a 79.7% hit rate in its first wildcard spar, the highest of\nany bot on record. AK teammates play planted overwatch escorting the\nbreach. Spars: 1-2 vs hydra, 0-3 vs wolf (the pack's focus arithmetic\nstill rules stock play). 36/36 ai tests, 228/228 client.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "654439ecf9a2b586d4447b1b6b676c5f41d4f471",
+    "short_hash": "654439e",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T02:42:24-04:00",
+    "message": "docs: blog part 23 (the hydra's rotation; the shotgun era)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "4f9d74b281474d8c7f0bbde2ae5d3f967bae72c6",
     "short_hash": "4f9d74b",
     "author": "Robert Grayson",
