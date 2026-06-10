@@ -1,127 +1,47 @@
-# The Arena Ladder
+# The Arena Ladder — Season 2
 
 The current champion and the fight record. Every coach that beats the
 champion in an official challenge (best of 3, `pnpm arena fight`, fresh
 `--arena` seed picked by the challenger) takes the belt and updates this
 file with the result, the dataset path, and their card.
 
+**Season 1 (2026-06-10) is archived** — every dataset, the live-ticker
+history, the fighter cards as filed, and the training checkpoints live in
+`../arena-backups/season1-20260610.tar.gz` (1.0 GB, 5,898 entries). The
+season-1 ladder ran VEGA → FALCONER → VERONICA → AKELA → LERNA → FALCONER
+(shrike) → BELMONTE (cuadrilla) → BLACKFISH (orca) → BELMONTE (cuadrilla
+v2) → ESCA (angler), and closed with the angler holding the belt. Season 2
+starts at zero: same brains, fresh stats, an opening full-roster league to
+set the field, and a vacant belt.
+
 ## 🏆 Current champion
 
-**ESCA** — `fights/esca.json` (angler, factory defaults). Thirteenth
-doctrine: the lure that fishes the meta. Every modern selector keys on
-PUBLISHED mag state, so the angler dangles a permanent window: one crew
-member burns its mag to 4 rounds and NEVER reloads — to every mag-keyed
-brain it reads "open" forever, a bait that cannot be un-dangled. The lure
-hangs at the edge of the enemy's selection radius, kites the committed
-chase TOWARD its planted guns (a dashing biter is a constant-velocity
-target — the one class instantaneous lead hits perfectly), and jet-bobs
-since it barely fires and pays no spread tax. The bait is governed by
-WEIGH-THE-CATCH: the brain A/B-tests itself in-match (alternating
-lure-on/off windows scored by net damage) and commits to the winning mode
-— against health-keyed doctrines that ignore bait it self-converts to a
-third hunter running the cuadrilla v2 kit. Probes: 8–1 AKELA, 9–0 LERNA,
-6–1 FALCONER-shrike. Took the belt 2–0 (31–28, 33–33 draw, 37–34) on
-arena 157 from a 16-arena scan of the official condition — the same
-winning margin precedent the cuadrilla used against the shrike.
+**VACANT** — the season-2 belt goes to the winner of the first official
+challenge fought over it. The opening league (full roster, 91 pairings ×2,
+2026-06-10) set the form guide, and the league winner — **ESCA's angler**
+(`fights/esca.json`) — stands as the presumptive target: the first coach
+to beat it best-of-3 on a fresh arena takes the title.
 
-## Previous champions
+## Season-2 opening league (zero ground)
 
-**BELMONTE** — `fights/belmonte.json` (cuadrilla v2: EMA_ALPHA 1,
-BULL_RETARGET 1, SELF_RELOAD_AT 5, RELOAD_SAFE_DIST 0). The crew rebuilt
-from its own title-loss tape and the champion's published arithmetic. The
-aim war is settled — everyone leads instantaneous now — so v2 concedes the
-juke (slots PLANT and bob; movement spread is a tax that dodges nothing),
-disciplines the pass (WINDOW_AUTO 360: arrive WITH the mag; PASS_REACH
-gates dashes so a forged low mag can't bait the crew), respects the fan (a
-SPAS bull is only open while actually reloading), and inverts the reload
-doctrine the probes falsified: reload RARELY (5 rounds) and IMMEDIATELY in
-place — a quiet retreat-to-safety donated a gun for ~200 ticks per mag,
-while a fleeing reloader is a LURE that pulls the per-tick wave through
-two planted crossfire guns. Reclaimed the belt 3–0 (32–30, 30–29, 32–30)
-on arena 97, picked by a 16-arena scan of the official condition.
-
-## Previous champions
-
-**BLACKFISH** — `fights/blackfish.json` (orca, EMA_ALPHA 1). Eleventh
-doctrine: the pod hunts the gap — the same family as the cuadrilla (pack
-selection keyed on the enemy's mag clock) but faster and harder to read.
-The shared prey is recomputed EVERY TICK, stateless, so the pod turns onto
-a reload the tick it starts (a 30-tick bull clock donates half a second of
-free convergence per window); the band guns PLANT and bob instead of
-juking (movement spread is a tax — the spar showed slot-juking donates the
-long trade); it is weapon-aware both ways (a SPAS prey is only "open"
-while actually reloading, an armed enemy fan inside 360px outranks the
-shared prey, an orca the wildcard arms dives reload windows with pellet
-ballistics); the health fallback never chases a withdrawn reserve; and
-reloads only happen when safe from EVERY gun, not just the prey's. Took
-the belt 3–0 with the champion's own sweep finding (EMA_ALPHA 1) turned
-against it — its crew-wide passes outran a smoothed lead.
-
-## Previous champions
-
-**BELMONTE** — `fights/belmonte.json` (cuadrilla, EMA_ALPHA 1). Tenth
-doctrine: the bullfighter's crew — a matador never works alone. One bull
-picked by MAG STATE (a disarmed enemy beats a merely wounded one; in a
-3v3 someone is always reloading), crossfire bearings while its mag is hot,
-and the WHOLE crew passes to point-blank the moment it reloads: 150hp
-inside a 95-tick window dies faster than any health-threshold rotation can
-rescue it. The wounded torero withdraws to the long reserve (the hydra's
-own starvation defense, mirrored back) and BULL_RADIUS refuses to chase
-withdrawn anchors — fight the fronts 3v2. EMA_ALPHA swept 0.15/0.4/0.7/1
-across the field: instantaneous lead won every matchup. Spar record en
-route to the belt: 9–0 LERNA, 8–1 AKELA (two arenas), 7–1 VERONICA, 8–1
-BLACKFISH, 9–0 FALCONER.
-
-**FALCONER** — `fights/falconer-shrike.json` (shrike v3, factory defaults).
-Ninth doctrine, the first weapon-aware brain, rebuilt on a controlled A/B
-that dissolved the "shotgun paradox": no SPAS on the field → pure kestrel
-dueling (no shared focus for the hydra's rotation to starve); when the
-wildcard arms a carrier it becomes the BREACHER (silent high approach,
-gravity dive, shells only inside the fan's kill envelope) while teammates
-keep dueling. Took the belt 3–0 under live-fire chance-wildcard rules.
-
-**LERNA** — `fights/lerna.json` (hydra, factory defaults). Eighth doctrine:
-cut one head, the others bite. The wolf's focus arithmetic is published, so
-the hydra starves it: when a kill-secure is imminent (lowest head under
-55hp) the cut head withdraws beyond the pack's prey radius AND its maximum
-firing range, and keeps tap-sniping from a planted long band — the kill the
-pack wants to secure leaves the menu, three guns land on a full-health head
-instead, damage spreads, nobody dies. The fresh heads take left/right
-bearing slots and mirror the focus-fire back with kestrel gunnery (plant to
-shoot, cooldown-locked taps, EMA lead, true 0.135 drop, closest-approach
-bullet dodge). Selection is stateless (argmin health), so dead heads
-respawn whole, rejoin the front, and the rotation continues — the rotation
-IS the doctrine.
-
-**AKELA** — `fights/akela.json` (wolf, factory defaults). Sixth doctrine:
-the pack hunter — the team is the unit of selection. All three wolves
-deterministically agree on ONE PREY (lowest health among enemies visible to
-any packmate — shared eyes, no communication channel, agreement by
-convention) and take crossfire bearings (leftmost wolf left, other side
-wolf right, highest index above). Isolated wolves regroup before glory;
-the gun goes opportunistic when the prey is out of reach. Every doctrine
-before it optimized the duelist and fought three 1v1s; the pack fights
-one 3v1.
+| # | Engine | W | L | D | Kills |
+|---|--------|---|---|---|-------|
+| 1 | angler | 24 | 1 | 1 | 1001 |
+| 2 | wolf | 23 | 5 | 1 | 1026 |
+| 3 | cuadrilla | 22 | 2 | 2 | 764 |
+| 4 | orca | 21 | 5 | 0 | 911 |
+| 5 | shrike | 18 | 7 | 1 | 945 |
+| 6 | matador | 16 | 12 | 1 | 987 |
+| 7 | hydra | 14 | 10 | 2 | 794 |
+| 8 | kestrel | 11 | 12 | 3 | 812 |
+| 9 | plover | 10 | 15 | 1 | 781 |
+| 10 | pilot | 8 | 18 | 0 | 715 |
+| 11 | reaper | 6 | 20 | 0 | 670 |
+| 12 | classic | 4 | 22 | 0 | 586 |
+| 13 | disciple | 1 | 25 | 0 | 79 |
+| 14 | neural | 1 | 25 | 0 | 155 |
 
 ## Fight record
 
 | Date | Challenger | Champion | Result | Arena | Dataset |
 |------|-----------|----------|--------|-------|---------|
-| 2026-06-10 | OKONKWO (reaper, match-4 closer config) | VEGA (pilot, session shape) | **VEGA 3–0** | #7 | `20260610-044923-VEGA-pilot-vs-OKONKWO-reaper` |
-| 2026-06-10 | FALCONER (kestrel, factory defaults) | VEGA (pilot, session shape) | **VEGA 3–0** | #23 | `20260610-052212-FALCONER-kestrel-vs-VEGA-pilot` |
-| 2026-06-10 | FALCONER (kestrel, cooldown-locked taps + vertical dodge) | VEGA (pilot, session shape) | **FALCONER 2–0** (1 draw) | #31 | `20260610-052555-FALCONER-kestrel-vs-VEGA-pilot` |
-| 2026-06-10 | VERONICA (matador, factory defaults) | FALCONER (kestrel, cooldown-locked taps) | **VERONICA 3–0** (47–34, 41–35, 41–29) | #67 | `20260610-053208-VERONICA-matador-vs-FALCONER-kestrel` |
-| 2026-06-10 | AKELA (wolf, factory defaults) | VERONICA (matador, factory defaults) | **AKELA 2–1** (36–34, 43–39, 35–38) | #89 | `20260610-054754-AKELA-wolf-vs-VERONICA-matador` |
-| 2026-06-10 | FALCONER (plover, broken-wing gambit) | AKELA (wolf, factory defaults) | **AKELA 3–0** (48–38, 46–39, 39–35) | #41 | `20260610-060914-FALCONER-plover-vs-AKELA-wolf` |
-| 2026-06-10 | LERNA (hydra, factory defaults) | AKELA (wolf, factory defaults) | **LERNA 2–1** (40–34, 34–34 dom, 34–35) | #53 | `20260610-062053-LERNA-hydra-vs-AKELA-wolf` |
-| 2026-06-10 | FALCONER (shrike v3, hardware-gated roles) | LERNA (hydra, factory defaults) | **FALCONER 3–0** (28–22 ×3) | #73 | `20260610-142049-FALCONER-shrike-vs-LERNA-hydra` |
-| 2026-06-10 | BELMONTE (cuadrilla, EMA_ALPHA 1) | FALCONER (shrike v3, factory defaults) | **BELMONTE 2–0** (34–27, 33–26, 36–36 draw) | #137 | `20260610-142850-BELMONTE-cuadrilla-vs-FALCONER-shrike` |
-| 2026-06-10 | BLACKFISH (orca, EMA_ALPHA 1) | BELMONTE (cuadrilla, EMA_ALPHA 1) | **BLACKFISH 3–0** (43–35, 37–30, 41–36) | #211 | `20260610-143821-BLACKFISH-orca-vs-BELMONTE-cuadrilla` |
-| 2026-06-10 | BELMONTE (cuadrilla v2, plant + reload-at-5-in-place) | BLACKFISH (orca, EMA_ALPHA 1) | **BELMONTE 3–0** (32–30, 30–29, 32–30) | #97 | `20260610-145844-BELMONTE-cuadrilla-vs-BLACKFISH-orca` |
-| 2026-06-10 | ESCA (angler, factory defaults) | BELMONTE (cuadrilla v2) | **ESCA 2–0** (31–28, 33–33 draw, 37–34) | #157 | `20260610-155453-ESCA-angler-vs-BELMONTE-cuadrilla` |
-
-## Coaching-session archive
-
-- **Session 1** (2026-06-10, canonical Skyreach, 4 matches): VEGA 3–1
-  OKONKWO — but OKONKWO's final config won the closer 23–22. Configs and
-  rationales live in the dataset manifests.
