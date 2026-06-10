@@ -1,5 +1,13 @@
 [
   {
+    "hash": "b27efd2725d4587a5bf77653b661caf6d2bb4fce",
+    "short_hash": "b27efd2",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:33:59-04:00",
+    "message": "feat: matador doctrine takes the belt — VERONICA 3-0 FALCONER (arena 67)\n\nThe fourth doctrine, upgraded through five sparring rounds: hunt the\nDISARMED enemy (target selection by mag state, not distance), true\n0.135 bullet drop (BulletParts gravity, Cvar.pas:228-231), taps locked\nto the 6-tick fire cooldown. EMA-lead pillar refuted by spar data and\ndemoted to a knob.\n\nAlso bakes the play-by-play into the arena runtime: every fight/teams\nrun maintains datasets/LIVE.json (schema soldat-arena-live/1, atomic\nwrites, best-effort) — the broadcast watcher polls datasets/, so series\nappear on the site as they run.\n\nOfficial: 47-34, 41-35, 41-29 on arena #67.\nDataset: 20260610-053208-VERONICA-matador-vs-FALCONER-kestrel\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
     "hash": "c73db99eeb7c557cf96b8650e603cd33e2f9a403",
     "short_hash": "c73db99",
     "author": "Robert Grayson",

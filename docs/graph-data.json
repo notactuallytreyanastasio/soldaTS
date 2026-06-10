@@ -2309,6 +2309,72 @@
       "created_at": "2026-06-10T01:27:59.567569-04:00",
       "updated_at": "2026-06-10T01:27:59.567569-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"c73db99\",\"confidence\":95}"
+    },
+    {
+      "id": 211,
+      "change_id": "db4f1d33-82d3-4a57-bb42-8bd36562a2d1",
+      "node_type": "outcome",
+      "title": "Matador sustains: 500 tests green; spar evolution vs VEGA went 0-3 → 3-0 after true 0.135 bullet drop + disarmed-target hunting + cooldown-locked taps (EMA-lead pillar refuted by spar data, kept as knob)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:33:01.288945-04:00",
+      "updated_at": "2026-06-10T01:33:01.288945-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 212,
+      "change_id": "59b71d42-05db-4551-9fae-32ef65e0936e",
+      "node_type": "outcome",
+      "title": "🏆 OFFICIAL: VERONICA (matador) 3-0 FALCONER (kestrel) on arena #67 (47-34, 41-35, 41-29) — matador takes the belt; dataset 20260610-053208-VERONICA-matador-vs-FALCONER-kestrel",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:33:01.456784-04:00",
+      "updated_at": "2026-06-10T01:33:01.456784-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":98}"
+    },
+    {
+      "id": 213,
+      "change_id": "07cef754-c24e-4aba-943f-aee1731db4ce",
+      "node_type": "action",
+      "title": "Baked play-by-play into the arena runtime: datasets/LIVE.json (schema soldat-arena-live/1) written atomically by every fight/teams run; watcher site polls datasets/ so series appear live",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:33:02.035624-04:00",
+      "updated_at": "2026-06-10T01:33:02.035624-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":92,\"files\":[\"soldat-ts/packages/arena/src/live.ts\",\"soldat-ts/packages/arena/src/live.test.ts\",\"soldat-ts/packages/arena/src/cli.ts\"],\"prompt\":\"this should be bkaed into the runtime of everything too\"}"
+    },
+    {
+      "id": 214,
+      "change_id": "3dae45e6-08a1-4589-ad4c-d8abed833635",
+      "node_type": "outcome",
+      "title": "LIVE.json verified in the official fight: status done, series 3-0, watch URL captured; tests green (live.test.ts)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:33:20.860564-04:00",
+      "updated_at": "2026-06-10T01:33:20.860564-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 215,
+      "change_id": "7aa5589d-7d07-436f-a9b8-b8eb2398abc5",
+      "node_type": "goal",
+      "title": "Restyle Arena Live as a stock ticker for the live games",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:33:57.645488-04:00",
+      "updated_at": "2026-06-10T01:33:57.645488-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"make this look more like a stock ticker for the live games\"}"
+    },
+    {
+      "id": 216,
+      "change_id": "30b5003e-c301-480a-99c8-3603b886bd6e",
+      "node_type": "action",
+      "title": "Committed matador championship + LIVE.json runtime broadcast",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:34:06.602619-04:00",
+      "updated_at": "2026-06-10T01:34:06.602619-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"b27efd2\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4841,6 +4907,72 @@
       "weight": 1.0,
       "rationale": "championship recorded in git",
       "created_at": "2026-06-10T01:27:59.743587-04:00"
+    },
+    {
+      "id": 243,
+      "from_node_id": 197,
+      "to_node_id": 211,
+      "from_change_id": "361c3840-6baa-4b39-b5c2-a5e83a144132",
+      "to_change_id": "db4f1d33-82d3-4a57-bb42-8bd36562a2d1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation + spar-tuning result",
+      "created_at": "2026-06-10T01:33:20.418740-04:00"
+    },
+    {
+      "id": 244,
+      "from_node_id": 197,
+      "to_node_id": 212,
+      "from_change_id": "361c3840-6baa-4b39-b5c2-a5e83a144132",
+      "to_change_id": "59b71d42-05db-4551-9fae-32ef65e0936e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "official challenge result",
+      "created_at": "2026-06-10T01:33:20.564446-04:00"
+    },
+    {
+      "id": 245,
+      "from_node_id": 198,
+      "to_node_id": 213,
+      "from_change_id": "b4217c8a-f29d-42c9-b3de-72ace313b39f",
+      "to_change_id": "07cef754-c24e-4aba-943f-aee1731db4ce",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "broadcast directive implemented in the runtime",
+      "created_at": "2026-06-10T01:33:20.711557-04:00"
+    },
+    {
+      "id": 246,
+      "from_node_id": 213,
+      "to_node_id": 214,
+      "from_change_id": "07cef754-c24e-4aba-943f-aee1731db4ce",
+      "to_change_id": "3dae45e6-08a1-4589-ad4c-d8abed833635",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "runtime feed exercised by the official fight",
+      "created_at": "2026-06-10T01:33:27.776834-04:00"
+    },
+    {
+      "id": 247,
+      "from_node_id": 199,
+      "to_node_id": 211,
+      "from_change_id": "8849a75d-5c56-486e-a2dc-416e95cb7037",
+      "to_change_id": "db4f1d33-82d3-4a57-bb42-8bd36562a2d1",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "monitor UX follow-up",
+      "created_at": "2026-06-10T01:33:57.793938-04:00"
+    },
+    {
+      "id": 249,
+      "from_node_id": 212,
+      "to_node_id": 216,
+      "from_change_id": "59b71d42-05db-4551-9fae-32ef65e0936e",
+      "to_change_id": "30b5003e-c301-480a-99c8-3603b886bd6e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "championship recorded in git",
+      "created_at": "2026-06-10T01:34:17.296296-04:00"
     }
   ]
 }
