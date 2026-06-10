@@ -1,6 +1,7 @@
 // Dataset store (goal node 170): writes one run directory per CLI invocation
 // under soldat-ts/datasets/<runId>/ with FULL provenance — manifest (git rev,
-// resolved tweaks, resolved tuning, seeds), per-match replay (gzipped JSONL),
+// resolved tweaks, resolved tuning, seeds), per-match replay + events (both
+// gzipped JSONL),
 // telemetry, events, and a cross-match summary. The format is documented for
 // trainers in soldat-ts/datasets/README.md — bump the schema ids on any
 // breaking shape change, never mutate them silently.
@@ -140,7 +141,7 @@ export function buildManifest(args: ManifestArgs): RunManifest {
       files: {
         replay: `match-${i + 1}.replay.jsonl.gz`,
         telemetry: `match-${i + 1}.telemetry.json`,
-        events: `match-${i + 1}.events.jsonl`,
+        events: `match-${i + 1}.events.jsonl.gz`,
       },
     })),
     cli: args.cli ?? null,
@@ -261,7 +262,12 @@ export function writeRun(
       path.join(dir, `match-${n}.telemetry.json`),
       JSON.stringify(r.telemetry, null, 2),
     );
-    fs.writeFileSync(path.join(dir, `match-${n}.events.jsonl`), eventsToJsonl(r.events));
+    // Events gzip too — every post-game JSONL artifact is compressed (the
+    // manifest's files[] entries are the source of truth for exact names).
+    fs.writeFileSync(
+      path.join(dir, `match-${n}.events.jsonl.gz`),
+      zlib.gzipSync(Buffer.from(eventsToJsonl(r.events))),
+    );
   });
   fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2));
   fs.writeFileSync(

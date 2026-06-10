@@ -69,10 +69,10 @@ describe('writeRun + buildManifest + buildSummary', () => {
     const files = fs.readdirSync(dir).sort();
     expect(files).toEqual([
       'manifest.json',
-      'match-1.events.jsonl',
+      'match-1.events.jsonl.gz',
       'match-1.replay.jsonl.gz',
       'match-1.telemetry.json',
-      'match-2.events.jsonl',
+      'match-2.events.jsonl.gz',
       'match-2.replay.jsonl.gz',
       'match-2.telemetry.json',
       'summary.json',

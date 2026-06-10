@@ -118,7 +118,7 @@ To see what a bot could observe about *enemies*, join rows across bots on
 line-of-sight-gated perception; the replay records ground truth, not the
 brain's filtered view.)
 
-## 5. Events — `match-N.events.jsonl`
+## 5. Events — `match-N.events.jsonl.gz`
 
 One JSON object per line, three shapes (all ticks on the same 60 Hz clock):
 
