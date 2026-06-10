@@ -1,5 +1,37 @@
 [
   {
+    "hash": "2eadcce91218e28a49fbbcb4c26ccda47b4b32e7",
+    "short_hash": "2eadcce",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:34:56-04:00",
+    "message": "feat: 48-callsign name pool, rotated by match seed\n\nTwelve NATO names meant every simultaneous match fielded the same six\nAlphas. The pool grows to 48 callsigns and subjectName() takes a seed-\nderived rotation offset (browser matches and arena datasets both pass it),\nso each game fields a distinct squad — Meteor/Banshee/Ghost in one tile,\nIceman/Viper/Slider in the next. 488 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "1caf07291aba7aa5964ae12b437e6b18d3ddd8a2",
+    "short_hash": "1caf072",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:28:34-04:00",
+    "message": "feat(arena): headless match server, tweakable brains, training datasets\n\nERA 3 foundation (goal node 170, built by workflow):\n\nTWEAKABLE BRAINS (tracked): pilot/reaper/classic tuning constants became\nper-brain configs (PILOT_DEFAULTS et al — defaults byte-identical to the old\nconstants, pinned by tests + a 2000-tick identity test). createEngine(id,\ntweaks) resolves overrides (unknown keys warn-ignored); BotEngine.tweaks\nexposes the RESOLVED full config; Game.engineTweaks threads per-side tweaks\nthrough mixed matches and survives hot-swaps.\n\n@soldat/arena (new package): runMatch() plays a COMPLETE headless deathmatch\nfaster than realtime via the new additive Game.onBrainsTicked seam (rows\npair the state each brain SAW with the action it CHOSE — post-think,\npre-physics). Artifacts per match: replay.jsonl.gz (one row per tick per\nlive bot: pos/vel/fuel/hp/ammo + full control incl. aim), events.jsonl\n(shots/hits/kills with positions), telemetry.json, plus run-level\nmanifest.json (schema soldat-arena-replay/1: git rev, seeds, both sides'\nrequested AND resolved tweaks, resolved tuning) and summary.json standings.\ndatasets/ is gitignored except a thorough README documenting every schema\nwith training notes — the uniform data format future models train against.\n\nCLI: pnpm arena --teams 'pilot vs reaper' --tweak-a RANGE_MAX=460 --tweak-b\nKILL_RANGE=220 --matches 8 --round 120 [--sweep a:RANGE_MAX=380,420,460].\nLive progress, standings, sweep epilogue table.\n\nVerified by 3 independent agents: 488/488 tests (47 new); 7200-tick match\nin 1.0s; byte-identical replays across processes for identical config+seed;\nsweep + provenance inspected like a model trainer would; play mode\nregression-checked. Known v1 limits (documented): no mirror matches (engine\naliasing = next slice), no live client<->server transport yet.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 27
+  },
+  {
+    "hash": "9a03015051eb2a9792b96ab5a6f27b1a543e5ca0",
+    "short_hash": "9a03015",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:14:09-04:00",
+    "message": "docs(blog): absolute raw.githubusercontent image URLs\n\nThe relative img/ links were valid on GitHub's blob view but Zed's markdown\npreview doesn't resolve relative image paths (zed-industries/zed#41892,\n#37686), and a weblog entry gets pasted into renderers that resolve from\narbitrary bases. All ten images verified serving 200 from origin/main.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "0a43c0196f59bf76753a0ce8bd95370625146de2",
+    "short_hash": "0a43c01",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T23:54:27-04:00",
+    "message": "feat(client): round-robin tournaments over ALL engines + H clean view\n\n?tournament with no explicit ?ai= now builds round-robin PAIRINGS over every\nregistered engine — classic v pilot, classic v reaper, pilot v reaper, cycle\n— so a new brain joins the bracket automatically (reaper was sitting out:\nthe default roster was hardcoded classic,pilot). Sidebar game lines show\neach pairing; explicit ?ai= still applies one roster to every game.\n\nH = CLEAN VIEW: in any match window (or pressed once on the tournament page,\nbroadcast into every tile via postMessage) hides the leaderboard, MVP panel,\nHUD, hint, and info-card details — leaving ONLY the engine names — so the\nshooting is fully watchable. Toggle back with H.\n\n441 tests green (pairingsFor pure + parseTournament null-roster);\nscreenshot-verified: 4 clean tiles, 3-engine standings sidebar.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "a3fe86f424bf8080ebc9d83043f869c076b2933a",
     "short_hash": "a3fe86f",
     "author": "Robert Grayson",

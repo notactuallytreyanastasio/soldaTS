@@ -1858,6 +1858,138 @@
       "created_at": "2026-06-09T23:43:31.041658-04:00",
       "updated_at": "2026-06-09T23:43:31.041658-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 170,
+      "change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "node_type": "goal",
+      "title": "ERA 3: generic client + backend, bot harness with tracked brain tweaks, recorded deathmatches (stats+replays) as training datasets, then Claude-vs-Claude trained models",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T23:49:02.917901-04:00",
+      "updated_at": "2026-06-09T23:49:02.917901-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"I want to make it so that this game has a generic client and a backend it can speak to. In this case, we are going to basically have a setup like the following:\\n\\n1. we have a server\\n2. we have a \\\"bot\\\" harness that takes a \\\"brain\\\" as we've defined here and then tweak a few settings in it (that are tracked) \\n3. that bot harness uses the client to play the game against the other team whose using other tweaked versions\\n4. we deathmatch these recording all shots, movement, kills, etc\\n5. we keep these sstats and \\\"replays\\\" and begin training a model that will play the game even better.\\n\\nWe then pit multiple claude fable instances with the task of doing some more training with the same datasets and pinning them against each other.\\n\\nAlso update the blog post @docs/blog/building-soldat-ts.md with everything up to where we have gotten now\"}"
+    },
+    {
+      "id": 171,
+      "change_id": "04822520-2dec-4956-8675-05b18a1bb6ca",
+      "node_type": "action",
+      "title": "Update blog post through the AI-arena era",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T23:49:59.451041-04:00",
+      "updated_at": "2026-06-09T23:49:59.451041-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 172,
+      "change_id": "ab19f3fe-8c22-4194-ae55-f3b9279c4dcb",
+      "node_type": "action",
+      "title": "Tournament defaults to round-robin pairings over ALL registered engines (reaper included)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T23:50:24.012601-04:00",
+      "updated_at": "2026-06-09T23:50:24.012601-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"why isnt reaper enabled for some of the games in /tournament\"}"
+    },
+    {
+      "id": 173,
+      "change_id": "fb7dbc16-8ce0-4ead-830c-4a4df3bd1fca",
+      "node_type": "outcome",
+      "title": "Round-robin brackets + clean view live (441 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T23:54:27.618200-04:00",
+      "updated_at": "2026-06-09T23:54:27.618200-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"0a43c01\",\"confidence\":95}"
+    },
+    {
+      "id": 174,
+      "change_id": "7105da4d-f7cb-4abf-99e2-8c1bd4a693ea",
+      "node_type": "outcome",
+      "title": "Blog post extended through AI-arena era: Parts 12-18 + new closing, 3 new live screenshots",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T23:58:53.134942-04:00",
+      "updated_at": "2026-06-09T23:58:53.134942-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 175,
+      "change_id": "d95aca7e-036e-4bd7-9f37-43d4c945c311",
+      "node_type": "action",
+      "title": "Implement tweakable brains + @soldat/arena headless match runner + replay datasets",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:07:04.736142-04:00",
+      "updated_at": "2026-06-10T00:07:04.736142-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 176,
+      "change_id": "d992d096-8d00-4b36-a374-ade2428d127f",
+      "node_type": "action",
+      "title": "Fix blog image links: relative -> absolute raw.githubusercontent URLs (Zed preview can't resolve relative images)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:13:33.302880-04:00",
+      "updated_at": "2026-06-10T00:13:33.302880-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":92,\"files\":[\"docs/blog/building-soldat-ts.md\"]}"
+    },
+    {
+      "id": 177,
+      "change_id": "33a3f174-00a2-48b5-96a7-5f2a35b14539",
+      "node_type": "outcome",
+      "title": "Blog images render in any viewer: 10 absolute URLs, all verified 200, pushed as 9a03015",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:14:18.632940-04:00",
+      "updated_at": "2026-06-10T00:14:18.632940-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"9a03015\",\"confidence\":95}"
+    },
+    {
+      "id": 178,
+      "change_id": "586d5f60-1db8-47ed-9f66-13b12d1dfbef",
+      "node_type": "outcome",
+      "title": "Foundation slice green: tweakable brains, @soldat/arena runner+CLI, replay datasets — 488 tests pass, 7200-tick match in 0.9s",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:21:49.500245-04:00",
+      "updated_at": "2026-06-10T00:21:49.500245-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 179,
+      "change_id": "7da09416-35e5-440e-81fa-e53866c7bfef",
+      "node_type": "outcome",
+      "title": "Arena foundation committed: 488 tests, 1s/match headless, deterministic replays, tracked tweaks",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:28:34.727935-04:00",
+      "updated_at": "2026-06-10T00:28:34.727935-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"1caf072\",\"confidence\":95}"
+    },
+    {
+      "id": 180,
+      "change_id": "8a846aa8-5479-4be9-8d0e-fa34b1cbd885",
+      "node_type": "action",
+      "title": "48-callsign name pool, seed-rotated per match",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:29:28.218993-04:00",
+      "updated_at": "2026-06-10T00:29:28.218993-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"we need more names for the players to differentiate too\"}"
+    },
+    {
+      "id": 181,
+      "change_id": "12815c34-54aa-4e58-b232-ddff88d60d40",
+      "node_type": "outcome",
+      "title": "COACH SESSION: two Fable coaches (VEGA/pilot, OKONKWO/reaper) played 4 deathmatches adjusting tracked tweaks between each — VEGA 3-1, but OKONKWO's final all-in config (KILL_RANGE 150, FIRE_RANGE 540, DIVE 380/360) WON the closer 23-22. Full loop proven: brains + tweaks + recorded matches + agent iteration",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:34:56.995211-04:00",
+      "updated_at": "2026-06-10T00:34:56.995211-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2eadcce\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3961,6 +4093,127 @@
       "weight": 1.0,
       "rationale": "Era closed at the tag",
       "created_at": "2026-06-09T23:43:31.271331-04:00"
+    },
+    {
+      "id": 202,
+      "from_node_id": 170,
+      "to_node_id": 171,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "04822520-2dec-4956-8675-05b18a1bb6ca",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "blog update",
+      "created_at": "2026-06-09T23:50:07.298418-04:00"
+    },
+    {
+      "id": 203,
+      "from_node_id": 170,
+      "to_node_id": 172,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "ab19f3fe-8c22-4194-ae55-f3b9279c4dcb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Tournament roster gap found while watching",
+      "created_at": "2026-06-09T23:50:41.516646-04:00"
+    },
+    {
+      "id": 204,
+      "from_node_id": 172,
+      "to_node_id": 173,
+      "from_change_id": "ab19f3fe-8c22-4194-ae55-f3b9279c4dcb",
+      "to_change_id": "fb7dbc16-8ce0-4ead-830c-4a4df3bd1fca",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed; screenshot-verified",
+      "created_at": "2026-06-09T23:54:27.777907-04:00"
+    },
+    {
+      "id": 205,
+      "from_node_id": 171,
+      "to_node_id": 174,
+      "from_change_id": "04822520-2dec-4956-8675-05b18a1bb6ca",
+      "to_change_id": "7105da4d-f7cb-4abf-99e2-8c1bd4a693ea",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Blog extension shipped",
+      "created_at": "2026-06-09T23:58:57.804932-04:00"
+    },
+    {
+      "id": 206,
+      "from_node_id": 170,
+      "to_node_id": 175,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "d95aca7e-036e-4bd7-9f37-43d4c945c311",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation step",
+      "created_at": "2026-06-10T00:07:13.902418-04:00"
+    },
+    {
+      "id": 207,
+      "from_node_id": 138,
+      "to_node_id": 176,
+      "from_change_id": "e55b84ca-543a-4fc0-bbcf-5b34ac45539b",
+      "to_change_id": "d992d096-8d00-4b36-a374-ade2428d127f",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Post-publication fix to the blog deliverable: images must render in Zed/external viewers",
+      "created_at": "2026-06-10T00:13:42.285727-04:00"
+    },
+    {
+      "id": 208,
+      "from_node_id": 176,
+      "to_node_id": 177,
+      "from_change_id": "d992d096-8d00-4b36-a374-ade2428d127f",
+      "to_change_id": "33a3f174-00a2-48b5-96a7-5f2a35b14539",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Link rewrite verified (10x HTTP 200) and pushed",
+      "created_at": "2026-06-10T00:14:24.934159-04:00"
+    },
+    {
+      "id": 209,
+      "from_node_id": 175,
+      "to_node_id": 178,
+      "from_change_id": "d95aca7e-036e-4bd7-9f37-43d4c945c311",
+      "to_change_id": "586d5f60-1db8-47ed-9f66-13b12d1dfbef",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation result",
+      "created_at": "2026-06-10T00:21:54.523425-04:00"
+    },
+    {
+      "id": 210,
+      "from_node_id": 178,
+      "to_node_id": 179,
+      "from_change_id": "586d5f60-1db8-47ed-9f66-13b12d1dfbef",
+      "to_change_id": "7da09416-35e5-440e-81fa-e53866c7bfef",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed as 1caf072",
+      "created_at": "2026-06-10T00:28:57.412882-04:00"
+    },
+    {
+      "id": 211,
+      "from_node_id": 170,
+      "to_node_id": 181,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "12815c34-54aa-4e58-b232-ddff88d60d40",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "First Claude-vs-Claude coaching session, run live",
+      "created_at": "2026-06-10T00:34:57.137825-04:00"
+    },
+    {
+      "id": 212,
+      "from_node_id": 180,
+      "to_node_id": 181,
+      "from_change_id": "8a846aa8-5479-4be9-8d0e-fa34b1cbd885",
+      "to_change_id": "12815c34-54aa-4e58-b232-ddff88d60d40",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": null,
+      "created_at": "2026-06-10T00:34:57.278597-04:00"
     }
   ]
 }
