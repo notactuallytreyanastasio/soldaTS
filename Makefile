@@ -16,13 +16,15 @@ setup: ## install deps (pnpm; pins in .tool-versions)
 	@command -v pnpm >/dev/null || { echo "pnpm missing — prereqs (.tool-versions):"; cat .tool-versions; exit 1; }
 	pnpm install
 
-up: ## start game client + live watcher + commissioner, detached
+up: ## start game client + watcher + commissioner + league grinder, detached
 	@curl -sfo /dev/null $(GAME_URL) && echo "client: already up" || \
 		{ nohup pnpm play > $(PLAY_LOG) 2>&1 & echo "client: starting (log $(PLAY_LOG))"; }
 	@pgrep -f "node watch.mjs" >/dev/null && echo "watcher: already up" || \
 		{ cd $(LIVE) && nohup node watch.mjs > watcher.log 2>&1 & echo "watcher: starting (log $(LIVE)/watcher.log)"; }
 	@pgrep -f "node commissioner.mjs" >/dev/null && echo "commissioner: already up" || \
 		{ cd $(LIVE) && nohup node commissioner.mjs > commissioner.log 2>&1 & echo "commissioner: starting (log $(LIVE)/commissioner.log)"; }
+	@pgrep -f "node league.mjs" >/dev/null && echo "grinder: already up" || \
+		{ cd $(LIVE) && nohup node league.mjs > league.log 2>&1 & echo "grinder: starting (log $(LIVE)/league.log)"; }
 	@for i in $$(seq 1 30); do \
 		curl -sfo /dev/null $(GAME_URL) && curl -sfo /dev/null $(TICK_URL) && break; sleep 1; done; \
 	curl -sfo /dev/null $(GAME_URL) || { echo "TIMEOUT: no game on :5173 — see $(PLAY_LOG)"; exit 1; }; \
@@ -31,8 +33,9 @@ up: ## start game client + live watcher + commissioner, detached
 	echo "ticker    : $(TICK_URL)"; \
 	echo "board json: $(TICK_URL)/data.json"
 
-down: ## stop client, watcher, commissioner
+down: ## stop client, watcher, commissioner, grinder
 	@pkill -f "node commissioner.mjs" 2>/dev/null && echo "commissioner: stopped" || echo "commissioner: not running"
+	@pkill -f "node league.mjs" 2>/dev/null && echo "grinder: stopped" || echo "grinder: not running"
 	@pkill -f "node watch.mjs" 2>/dev/null && echo "watcher: stopped" || echo "watcher: not running"
 	@kill $$(lsof -ti :5173) 2>/dev/null && echo "client: stopped" || echo "client: not running"
 
@@ -46,9 +49,16 @@ status: ## pgrep + curl each service
 	@pgrep -f "node commissioner.mjs" >/dev/null \
 		&& printf "%-13s %-6s %s\n" commissioner up "pid $$(pgrep -f 'node commissioner.mjs' | head -1)" \
 		|| printf "%-13s %-6s %s\n" commissioner DOWN "$(LIVE)/commissioner.log"
+	@pgrep -f "node league.mjs" >/dev/null \
+		&& printf "%-13s %-6s %s\n" grinder up "pid $$(pgrep -f 'node league.mjs' | head -1)" \
+		|| printf "%-13s %-6s %s\n" grinder DOWN "$(LIVE)/league.log"
 
 test: ## typecheck + unit suite
 	pnpm typecheck && pnpm vitest run
+
+grind: ## start just the league grinder daemon (~120 matches/hr)
+	@pgrep -f "node league.mjs" >/dev/null && echo "grinder: already up" || \
+		{ cd $(LIVE) && nohup node league.mjs > league.log 2>&1 & echo "grinder: starting"; }
 
 league: ## full roster round-robin
 	pnpm arena
