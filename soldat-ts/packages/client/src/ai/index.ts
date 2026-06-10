@@ -11,6 +11,7 @@ import { createKestrelEngine } from './kestrel';
 import { createWolfEngine } from './wolf';
 import { createPloverEngine } from './plover';
 import { createHydraEngine } from './hydra';
+import { createShrikeEngine } from './shrike';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -20,6 +21,7 @@ registerEngine('kestrel', createKestrelEngine);
 registerEngine('wolf', createWolfEngine);
 registerEngine('plover', createPloverEngine);
 registerEngine('hydra', createHydraEngine);
+registerEngine('shrike', createShrikeEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -30,3 +32,4 @@ export { KESTREL_DEFAULTS, type KestrelConfig } from './kestrel';
 export { WOLF_DEFAULTS, type WolfConfig } from './wolf';
 export { PLOVER_DEFAULTS, type PloverConfig } from './plover';
 export { HYDRA_DEFAULTS, type HydraConfig } from './hydra';
+export { SHRIKE_DEFAULTS, type ShrikeConfig } from './shrike';

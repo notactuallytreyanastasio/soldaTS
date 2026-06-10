@@ -12,6 +12,7 @@ import { KESTREL_DEFAULTS } from './kestrel';
 import { WOLF_DEFAULTS } from './wolf';
 import { PLOVER_DEFAULTS } from './plover';
 import { HYDRA_DEFAULTS } from './hydra';
+import { SHRIKE_DEFAULTS } from './shrike';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -227,6 +228,40 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
       DROP_G: 0.135,
       JUKE_MIN_TICKS: 0,
       JUKE_VAR_TICKS: 22,
+      BOB_UP_TICKS: 12,
+      BOB_DOWN_MIN: 18,
+      BOB_DOWN_VAR: 14,
+      DODGE_HORIZON: 26,
+      DANGER_RADIUS: 56,
+      DODGE_COMMIT: 6,
+      HEIGHT_SLACK: 110,
+      FUEL_FLOOR: 80,
+      RELOAD_LOW: 6,
+      HUNT_MEMORY_TICKS: 240,
+      STALL_RISE_VY: -0.1,
+      STALL_TRIGGER: 25,
+      STALL_COOLDOWN: 180,
+    });
+  });
+
+  it('SHRIKE_DEFAULTS', () => {
+    expect(SHRIKE_DEFAULTS).toEqual({
+      BLAST_RANGE: 200,
+      EFFECT_MAX: 280,
+      PUSH_DIST: 90,
+      DIVE_HEIGHT: 180,
+      DIVE_ENTRY: 250,
+      WINDOW_MAG: 6,
+      SHELLS_LEAVE: 1,
+      BAND_MIN: 320,
+      BAND_MAX: 460,
+      APPROACH_FIRE_DIST: 620,
+      FIRE_MAX_DIST: 620,
+      FOCUS_RETARGET: 30,
+      TAP_PERIOD: 6,
+      TAP_OPEN: 1,
+      EMA_ALPHA: 0.15,
+      DROP_G: 0.135,
       BOB_UP_TICKS: 12,
       BOB_DOWN_MIN: 18,
       BOB_DOWN_VAR: 14,

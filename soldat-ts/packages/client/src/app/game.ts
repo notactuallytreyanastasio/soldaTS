@@ -423,6 +423,7 @@ export class Game {
       ammoOf: (i: number): number => this.ammoOf(i),
       reloadingOf: (i: number): boolean => this.reloadingOf(i),
       magSize: this.tuning.magSize,
+      weaponOf: (i: number): string => this.weaponNameOf(i),
     };
 
     // Player. In spectate mode slot 1 is never spawned: an inactive sprite is
