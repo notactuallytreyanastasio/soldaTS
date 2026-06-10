@@ -48,6 +48,13 @@ const JUKE_VAR_TICKS = 26;
 const HUNT_MEMORY_TICKS = 240; // ~4 s of last-seen pursuit after losing LOS
 const BURST_PERIOD = 14; // ticks — long-range fire discipline cycle
 const BURST_OPEN = 5; // ticks of the period spent firing (tap-bursts)
+// Ceiling-stall give-up (goal node 150): two pilots each demanding a height
+// edge over the other is an unwinnable arms race that ends pinned to the
+// ceiling. Burning jet without actually rising for this long means the climb
+// is going nowhere — concede the height contest and fight from here.
+const STALL_RISE_VY = -0.1; // rising at all = velocityY below this (y is down)
+const STALL_TRIGGER = 25; // ticks of jetting-without-rising before giving up
+const STALL_COOLDOWN = 180; // ticks (~3 s) with climbing suppressed
 
 class PilotBrain implements BotBrain {
   private readonly roam: RoamState = createRoamState();
@@ -56,8 +63,38 @@ class PilotBrain implements BotBrain {
   private lastSeenX = 0;
   private lastSeenY = 0;
   private lastSeenAt = -1;
+  /** Consecutive ticks spent jetting without gaining altitude. */
+  private stallTicks = 0;
+  /** Climbing is conceded until this tick (ceiling-stall give-up). */
+  private noClimbUntil = 0;
 
   tick(botIndex: number, ctx: BotEngineContext): void {
+    const { world } = ctx;
+    const s = world.sprites[botIndex];
+    const parts = world.spriteParts;
+    if (s === undefined || parts === null) return;
+    const c = s.control;
+
+    this.decide(botIndex, ctx);
+
+    // Ceiling-stall give-up: burning jet without rising means the climb is
+    // blocked (geometry, or a symmetric height arms race with another
+    // pilot). Concede: cut thrust and stop chasing height for a while —
+    // gravity brings the duel back into the arena.
+    const vy = parts.velocityY[botIndex] ?? 0;
+    if (c.jetpack && vy >= STALL_RISE_VY) {
+      this.stallTicks += 1;
+    } else {
+      this.stallTicks = 0;
+    }
+    if (this.stallTicks >= STALL_TRIGGER) {
+      this.stallTicks = 0;
+      this.noClimbUntil = world.mainTickCounter + STALL_COOLDOWN;
+      c.jetpack = false;
+    }
+  }
+
+  private decide(botIndex: number, ctx: BotEngineContext): void {
     const { world } = ctx;
     const s = world.sprites[botIndex];
     const parts = world.spriteParts;
@@ -92,7 +129,11 @@ class PilotBrain implements BotBrain {
     if (this.lastSeenAt >= 0 && clock - this.lastSeenAt < HUNT_MEMORY_TICKS) {
       if (px < this.lastSeenX - 40) c.right = true;
       else if (px > this.lastSeenX + 40) c.left = true;
-      if (this.lastSeenY < py - HEIGHT_EDGE_MIN && s.jetsCount > FUEL_RESERVE) {
+      if (
+        this.lastSeenY < py - HEIGHT_EDGE_MIN &&
+        s.jetsCount > FUEL_RESERVE &&
+        clock >= this.noClimbUntil
+      ) {
         c.jetpack = true;
       }
       return;
@@ -131,14 +172,17 @@ class PilotBrain implements BotBrain {
       // up is safer than running on the floor), never return fire dry.
       if (dx > 0) c.left = true;
       else c.right = true;
-      if (s.jetsCount > FUEL_RESERVE) c.jetpack = true;
+      if (s.jetsCount > FUEL_RESERVE && clock >= this.noClimbUntil) {
+        c.jetpack = true;
+      }
       return;
     }
 
     // --- Positioning: hold the height edge, keep the range band ------------
     if (
       heightEdge < HEIGHT_EDGE_MIN &&
-      s.jetsCount > (heightEdge < 0 ? FUEL_RESERVE : FUEL_COMMIT - 100)
+      s.jetsCount > (heightEdge < 0 ? FUEL_RESERVE : FUEL_COMMIT - 100) &&
+      clock >= this.noClimbUntil
     ) {
       // Below or level: climb. Attacking from underneath is a losing duel.
       c.jetpack = true;
