@@ -16,6 +16,7 @@ import { buildRunPlans, parseSweep, parseTeams, parseTweaks, type RunPlan } from
 import { runMatch, type MatchResult } from './runner';
 import { buildManifest, makeRunId, writeRun } from './store';
 import { buildWatchUrl, validateCard, type FighterCard } from './fighterCard';
+import { startLiveFeed } from './live';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -138,6 +139,14 @@ function main(): void {
       `\n[${plan.label}] ${plan.teams[0].engine} (red) vs ${plan.teams[1].engine} (blue)` +
         ` · ${plan.matches} matches · ${plan.roundTicks / 60}s rounds · variant ${plan.variant}`,
     );
+    // Play-by-play baked into the runtime (engine names stand in for coaches).
+    const live = startLiveFeed(outDir, {
+      arenaSeed: 0,
+      roundSecs: plan.roundTicks / 60,
+      matchesPlanned: plan.matches,
+      red: { coach: plan.teams[0].engine, engine: plan.teams[0].engine, tweaks: plan.teams[0].tweaks ?? {} },
+      blue: { coach: plan.teams[1].engine, engine: plan.teams[1].engine, tweaks: plan.teams[1].tweaks ?? {} },
+    });
     for (let k = 0; k < plan.matches; k++) {
       const seed = plan.seedBase + k;
       const t0 = performance.now();
@@ -162,6 +171,16 @@ function main(): void {
           `  ticks ${result.ticks}  ${secs}s  rows ${rowCount}`,
       );
       results.push(result);
+      live.matchDone({
+        n: k + 1,
+        seed,
+        winnerTeam: round?.winnerTeam ?? 0,
+        winnerCoach: round?.winnerEngine ?? null,
+        redKills: round?.redKills ?? 0,
+        blueKills: round?.blueKills ?? 0,
+        ticks: result.ticks,
+        wallSecs: Number(secs),
+      });
     }
 
     const runId = makeRunId(plan.teams[0].engine, plan.teams[1].engine, plan.runIdSuffix);
@@ -181,6 +200,7 @@ function main(): void {
       results,
     );
     outcomes.push({ plan, results, dir });
+    live.finish({ dataset: dir });
 
     // Per-run standings.
     const wins = { red: 0, blue: 0 };
@@ -274,6 +294,16 @@ function fight(
   if (a.rationale !== undefined) console.log(`  ${a.coach}: "${a.rationale}"`);
   if (b.rationale !== undefined) console.log(`  ${b.coach}: "${b.rationale}"`);
 
+  // Play-by-play baked into the runtime: the broadcast watcher polls the
+  // datasets dir, so LIVE.json puts this series on the site as it runs.
+  const live = startLiveFeed(outDir, {
+    arenaSeed,
+    roundSecs,
+    matchesPlanned: matches,
+    red: { coach: a.coach, engine: a.engine, tweaks: a.tweaks ?? {}, rationale: a.rationale },
+    blue: { coach: b.coach, engine: b.engine, tweaks: b.tweaks ?? {}, rationale: b.rationale },
+  });
+
   const results: MatchResult[] = [];
   for (let k = 0; k < matches; k++) {
     const seed = seedBase + k;
@@ -290,6 +320,7 @@ function fight(
     });
     results.push(result);
     const r = result.round;
+    const wallSecs = (performance.now() - started) / 1000;
     const verdict =
       r === null
         ? 'cap'
@@ -299,9 +330,18 @@ function fight(
             ? `${b.coach} wins (${r.blueKills}-${r.redKills})`
             : `draw (${r.redKills}-${r.blueKills})`;
     console.log(
-      `  match ${k + 1}/${matches}  seed ${seed}  ${verdict}  ` +
-        `${((performance.now() - started) / 1000).toFixed(1)}s`,
+      `  match ${k + 1}/${matches}  seed ${seed}  ${verdict}  ${wallSecs.toFixed(1)}s`,
     );
+    live.matchDone({
+      n: k + 1,
+      seed,
+      winnerTeam: r?.winnerTeam ?? 0,
+      winnerCoach: r?.winnerTeam === 1 ? a.coach : r?.winnerTeam === 2 ? b.coach : null,
+      redKills: r?.redKills ?? 0,
+      blueKills: r?.blueKills ?? 0,
+      ticks: result.ticks,
+      wallSecs: Number(wallSecs.toFixed(2)),
+    });
   }
 
   const runId = makeRunId(`${a.coach}-${a.engine}`, `${b.coach}-${b.engine}`);
@@ -326,7 +366,7 @@ function fight(
   console.log(`  series: ${a.coach} ${aWins} — ${bWins} ${b.coach}`);
   console.log('');
   console.log('  WATCH (replays the exact match-1 sim in the browser — pnpm play first):');
-  console.log(
-    `  ${buildWatchUrl('http://localhost:5173', a, b, { seed: seedBase, roundSecs, arenaSeed })}`,
-  );
+  const watchUrl = buildWatchUrl('http://localhost:5173', a, b, { seed: seedBase, roundSecs, arenaSeed });
+  console.log(`  ${watchUrl}`);
+  live.finish({ dataset: dir, watchUrl });
 }

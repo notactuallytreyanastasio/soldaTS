@@ -102,8 +102,8 @@ export const MATADOR_DEFAULTS: Readonly<MatadorConfig> = {
   FUEL_PUNISH_MIN: 40, // ticks — punish dashes still fly on fumes (mostly horizontal anyway)
   JUKE_MIN_TICKS: 14, // poke-band strafe-juke clock (rng-rolled per leg)
   JUKE_VAR_TICKS: 22,
-  BURST_PERIOD: 12, // ticks — poke fire-discipline cycle
-  BURST_OPEN: 4, // ticks of the period spent firing (tap-bursts)
+  BURST_PERIOD: 6, // ticks — poke tap clock, locked to the fire cooldown:
+  BURST_OPEN: 1, // one shot per period = max volume at zero bloom (the 4/12 burst halved poke volume)
   HUNT_MEMORY_TICKS: 240, // ~4 s of last-seen pursuit after losing LOS
   // Ceiling-stall give-up (proven failure mode, see pilot.ts node 150).
   STALL_RISE_VY: -0.1,
