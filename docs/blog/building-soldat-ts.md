@@ -400,9 +400,300 @@ serve four eras of the game side by side on four ports.
 the FreePascal golden-master cross-check (the final feel-fidelity gate) remains
 human-gated; the RNG will need a faithful Pascal port before combat scenarios
 can join the golden master; the skeleton/ragdoll, grenades, weapon switching,
-and netcode transport are still ahead. And the next chapter is already in
-flight: swappable bot-AI engines behind an adapter, with a side-by-side duel
-viewer to watch two brains fight it out.
+and netcode transport are still ahead. When I first wrote this post, the next
+chapter was "already in flight: swappable bot-AI engines behind an adapter,
+with a side-by-side duel viewer to watch two brains fight it out." All of that
+shipped — and it got considerably bigger than the sentence. That's the rest of
+this post.
+
+## Part 12: The adapter — a line in the sand, and a brain from first principles
+
+The prompt that opened this era drew the boundary explicitly:
+
+> are we really using the soldat assets to their best ability? I want this
+> game to look better. but we should now draw a line in the sand. now we will
+> make the engine for the bot AI swappable using an adapter pattern. you want
+> to build this first principles version, but we should be able to just turn
+> on 2 games at once and watch each of them play!
+
+So every bot brain moved behind one seam. A `BotEngine` is a named brain
+factory in a registry; a `BotBrain` ticks once per sim tick and its *only
+output* is its own bot's control struct. Brains read the world freely but
+never mutate it — same rule as the telemetry observers, or determinism dies —
+and randomness must come from `world.rng`, never `Math.random`. Where the seam
+lives was its own logged decision: at the *client* layer, not inside the sim,
+because ammo, reload state, and spawn points live in the client `Game` and
+brains need all three to think.
+
+The existing brain became `classic` — a pure extraction of the ported Pascal
+AI plus the client sustainment layer, with a regression test pinning play mode
+byte-identical. Which freed the second slot for the brain the adapter existed
+to make possible. The seed had been planted a few sessions earlier:
+
+> think about building bots in a 2d shooter game from first principles --
+> imagine taking the optimized play of a counter strike source player but
+> wawtching from the top down in 2 dimensions and assuming the vertical play
+
+`pilot` is that thought made code. What a Counter-Strike pro mechanically *is*
+turns out to be mostly not aim — it's positioning that makes fights unfair
+before they start, information discipline, and movement that defeats
+prediction. Rotated into 2D-plus-vertical, that became six doctrines, each one
+a comment block at the top of `pilot.ts`:
+
+1. **Positioning beats aim — height is the angle.** Pilot climbs until it
+   holds a height edge over its target, and gives ground vertically rather
+   than horizontally.
+2. **Range discipline.** It keeps duels inside a 200–420px band — close
+   enough to hit, far enough that incoming fire is dodgeable — backing off
+   from brawls instead of face-tanking them.
+3. **Movement as counter-prediction.** While engaged it strafe-jukes on an
+   RNG clock. The classic aim model leads targets assuming constant velocity,
+   so erratic acceleration is literally its mathematical counter.
+4. **Mag state is tactical state.** It reloads on its own terms behind range,
+   disengages while dry, and re-enters with a full mag.
+5. **Memory over omniscience.** When line of sight breaks it hunts the last
+   seen position for ~4 seconds instead of instantly forgetting the enemy
+   exists.
+6. **Fuel as economy.** It spends the tank to take height, never to hover
+   dry; below the reserve it perches and lets regen pay for the next climb.
+
+Plus time-of-flight lead and true ballistic drop compensation in the aim math.
+About which — a story.
+
+## Part 13: ?duel, and the bug it caught in its first minute
+
+`?duel=classic,pilot` boots two complete, independent matches side by side —
+each engine in its own iframe with its own sim, renderer, and telemetry — so
+two brains can be raced under identical conditions and judged by numbers
+instead of vibes.
+
+The feature paid for itself inside sixty seconds. Pilot v1 — the brain with
+the fancy ballistics — was hitting **0.1%** of its shots. Not 10%. A tenth of
+a percent. Watching one match you'd have called pilot "cautious"; watching two
+matches side by side with per-frame telemetry, classic was landing one shot in
+five while the first-principles genius couldn't hit a floating pad. The drop
+compensation was overshooting by a factor of **60** — and if that number
+sounds familiar, it's the tick rate; seconds had leaked into per-tick
+ballistics, and every round was being lobbed mortar-high over its target. The
+fix is one constant; the code comment at the crime scene still notes that the
+duel paid for itself in its first minute.
+
+Re-raced for 90 seconds after the fix: pilot **35%** hit rate to classic's
+22%, median kill distance **291px** to 164px, jet use **71%** of alive time to
+46%. The first-principles brain wasn't just winning — it was visibly playing a
+different game: higher, farther, airborne.
+
+Then the duel viewer grew up. `?duel` generalized from exactly two engines to
+up to six in a grid, repeats allowed — mirror matches are legal and
+informative. Wheel zoom became proportional to the actual scroll delta so a
+trackpad gesture stopped teleporting the camera across four games. Engines
+became self-describing (`BotEngine.strategy`), so every window shows a big
+color-coded banner — amber CLASSIC "REFLEX BANDS", cyan PILOT
+"FIRST-PRINCIPLES AERIAL" — and the E key hot-swaps brains mid-match: every
+bot gets a fresh brain from the new engine on the next tick while sprites,
+scores, fuel, and ammo carry over. Only the thinking changes.
+
+![Duel mode: pilot and reaper racing in independent arenas, banners and follow lines live](img/10-duel-pilot-reaper.png)
+
+## Part 14: Mixed matches, and teams that follow engines
+
+> now how do we split it into multiple diff AI modes
+
+Duels are parallel universes; the obvious next question is one universe.
+`?ai=classic,pilot` assigns a single match's bots to engines round-robin, and
+the brains fight *each other* in one shared arena. The scoreboard becomes
+engine versus engine, the banner reads CLASSIC vs PILOT — MIXED MATCH, and the
+first mixed match on record had pilot leading 20:10.
+
+Then teams arrived, and they arrived at the sim level, not as a UI tint:
+`Sprite.team` in the world state, `findTarget` skips teammates (a refinement
+the original Pascal AI deferred), and bullets pass through the owner's
+teammates — friendly fire is off in the *physics*. The key move: in mixed
+matches, **teams follow engines**. Red is engine group zero, blue is engine
+group one, so red versus blue *is* classic versus pilot. Engine warfare,
+watchable as a team sport.
+
+A live leaderboard panel ranks every fighter by **dominance** — kills minus
+half deaths, so a fighter that trades two-for-one ranks above one that feeds —
+with team dots and engine tags. That one metric became the spine of everything
+in the next part: the in-match board, the tournament standings, and the round
+verdicts all agree because they all call the same function.
+
+## Part 15: The tournament
+
+> lets make a script that fires up 4 games, each running with a mixture of
+> AIs, and we score which one has the most dominant fighter and then model
+> more after them
+
+`?tournament` boots **four simultaneous team games** in a grid, each on a
+distinct seed — the sim is deterministic, so identical seeds would replay the
+same match four times — with a sidebar that aggregates every fighter across
+all games into one standings table: per-engine totals, a crowned dominant
+engine, top fighters across games. `tools/run-tournament.mjs` drives the whole
+page headlessly and prints the verdict, so a tournament is something a script
+(or an agent) can run and read.
+
+And the four games aren't just four seeds — they're four *games*. The tuning
+constants became a `GameTuning` instance (defaults byte-identical to the old
+constants; `?play` untouched), and each tournament slot runs a named variant:
+**baseline** (stock rules), **high-octane** (fire interval 6→4, reload 95→70,
+quick respawns), **thin-air** (a 320-tick tank and zero air regen — gravity
+matters again), and **marksman** (near-laser accuracy, 12-round mags, long
+reloads). A round samples the engines across four metas instead of one.
+
+First live verdict: **pilot crowned**, 124 kills / 67 deaths, dominance 90.5,
+against classic's 62 / 125 and dominance −0.5. Every one of the top ten
+fighters across all four games was a pilot. The first-principles thesis,
+measured.
+
+The original design then "evolved" the next round's rosters toward the winner
+— re-weight by dominance, every engine keeps at least one slot. That verdict
+produced a 5:1 pilot-to-classic roster, and the next user message killed the
+feature, correctly:
+
+> it appears every player is on pilot -- it should be each team is entirely
+> in one mode with the knob turns and the turns should be shown in the UI
+
+A 5-v-1 doesn't read as evolution; it reads as a bug ("everyone is on pilot"),
+and it isn't an experiment either — it's a pile-on. Teams are now **whole**:
+each team is entirely one engine, split evenly, and the next round (N key, or
+the printed URL) keeps the same whole teams on fresh generation-derived seeds
+instead of collapsing rosters toward the winner. The same correction demanded
+the knob turns be *shown*, so every banner and sidebar entry spells out its
+variant's deviations — `fire 6→4 · reload 95→70 · …` — instead of asking the
+spectator to trust that the games differ.
+
+Rounds got stakes, too: after ten sim-minutes the game freezes — the tick
+no-ops while the UI and telemetry keep serving the final state — under a 56px
+RED WINS / BLUE WINS banner naming the winning team *and its engine*. The
+verdict (kills, then total dominance, then draw) is one pure, tested function.
+Each game carries per-team MVP scoreboards live, and the round champion across
+all four games is the engine with the most game wins. Pilot swept the first
+full round 4–0, across all four variants. For about a day, the meta looked
+solved.
+
+![The tournament: four variant games, leaderboards and MVPs per tile, aggregated standings in the sidebar](img/08-tournament.png)
+
+## Part 16: Reaper — designing the counter, then tuning it by telemetry
+
+> lets make a third kind of AI model strategy then
+
+A meta with one dominant doctrine is a solved game, so the third engine was
+designed *against* the champion. Pilot wins by holding its 200–420px band with
+a height edge: at that range its tap-bursts stay accurate, its jukes have time
+to defeat lead aim, and its reload-disengage rhythm never gets interrupted.
+`reaper` is built to deny the band:
+
+- **Relentless gap-close.** Every tick spent at pilot's preferred range is a
+  tick lost; every tick inside 150px is a tick won — spray bloom is free at
+  knife range, and a juke that defeats lead aim at 300px moves you two degrees
+  at 80px.
+- **Dive entry.** Approach *above* the target and cut the jets to fall onto
+  it. A diving body accelerates under gravity — harder to lead than any juke —
+  and arrives with a full tank for the exit climb.
+- **Knife-range commitment.** Inside the kill circle it never retreats:
+  full-auto, push *through* the target, reload only on a dry mag. Half
+  measures re-open the range and hand the duel back to the band.
+
+Reaper v1 lost the round **0–4**. Pilot outscored it 84 kills to 53, and the
+telemetry said exactly why: v1 held fire inside 320px on the run-in, politely
+eating free tap-bursts the entire way down. One data-driven pass later —
+return fire from 460px, approach 200px *above* the target (over pilot's
+preferred height edge), commit at 180px — reaper v2 went **1–3**: one game
+decided on a 16–16 tiebreak, two others by two kills, and it *won* the
+marksman variant 13–11, the meta where 12-round mags and long reloads punish
+pilot's spray-and-reposition rhythm hardest. The arena has its first real
+rivalry, and the loop that produced it — design from doctrine, lose, read the
+telemetry, tune, contest — is the Part 10 pipeline doing exactly what it was
+built for.
+
+One pilot bug from this era deserves its place in the bug ledger. The report:
+
+> in pilot mode they all cling to the ceiling
+
+Two pilots each demanding a 50px height edge over *each other* is a symmetric
+arms race with no winner — and Skyreach has a ceiling slab (Part 10's fix for
+the infinite climb), so entire matches ended pinned to it, six bots scraping
+the lid forever. The fix is concession: a brain that has burned jet for 25
+consecutive ticks without actually rising is in a climb it cannot win, so it
+gives up the height contest — thrust cut, all climbing suppressed for about
+three seconds — and gravity brings the duel back into the arena before the
+next bid. Reaper inherits the same give-up. Doctrines need to know when their
+axiom is unsatisfiable.
+
+## Part 17: Watchability is a feature
+
+Four simultaneous games exposed the information design. The 34px engine
+banners that looked stately in one full window covered half the action in a
+tournament tile, and the sound of four arenas at once is not sound, it's
+punishment:
+
+> can we have a button to turn off the PILOT VS REAPER stuff etc so the 4
+> screen is viewable / can we also get a mute button thats on by default (m
+> for short)
+
+Small windows — tournament tiles are half-screen iframes — now auto-render a
+compact semi-transparent corner card instead of the banner: engines, strategy,
+the variant's knob turns, and a team-colored `▶ FOLLOWING Charlie — RED ·
+pilot` line that tracks wherever the director camera is parked. B (or the ℹ
+button) toggles the card; M toggles sound, **muted by default**; the buttons
+blur themselves after a click so they never steal game keys from the arena.
+
+And the chevrons. The teams *were* tinted — the Gostek shirt and pants take
+the team color — but camo textures dominate at spectator zoom and a few tinted
+pixels can't be read; in practice everyone looked vaguely blue. Each live
+teamed soldier now carries a solid team-colored chevron above its head, drawn
+in a dedicated always-cleared marker layer above all entities (FFA matches
+stay unmarked). It's the cheapest change of the era and probably the highest
+watchability-per-line in the codebase: at any zoom, the shape of the fight is
+legible.
+
+The principle underneath: **spectator legibility is a feature**, not chrome.
+This game's default mode is watching, and the tournament made watching the
+primary instrument for judging the AIs. An instrument you can't read isn't an
+instrument.
+
+![A pilot-vs-reaper team match: chevrons over heads, per-team MVP panel, the compact info card with its follow line](img/09-team-match.png)
+
+## Part 18: Another line in the sand
+
+> Let's commit where this is at as a line in the sand. we are going to take a
+> large turn now.
+
+The tag is `v0.2-ai-arena`: three engines behind the adapter, red-versus-blue
+engine warfare with chevrons and MVP scoreboards, ten-minute rounds with
+winner banners, four-game knob-variant tournaments with crowned champions, the
+telemetry pipeline and its headless runner, keyboard-only human play — 439
+tests green, 169 decision nodes deep.
+
+The large turn is already written down, verbatim, on the goal node that opens
+the next era:
+
+> I want to make it so that this game has a generic client and a backend it
+> can speak to. In this case, we are going to basically have a setup like the
+> following:
+>
+> 1. we have a server
+> 2. we have a "bot" harness that takes a "brain" as we've defined here and
+>    then tweak a few settings in it (that are tracked)
+> 3. that bot harness uses the client to play the game against the other team
+>    whose using other tweaked versions
+> 4. we deathmatch these recording all shots, movement, kills, etc
+> 5. we keep these sstats and "replays" and begin training a model that will
+>    play the game even better.
+>
+> We then pit multiple claude fable instances with the task of doing some more
+> training with the same datasets and pinning them against each other.
+
+Read that against the last six parts and you can see the arena was never just
+a toy. The adapter is the harness's seam; the tracked knob variants are the
+tracked brain tweaks; the telemetry that caught the 60× ballistics bug and
+tuned reaper is the recording layer; the headless tournament runner is the
+match scheduler. The era that just closed built the laboratory. The next one
+runs the experiments — hand-written doctrines first, then models trained on
+everything those doctrines record, then multiple Claude instances training
+against the same datasets and getting pitted against each other in the same
+arena that crowned pilot.
 
 ## Closing
 
@@ -414,11 +705,23 @@ across a language boundary if you do three things relentlessly: read before you
 write, make fidelity a test instead of a vibe, and write down *why* — every
 choice, every reversal, every bug that turned out to be a one-line lights-on.
 
+The AI-arena era applied the same three rules to the bots themselves: read
+(the telemetry), test (the duels and tournaments), write down why (the
+doctrine comments at the top of every brain, the decision nodes behind every
+tuning pass). Pilot exists because a prompt asked what a CS pro would look
+like rotated into 2D; reaper exists because a champion demanded a challenger;
+both got better the same way — by losing measurably and being tuned against
+the numbers.
+
 The game opens on six bots dogfighting over Skyreach. Add `?play` to the URL
-and go beat them. They won't get aim assist. You will.
+and go beat them — they won't get aim assist, you will. Or add
+`?duel=pilot,reaper` and watch the rivalry, `?tournament` and crown a round
+champion across four metas at once. The bots fight either way. They don't need
+us to watch anymore. Which is, of course, the point of what comes next.
 
 ---
 
-*All screenshots captured live from the running game on June 9, 2026 — four of
-them from historical commits resurrected in git worktrees for this post. The
+*All screenshots captured live from the running game on June 9, 2026 — four
+from historical commits resurrected in git worktrees, and the three AI-arena
+shots (Parts 13–17) from the `v0.2-ai-arena` build the day it was tagged. The
 screenshot tool is `soldat-ts/tools/screenshot.mjs`.*
