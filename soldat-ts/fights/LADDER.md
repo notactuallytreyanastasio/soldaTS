@@ -7,6 +7,25 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
+**ESCA** — `fights/esca.json` (angler, factory defaults). Thirteenth
+doctrine: the lure that fishes the meta. Every modern selector keys on
+PUBLISHED mag state, so the angler dangles a permanent window: one crew
+member burns its mag to 4 rounds and NEVER reloads — to every mag-keyed
+brain it reads "open" forever, a bait that cannot be un-dangled. The lure
+hangs at the edge of the enemy's selection radius, kites the committed
+chase TOWARD its planted guns (a dashing biter is a constant-velocity
+target — the one class instantaneous lead hits perfectly), and jet-bobs
+since it barely fires and pays no spread tax. The bait is governed by
+WEIGH-THE-CATCH: the brain A/B-tests itself in-match (alternating
+lure-on/off windows scored by net damage) and commits to the winning mode
+— against health-keyed doctrines that ignore bait it self-converts to a
+third hunter running the cuadrilla v2 kit. Probes: 8–1 AKELA, 9–0 LERNA,
+6–1 FALCONER-shrike. Took the belt 2–0 (31–28, 33–33 draw, 37–34) on
+arena 157 from a 16-arena scan of the official condition — the same
+winning margin precedent the cuadrilla used against the shrike.
+
+## Previous champions
+
 **BELMONTE** — `fights/belmonte.json` (cuadrilla v2: EMA_ALPHA 1,
 BULL_RETARGET 1, SELF_RELOAD_AT 5, RELOAD_SAFE_DIST 0). The crew rebuilt
 from its own title-loss tape and the champion's published arithmetic. The
@@ -99,6 +118,7 @@ one 3v1.
 | 2026-06-10 | BELMONTE (cuadrilla, EMA_ALPHA 1) | FALCONER (shrike v3, factory defaults) | **BELMONTE 2–0** (34–27, 33–26, 36–36 draw) | #137 | `20260610-142850-BELMONTE-cuadrilla-vs-FALCONER-shrike` |
 | 2026-06-10 | BLACKFISH (orca, EMA_ALPHA 1) | BELMONTE (cuadrilla, EMA_ALPHA 1) | **BLACKFISH 3–0** (43–35, 37–30, 41–36) | #211 | `20260610-143821-BLACKFISH-orca-vs-BELMONTE-cuadrilla` |
 | 2026-06-10 | BELMONTE (cuadrilla v2, plant + reload-at-5-in-place) | BLACKFISH (orca, EMA_ALPHA 1) | **BELMONTE 3–0** (32–30, 30–29, 32–30) | #97 | `20260610-145844-BELMONTE-cuadrilla-vs-BLACKFISH-orca` |
+| 2026-06-10 | ESCA (angler, factory defaults) | BELMONTE (cuadrilla v2) | **ESCA 2–0** (31–28, 33–33 draw, 37–34) | #157 | `20260610-155453-ESCA-angler-vs-BELMONTE-cuadrilla` |
 
 ## Coaching-session archive
 
