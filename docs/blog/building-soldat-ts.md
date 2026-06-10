@@ -695,6 +695,64 @@ everything those doctrines record, then multiple Claude instances training
 against the same datasets and getting pitted against each other in the same
 arena that crowned pilot.
 
+## Part 19: The Claude Arena — coaches, datasets, and the road to a learned player
+
+The era-3 prompt reframed everything the arena era had built:
+
+> we have a server… a "bot" harness that takes a "brain" as we've defined here
+> and then tweak a few settings in it (that are tracked)… we deathmatch these
+> recording all shots, movement, kills, etc… and begin training a model that
+> will play the game even better.
+
+The key realization made the "server" almost free: `Game` had been headless
+all along — the unit tests had been constructing it in node and ticking it
+ten thousand times since the adapter landed. So the backend isn't a port of
+the game to a server; it's just the game, minus the renderer, run as fast as
+the CPU allows. A 120-second match simulates in **one second**.
+
+On top of that sit four layers, each tracked:
+
+- **Tweakable brains.** Every engine's tuning constants became per-brain
+  configs (`PILOT_DEFAULTS`, 15 knobs; `REAPER_DEFAULTS`, 12) with overrides
+  resolved through a warn-on-typo resolver. The browser game is byte-identical
+  with no tweaks — pinned by a 2000-tick identity test.
+- **The dataset pipeline.** `pnpm arena` runs recorded deathmatches: per-tick,
+  per-bot replay rows pairing *the state the brain saw* with *the action it
+  chose* (the seam is explicit: sampled after brains think, before physics),
+  plus every shot/hit/kill, all gzipped JSONL under a manifest carrying both
+  sides' resolved configs, the map seed, and the git rev. Same config + seed
+  produces byte-identical replays — verified across processes.
+- **Generated maps.** "We can't just play one." `generateArena(seed)` rolls
+  deterministic Skyreach-family layouts — the seed is the map's identity, so
+  datasets stay reproducible while bots stop overfitting one floor plan.
+- **Fighter cards.** The Claude-facing interface (`ARENA.md`) is one JSON
+  file: coach name, engine, tweaks, rationale. `pnpm arena fight a.json
+  b.json` runs the match, writes the dataset, and prints a WATCH URL — the
+  sim is deterministic, so the browser *replays the exact recorded match*,
+  coach names on the banner.
+
+And then we ran it. Two Claude Fable instances — Coach VEGA (pilot) and
+Coach OKONKWO (reaper) — played a four-match session, each adjusting their
+knobs between deathmatches off the recorded stats. VEGA went up 3-0; OKONKWO
+closed the gap every match, and in the finale filed an all-in config —
+commit only at true knife range, suppress the whole approach, plunge from
+above the contest ceiling — **and won it 23-22**. Then the rematch on a
+fresh generated map: VEGA swept 3-0. The finale config didn't generalize.
+That finding — a tuned strategy beating its rival once and failing to
+transfer — is the entire argument for the dataset pipeline: the next
+fighters won't be hand-tuned, they'll be *trained*, first by behavior
+cloning those replay rows into a small policy network that ships as a
+`neural` engine (inference is a few matmuls — it runs in TS, fights in the
+same arena, and gets judged by the same telemetry as everyone else), then by
+self-play RL with the one-second headless match as the environment.
+
+One more fix from this stretch deserves its confession: after *two* user
+reports of "the sprites still aren't red vs blue," the real culprit turned
+out to be the texture tint table — only the shirt and pants slots carried
+team color, and multiplying dark camo by a dark tint is invisible. Every
+non-skin body part now wears a bright team wash. Sometimes the bug report
+has to arrive twice before you believe it.
+
 ## Closing
 
 Twenty-year-old games survive on feel, and feel doesn't live in any single

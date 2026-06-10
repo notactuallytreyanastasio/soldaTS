@@ -1990,6 +1990,83 @@
       "created_at": "2026-06-10T00:34:56.995211-04:00",
       "updated_at": "2026-06-10T00:34:56.995211-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"2eadcce\",\"confidence\":95}"
+    },
+    {
+      "id": 182,
+      "change_id": "35c9ed1e-069e-4336-897c-a5eaf5e50880",
+      "node_type": "action",
+      "title": "Gzip events JSONL too — all post-game JSONL artifacts compressed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:36:27.957949-04:00",
+      "updated_at": "2026-06-10T00:36:27.957949-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"make sure were gzipping the jsonl as we track the games once they are done\"}"
+    },
+    {
+      "id": 183,
+      "change_id": "04c00b90-f01e-4408-9788-68317bb9ec8b",
+      "node_type": "outcome",
+      "title": "All post-game JSONL gzipped (events 72KB->1.8KB in smoke run)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:37:18.517247-04:00",
+      "updated_at": "2026-06-10T00:37:18.517247-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7f3f769\",\"confidence\":95}"
+    },
+    {
+      "id": 184,
+      "change_id": "31ff06f3-f437-4257-bb92-7ec534bf4d3d",
+      "node_type": "action",
+      "title": "Overnight campaign runner (matrix of pairings/variants/tweaks/seeds, stop-file + caps) + training-data extractor; launch tonight's run",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:40:29.635640-04:00",
+      "updated_at": "2026-06-10T00:40:29.635640-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"so how do we start training a model based off the results of these games? can we begin writing some games and letting these play out overnight?\"}"
+    },
+    {
+      "id": 185,
+      "change_id": "b721729e-4473-4994-acf0-aa93ffd5f554",
+      "node_type": "action",
+      "title": "Claude Arena: fighter cards (JSON protocol), pnpm arena fight A.json B.json, URL tweaks+coach labels in browser, ARENA.md login doc",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:41:58.487522-04:00",
+      "updated_at": "2026-06-10T00:41:58.487522-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"the idea here is simple: we first want to build the \\\"claude arena\\\"\\n\\nthis will be how we interface claude fable to grab a given \\\"brain\\\" and tweak it for a match\\n\\nthen another fable does the same thing\\n\\nthen the two face off and we view the match\\n\\nhow do we build that out\"}"
+    },
+    {
+      "id": 186,
+      "change_id": "26252580-20da-4a15-916e-bb8dd6967610",
+      "node_type": "action",
+      "title": "Seeded arena generator: deterministic Skyreach-family maps, ?arena=N + runner arenaSeed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:45:16.263163-04:00",
+      "updated_at": "2026-06-10T00:45:16.263163-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"lets generate more maps too...we cant just play one\"}"
+    },
+    {
+      "id": 187,
+      "change_id": "d112f16b-3587-4dbb-ae04-98ac97ad22a9",
+      "node_type": "action",
+      "title": "Tint ALL non-skin Gostek parts with a team wash — bodies finally read red vs blue",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:50:48.505875-04:00",
+      "updated_at": "2026-06-10T00:50:48.505875-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"the sprites still arent showing as red vs blue in what im seeing...\"}"
+    },
+    {
+      "id": 188,
+      "change_id": "c78d671d-a5f5-41db-8431-64f54175c196",
+      "node_type": "outcome",
+      "title": "Claude Arena live: cards->fight->dataset->watch URL; VEGA 3-0 OKONKWO on arena #7 (config didn't generalize); 496 tests",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:53:03.091867-04:00",
+      "updated_at": "2026-06-10T00:53:03.091867-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"8effba6\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4214,6 +4291,72 @@
       "weight": 1.0,
       "rationale": null,
       "created_at": "2026-06-10T00:34:57.278597-04:00"
+    },
+    {
+      "id": 213,
+      "from_node_id": 170,
+      "to_node_id": 182,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "35c9ed1e-069e-4336-897c-a5eaf5e50880",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Dataset hygiene",
+      "created_at": "2026-06-10T00:36:28.099346-04:00"
+    },
+    {
+      "id": 214,
+      "from_node_id": 182,
+      "to_node_id": 183,
+      "from_change_id": "35c9ed1e-069e-4336-897c-a5eaf5e50880",
+      "to_change_id": "04c00b90-f01e-4408-9788-68317bb9ec8b",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed; round-trip verified",
+      "created_at": "2026-06-10T00:37:18.671203-04:00"
+    },
+    {
+      "id": 215,
+      "from_node_id": 170,
+      "to_node_id": 184,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "31ff06f3-f437-4257-bb92-7ec534bf4d3d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Training pipeline next step",
+      "created_at": "2026-06-10T00:40:29.800226-04:00"
+    },
+    {
+      "id": 216,
+      "from_node_id": 170,
+      "to_node_id": 185,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "b721729e-4473-4994-acf0-aa93ffd5f554",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Claude Arena interface slice",
+      "created_at": "2026-06-10T00:41:58.630132-04:00"
+    },
+    {
+      "id": 217,
+      "from_node_id": 170,
+      "to_node_id": 186,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "26252580-20da-4a15-916e-bb8dd6967610",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Map variety for training data",
+      "created_at": "2026-06-10T00:45:16.436612-04:00"
+    },
+    {
+      "id": 218,
+      "from_node_id": 185,
+      "to_node_id": 188,
+      "from_change_id": "b721729e-4473-4994-acf0-aa93ffd5f554",
+      "to_change_id": "c78d671d-a5f5-41db-8431-64f54175c196",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Arena committed",
+      "created_at": "2026-06-10T00:53:15.107368-04:00"
     }
   ]
 }

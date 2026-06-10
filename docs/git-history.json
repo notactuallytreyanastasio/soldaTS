@@ -1,5 +1,21 @@
 [
   {
+    "hash": "8effba6dbafb6652034a6f37d948898604ce3aff",
+    "short_hash": "8effba6",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:53:02-04:00",
+    "message": "feat: THE CLAUDE ARENA — fighter cards, watchable fights, generated maps, true team colors\n\nTHE INTERFACE (ARENA.md is the login): a coach — Claude Fable instance,\nhuman, or future model wrapper — grabs a brain and files a FIGHTER CARD\n(soldat-fighter-card/1: coach, engine, tweaks, rationale; validation errors\nlist the legal knobs so coaches self-serve). Two cards fight:\n\n  pnpm arena fight fights/vega.json fights/okonkwo.json --matches 3 --arena 7\n\nEvery match records a training dataset AND prints a WATCH URL — the sim is\ndeterministic per seed, so the browser REPLAYS the exact recorded match:\ncoach names on the banner ('PILOT (VEGA) vs REAPER (OKONKWO)'), each side's\nknob turns on the info card (?tweak-a/?tweak-b/?coach-a/?coach-b parsed in\nmain.ts and threaded into Game.engineTweaks).\n\nGENERATED MAPS ('we can't just play one'): generateArena(seed) rolls\ndeterministic Skyreach-family layouts (sealed aerial box, rejection-sampled\nperch pads, spread spawns) — ?arena=N in the browser, --arena N in the CLI,\narenaSeed in MatchConfig, and tournament tiles each play a different map\nper generation. Seed 0 = the canonical hand-built Skyreach. Same seed =\nbyte-identical map, so manifests stay reproducible.\n\nTRUE TEAM COLORS (user report, twice): only the shirt/pants texture slots\nwere team-tinted and dark camo ate the tint. Every non-skin Gostek part now\ncarries a bright team wash — soldiers finally READ red vs blue at any zoom.\n\nFirst official arena fight: VEGA (pilot, session shape) 3-0 OKONKWO\n(reaper, the match-4 closer config) on arena #7 — the config that won the\ncoaching-session finale did NOT generalize to a new map and fresh seeds,\nwhich is precisely the kind of finding the arena exists to surface.\nfights/vega.json + fights/okonkwo.json committed as the first cards.\n496 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 13
+  },
+  {
+    "hash": "7f3f769e6af11bd91ac3af94966fd2a4ce2a147a",
+    "short_hash": "7f3f769",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:37:18-04:00",
+    "message": "fix(arena): gzip events JSONL too — every post-game JSONL artifact compressed\n\nReplays were gzipped; events.jsonl was written plain ('events are small')\n— but at dataset scale everything JSONL gets compressed once the game is\ndone. match-N.events.jsonl.gz now, manifest files[] entries are the source\nof truth for exact names; README updated. Verified: smoke run round-trips\n(gunzip -t clean, rows parse), 488 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "2eadcce91218e28a49fbbcb4c26ccda47b4b32e7",
     "short_hash": "2eadcce",
     "author": "Robert Grayson",
