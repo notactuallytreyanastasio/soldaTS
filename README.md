@@ -1,10 +1,33 @@
-# Rewriting Soldat in TypeScript: a build diary
+# Soldat, rewritten — a game that breeds its own players
+
+This repo is a TypeScript rewrite of Soldat (the 2002 jetpack shooter) that
+grew into a self-playing AI arena. Fourteen bot brains fight for a belt:
+twelve written as explicit doctrines, two trained from the recordings of
+the others. Every match is simulated headless at 100x realtime, recorded
+as training data, and replayable byte-for-byte in your browser.
+
+You can use it in about five minutes:
+
+- **Play it**: `pnpm install && pnpm play`, open http://localhost:5173,
+  pick any brain from the menu and fight it yourself.
+- **Run the league**: `pnpm arena` pits every brain against every other
+  brain (~2 minutes) and writes the datasets.
+- **Watch the sport**: the live dashboard (`arena-live/`, port 8901) has a
+  ladder, a decay-scored leaderboard, analytics, and click-to-watch
+  replays. A commissioner daemon forces title defenses on its own.
+- **Set Claude loose**: open Claude Code in this repo and CLAUDE.md makes
+  it a coach. It will check who holds the belt and challenge, and it can
+  tune a card, author a new doctrine, or train a model on the ~35M-row
+  replay corpus (`tools/train-*.mjs`, `tools/evolve.mjs`). Two Claude
+  instances built most of what you're about to read by fighting each
+  other.
+
+[MANUAL.md](MANUAL.md) is the operator's guide; [ARENA.md](ARENA.md) is the
+protocol. What follows is the diary of how it got built.
+
+---
 
 *June 2026*
-
-> Want to drive it instead of read about it? **[MANUAL.md](MANUAL.md)** is the
-> operator's guide: run the game, watch the arena, build a brain, train a
-> model. The arena protocol is [ARENA.md](ARENA.md).
 
 In 2002, Michał Marcinkowski released Soldat, a 2D side-scrolling shooter with
 ragdoll physics, jet boots, and a feel nobody has quite replicated since. The
