@@ -5,11 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARENA LIVE — the Claude Arena exchange</title>
 <style>
-  :root {
+  /* ---- theme system -------------------------------------------------------
+     All colors route through custom properties. Dark = trading floor at
+     night (default); light = financial newspaper (warm paper + ink), NOT a
+     naive inversion. JS sets :root[data-theme] from localStorage or
+     prefers-color-scheme; the D3 charts read these same vars at draw time. */
+  :root, :root[data-theme="dark"] {
     --bg: #04060a;
+    --bg-deep: #020407;
+    --head-bg: #070a10;
     --panel: #0a0e16;
     --panel2: #0f1521;
+    --panel3: #05080d;
+    --hover: #141c2c;
     --line: #1c2536;
+    --line2: #131a29;
     --text: #d6dbe6;
     --dim: #6b7690;
     --red: #ff5d5d;
@@ -17,13 +27,60 @@
     --gold: #f5c542;
     --up: #19d67c;
     --down: #ff4d4d;
+    --hero1: #0c1220;
+    --hero2: #080c14;
+    --hero-border-h: #2c3a55;
+    --warn-bg: #2a1d10;
+    --warn-border: #5a3d1a;
+    --warn-text: #e8b06a;
+    --flash-up: rgba(25, 214, 124, 0.30);
+    --flash-down: rgba(255, 77, 77, 0.30);
+    --flash-flat: rgba(245, 197, 66, 0.26);
+    --scanline: rgba(255, 255, 255, 0.022);
+    --reign-sat: 45%;
+    --reign-lum: 20%;
     --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  :root[data-theme="light"] {
+    --bg: #efe9db;            /* warm paper */
+    --bg-deep: #e6ddc8;
+    --head-bg: #f7f2e4;
+    --panel: #f9f5ea;
+    --panel2: #efe8d5;
+    --panel3: #f3eddd;
+    --hover: #e8dfc8;
+    --line: #cfc3a6;
+    --line2: #ded3b9;
+    --text: #2b2722;          /* ink */
+    --dim: #84785f;
+    --red: #b3362a;           /* press red */
+    --blue: #1f5fa8;          /* ledger blue */
+    --gold: #8f6e0e;          /* ink-gold, legible on paper */
+    --up: #14743f;
+    --down: #b3362a;
+    --hero1: #faf6ec;
+    --hero2: #f0e9d6;
+    --hero-border-h: #b9ab87;
+    --warn-bg: #f3e2bd;
+    --warn-border: #c9a35a;
+    --warn-text: #6b4d12;
+    --flash-up: rgba(20, 116, 63, 0.22);
+    --flash-down: rgba(179, 54, 42, 0.20);
+    --flash-flat: rgba(143, 110, 14, 0.22);
+    --scanline: transparent;
+    --reign-sat: 38%;
+    --reign-lum: 82%;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
     font: 13px/1.45 var(--mono);
     font-variant-numeric: tabular-nums;
+  }
+  /* faint CRT scanlines on the dark floor; invisible on paper */
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999;
+    background: repeating-linear-gradient(0deg, var(--scanline) 0 1px, transparent 1px 3px);
   }
   a { color: var(--blue); text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -34,29 +91,45 @@
   header {
     display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
     padding: 8px 16px 6px; border-bottom: 1px solid var(--line);
-    background: #070a10;
+    background: var(--head-bg);
   }
   header h1 { font-size: 16px; margin: 0; letter-spacing: 4px; color: var(--gold); }
   header .live { color: var(--up); animation: blink 1.6s infinite; letter-spacing: 2px; }
   @keyframes blink { 50% { opacity: 0.25; } }
   header .meta { color: var(--dim); font-size: 11px; margin-left: auto; }
+  #themeBtn {
+    background: var(--panel2); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; cursor: pointer;
+    letter-spacing: 1px;
+  }
+  #themeBtn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ---- price-change flash (any cell whose value changed between refreshes) */
+  @keyframes flashfade { from { background-color: var(--fc); } to { background-color: transparent; } }
+  .flash-up { --fc: var(--flash-up); animation: flashfade 0.65s ease-out; }
+  .flash-down { --fc: var(--flash-down); animation: flashfade 0.65s ease-out; }
+  .flash-flat { --fc: var(--flash-flat); animation: flashfade 0.65s ease-out; }
 
   /* ---- ticker tape ------------------------------------------------------- */
-  .tape { overflow: hidden; white-space: nowrap; background: #020407; border-bottom: 1px solid var(--line); user-select: none; }
+  .tape { overflow: hidden; white-space: nowrap; background: var(--bg-deep); border-bottom: 1px solid var(--line); user-select: none; }
   .tape-inner { display: inline-block; padding: 5px 0; animation: tapescroll 80s linear infinite; will-change: transform; }
   .tape:hover .tape-inner { animation-play-state: paused; }
   @keyframes tapescroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-  .chip { display: inline-block; margin: 0 26px 0 0; cursor: pointer; font-size: 12px; letter-spacing: 1px; }
+  .chip { display: inline-block; margin: 0 26px 0 0; cursor: pointer; font-size: 12px; letter-spacing: 1px; padding: 0 5px; border-radius: 4px; }
   .chip:hover { text-decoration: underline; }
   .chip b { font-weight: bold; }
+  /* freshly-finished fights pulse at the head of the tape */
+  @keyframes freshpulse { 0%, 100% { background: var(--flash-flat); } 50% { background: transparent; } }
+  .chip.fresh { animation: freshpulse 1.4s ease-in-out infinite; }
+  .chip.fresh::before { content: "NEW "; color: var(--gold); font-size: 10px; letter-spacing: 2px; }
 
   /* ---- LIVE hero --------------------------------------------------------- */
   .hero {
     margin: 14px 16px; border: 1px solid var(--line); border-radius: 10px;
-    background: linear-gradient(180deg, #0c1220, #080c14);
+    background: linear-gradient(180deg, var(--hero1), var(--hero2));
     padding: 14px 20px; cursor: pointer; position: relative; overflow: hidden;
   }
-  .hero:hover { border-color: #2c3a55; }
+  .hero:hover { border-color: var(--hero-border-h); }
   .hero .tag { font-size: 11px; letter-spacing: 3px; }
   .hero .tag .reddot { color: var(--down); animation: blink 1s infinite; }
   .hero .row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 6px; }
@@ -69,29 +142,63 @@
     position: absolute; right: 16px; top: 14px; border: 1px solid var(--gold); color: var(--gold);
     border-radius: 6px; padding: 4px 12px; font-size: 12px; letter-spacing: 2px;
   }
-  .hero .watchbtn:hover { background: var(--gold); color: #000; }
+  .hero .watchbtn:hover { background: var(--gold); color: var(--bg); }
+  /* LIVE NOW: bigger, sticky, kill-feed pulsing — the fight owns the page */
+  .hero.live-now {
+    position: sticky; top: 8px; z-index: 50;
+    padding: 20px 24px;
+    border-color: var(--down);
+    box-shadow: 0 6px 30px rgba(0,0,0,0.45), 0 0 0 1px var(--down);
+  }
+  .hero.live-now .side { font-size: 32px; }
+  .hero.live-now .score { font-size: 52px; animation: scorebeat 2s ease-in-out infinite; }
+  @keyframes scorebeat { 0%, 100% { text-shadow: 0 0 0 transparent; } 50% { text-shadow: 0 0 18px var(--gold); } }
+  .hero.live-now::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(110deg, transparent 35%, var(--flash-flat) 50%, transparent 65%);
+    background-size: 280% 100%; animation: sweep 3.2s linear infinite;
+  }
+  @keyframes sweep { from { background-position: 120% 0; } to { background-position: -80% 0; } }
+  .hero .mchip.latest { animation: freshpulse 1.2s ease-in-out infinite; border-color: var(--gold); }
+
+  /* ---- belt lineage strip ------------------------------------------------- */
+  .beltstrip { margin: 0 16px 14px; }
+  .beltstrip .bs-head { font-size: 10px; letter-spacing: 3px; color: var(--gold); margin: 0 2px 4px; text-transform: uppercase; }
+  .belt-bars { display: flex; height: 42px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+  .belt-bar { position: relative; min-width: 84px; cursor: pointer; padding: 5px 9px 4px; border-right: 1px solid var(--bg); overflow: hidden; }
+  .belt-bar:last-child { border-right: none; }
+  .belt-bar:hover { filter: brightness(1.25); }
+  :root[data-theme="light"] .belt-bar:hover { filter: brightness(0.94); }
+  .belt-bar .bb-who { font-weight: bold; font-size: 12px; letter-spacing: 1px; white-space: nowrap; }
+  .belt-bar .bb-sub { font-size: 9px; color: var(--dim); white-space: nowrap; }
+  .belt-bar.reigning .bb-who::after { content: " 👑"; }
+  .belt-bar.reigning { outline: 1px solid var(--gold); outline-offset: -2px; animation: reignglow 2.4s ease-in-out infinite; }
+  @keyframes reignglow { 0%, 100% { outline-color: var(--gold); } 50% { outline-color: transparent; } }
 
   .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; padding: 0 16px 16px; max-width: 1700px; margin: 0 auto; }
   @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
   .panel h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
-  .warnbar { background: #2a1d10; border: 1px solid #5a3d1a; color: #e8b06a; border-radius: 8px; padding: 6px 14px; margin: 10px 16px 0; font-size: 12px; }
+  .warnbar { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); border-radius: 8px; padding: 6px 14px; margin: 10px 16px 0; font-size: 12px; }
 
   /* ---- big board --------------------------------------------------------- */
   table.board { border-collapse: collapse; width: 100%; font-size: 13px; }
   table.board th { color: var(--dim); font-weight: normal; text-transform: uppercase; font-size: 10px; letter-spacing: 2px; border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: right; }
-  table.board td { padding: 6px 8px; border-bottom: 1px solid #131a29; text-align: right; }
+  table.board td { padding: 6px 8px; border-bottom: 1px solid var(--line2); text-align: right; }
   table.board th:nth-child(-n+2), table.board td:nth-child(-n+2) { text-align: left; }
   table.board tr.r { cursor: pointer; }
   table.board tr.r:hover { background: var(--panel2); }
   table.board .sym { font-weight: bold; font-size: 14px; letter-spacing: 1px; }
   table.board .belt { color: var(--gold); }
+  table.board tr.oneshot td { opacity: 0.55; }
+  details.fold summary { cursor: pointer; color: var(--dim); font-size: 11px; letter-spacing: 2px; padding: 6px 4px 2px; }
+  details.fold summary:hover { color: var(--text); }
   .spark { vertical-align: middle; }
 
   /* ---- time & sales (fight feed) ----------------------------------------- */
   .fight { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; background: var(--panel); overflow: hidden; }
   .fight-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 8px 12px; background: var(--panel2); border-bottom: 1px solid var(--line); cursor: pointer; }
-  .fight-head:hover { background: #141c2c; }
+  .fight-head:hover { background: var(--hover); }
   .fight-head .vs { font-size: 14px; font-weight: bold; letter-spacing: 1px; }
   .fight-head .when, .fight-head .arena { color: var(--dim); font-size: 11px; }
   .fight-head .series { margin-left: auto; font-size: 15px; font-weight: bold; }
@@ -112,7 +219,7 @@
   .match .mn { color: var(--gold); letter-spacing: 1px; }
   .match .winner { font-weight: bold; }
   table.stats { border-collapse: collapse; width: 100%; margin: 8px 0 4px; font-size: 12px; }
-  table.stats th, table.stats td { border-bottom: 1px solid #131a29; padding: 3px 8px; text-align: right; }
+  table.stats th, table.stats td { border-bottom: 1px solid var(--line2); padding: 3px 8px; text-align: right; }
   table.stats th:first-child, table.stats td:first-child,
   table.stats th:nth-child(2), table.stats td:nth-child(2) { text-align: left; }
   table.stats th { color: var(--dim); font-weight: normal; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
@@ -120,11 +227,35 @@
   table.stats tr.r:hover { background: var(--panel2); }
   details.pbp { margin: 2px 0 8px; }
   details.pbp summary { cursor: pointer; color: var(--gold); font-size: 11px; letter-spacing: 2px; }
-  .timeline { max-height: 240px; overflow-y: auto; margin: 6px 0; padding: 6px 10px; background: #05080d; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+  .timeline { max-height: 240px; overflow-y: auto; margin: 6px 0; padding: 6px 10px; background: var(--panel3); border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
   .timeline .k { padding: 1px 0; cursor: pointer; }
   .timeline .k:hover { background: var(--panel2); }
   .timeline .t { color: var(--dim); display: inline-block; width: 44px; }
   .timeline .score { color: var(--gold); float: right; }
+  .showall {
+    display: block; width: 100%; margin: 2px 0 14px; padding: 7px 0;
+    background: var(--panel2); color: var(--gold); border: 1px solid var(--line);
+    border-radius: 8px; font: 12px var(--mono); letter-spacing: 2px; cursor: pointer;
+  }
+  .showall:hover { border-color: var(--gold); }
+
+  /* ---- analytics desk (D3) ------------------------------------------------ */
+  .chartbox { margin: 4px 0 10px; }
+  .chartbox > summary { cursor: pointer; color: var(--gold); font-size: 11px; letter-spacing: 2px; padding: 4px 0; }
+  .chartbox .chart { width: 100%; margin-top: 4px; }
+  .chartbox svg { width: 100%; height: auto; display: block; background: var(--panel3); border: 1px solid var(--line); border-radius: 6px; }
+  .chartbox svg text { font-family: var(--mono); }
+  .chartnote { color: var(--dim); font-size: 10px; margin: 2px 0 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; margin: 4px 0; }
+  .legend .li { cursor: pointer; user-select: none; }
+  .legend .li.off { opacity: 0.32; text-decoration: line-through; }
+  .legend .swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; vertical-align: baseline; }
+  #d3tip {
+    position: fixed; z-index: 1000; pointer-events: none; display: none;
+    background: var(--panel2); color: var(--text); border: 1px solid var(--gold);
+    border-radius: 6px; padding: 5px 9px; font: 11px/1.5 var(--mono); max-width: 320px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35); white-space: pre-line;
+  }
 
   /* ---- news wire --------------------------------------------------------- */
   .node { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); font-size: 12px; align-items: baseline; }
@@ -132,8 +263,8 @@
   .b-goal { color: var(--gold); border-color: var(--gold); }
   .b-action { color: var(--blue); border-color: var(--blue); }
   .b-outcome { color: var(--up); border-color: var(--up); }
-  .b-decision { color: #d98aff; border-color: #d98aff; }
-  .b-option { color: #8ad0ff; border-color: #8ad0ff; }
+  .b-decision { color: #b06fd4; border-color: #b06fd4; }
+  .b-option { color: #5da0c8; border-color: #5da0c8; }
   .b-observation { color: var(--dim); border-color: var(--dim); }
   .node .nt { flex: 1; }
   .node .nwhen { color: var(--dim); flex: none; font-size: 10px; }
@@ -141,7 +272,33 @@
   .cardbox .who { font-weight: bold; }
   .doctrine { margin: 7px 0; }
   .doctrine summary { cursor: pointer; color: var(--gold); font-size: 12px; }
-  .doctrine pre { white-space: pre-wrap; font-size: 11px; color: var(--dim); background: #05080d; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; max-height: 300px; overflow-y: auto; }
+  .doctrine pre { white-space: pre-wrap; font-size: 11px; color: var(--dim); background: var(--panel3); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; max-height: 300px; overflow-y: auto; }
+  /* --- Brains browser (the prospectus) --- */
+  .brains-toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 10px; }
+  .brains-toolbar input, .brains-toolbar select { background: var(--panel3); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 5px 9px; font: inherit; font-size: 12px; }
+  .brains-toolbar input { flex: 1 1 180px; min-width: 140px; }
+  .brains-toolbar .count { color: var(--dim); font-size: 11px; }
+  .braingrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 10px; }
+  .braincard { background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .braincard .bc-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .braincard .bc-name { color: var(--gold); font-size: 15px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .braincard .bc-tag { color: var(--dim); font-style: italic; font-size: 11px; }
+  .braincard .bc-strat { font-size: 11px; color: var(--text); border-left: 2px solid var(--gold); padding-left: 8px; }
+  .braincard .bc-stats { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--dim); }
+  .braincard .bc-stats b { color: var(--text); font-weight: 600; }
+  .braincard .bc-stats .pos { color: var(--up); } .braincard .bc-stats .neg { color: var(--down); }
+  .braincard .bc-coaches { font-size: 10px; color: var(--dim); }
+  .braincard .bc-coaches .chip { border: 1px solid var(--line); border-radius: 10px; padding: 1px 7px; margin-right: 4px; background: var(--panel3); display: inline-block; }
+  .braincard table.knobs { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+  .braincard table.knobs td { border-top: 1px solid var(--line2); padding: 3px 6px 3px 0; vertical-align: top; }
+  .braincard table.knobs td.k { color: var(--blue); white-space: nowrap; font-family: inherit; }
+  .braincard table.knobs td.v { color: var(--text); text-align: right; white-space: nowrap; }
+  .braincard table.knobs td.doc { color: var(--dim); width: 60%; }
+  .braincard .knobwrap { max-height: 260px; overflow-y: auto; }
+  .braincard a.tape { color: var(--blue); font-size: 11px; text-decoration: none; }
+  .braincard a.tape:hover { text-decoration: underline; }
+  .braincard .bc-belt { font-size: 10px; border: 1px solid var(--gold); color: var(--gold); border-radius: 10px; padding: 1px 7px; }
+  .braincard .bc-helper { font-size: 10px; border: 1px solid var(--line); color: var(--dim); border-radius: 10px; padding: 1px 7px; }
   .md { white-space: pre-wrap; word-break: break-word; font-size: 12px; }
   .md h2, .md h3 { color: var(--gold); margin: 8px 0 4px; font-size: 12px; letter-spacing: 1px; }
   .md table { border-collapse: collapse; margin: 6px 0; font-size: 11px; }
@@ -150,20 +307,24 @@
   .md strong { color: var(--gold); }
   footer { color: var(--dim); font-size: 11px; text-align: center; padding: 8px 0 22px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
 <body>
 <header>
   <h1>⚔ ARENA LIVE</h1>
   <span class="live">● LIVE</span>
+  <button id="themeBtn" title="toggle light/dark">☀ / 🌙</button>
   <span class="meta" id="meta">loading…</span>
 </header>
 <div class="tape" id="tape"></div>
 <div id="hero"></div>
+<div id="beltstrip"></div>
 <div id="warnbar" style="display:none" class="warnbar"></div>
 <div class="wrap">
   <main id="main"><div class="panel">Loading market data…</div></main>
   <aside id="aside"></aside>
 </div>
+<div id="d3tip"></div>
 <footer>Arena Live — rebuilt by arena-live/watch.mjs · page refetches data.json every 5s · click anything to open the replay (needs <code>pnpm play</code> on :5173)</footer>
 <script>
 'use strict';
@@ -185,9 +346,28 @@ function openUrl(u) { if (u) window.open(u, '_blank'); }
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-watch]');
   if (!el) return;
-  if (e.target.closest('a, details.pbp summary, details.resolved summary, details.doctrine')) return;
+  if (e.target.closest('a, details.pbp summary, details.resolved summary, details.doctrine, details.fold summary, button')) return;
   openUrl(el.getAttribute('data-watch'));
 });
+
+// ---- theme -------------------------------------------------------------------
+function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
+function applyTheme(t, persist) {
+  document.documentElement.setAttribute('data-theme', t);
+  if (persist) { try { localStorage.setItem('arena-theme', t); } catch {} }
+  document.getElementById('themeBtn').textContent = t === 'light' ? '🌙 dark' : '☀ light';
+  if (lastData) render(lastData); // re-render so bars + D3 charts pick up the palette
+}
+(function initTheme() {
+  let t = null;
+  try { t = new URLSearchParams(location.search).get('theme'); } catch {} // ?theme= override (testing)
+  if (t !== 'light' && t !== 'dark') { try { t = localStorage.getItem('arena-theme'); } catch {} }
+  if (t !== 'light' && t !== 'dark') {
+    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
 // Ticker symbol: first letter + consonants (then vowels) of the rest, 5 chars.
 function sym(name) {
@@ -249,7 +429,32 @@ const tweakStr = (t) => {
   return '<span class="tweaks">' + e.map(([k, v]) => `${esc(k)}=<b>${esc(v)}</b>`).join(' · ') + '</span>';
 };
 
+// ---- price-change flash --------------------------------------------------------
+// Any element rendered with data-fk="stable-key" flashes green/red/gold when its
+// text differs from the previous render. ~600ms fade, pure CSS animation.
+const prevVals = new Map();
+function applyFlashes() {
+  const seen = new Map();
+  for (const el of document.querySelectorAll('[data-fk]')) {
+    const k = el.getAttribute('data-fk');
+    const txt = el.textContent;
+    seen.set(k, txt);
+    const old = prevVals.get(k);
+    if (old === undefined || old === txt) continue;
+    const a = parseFloat(String(old).replace(/[^\d.+-]/g, ''));
+    const b = parseFloat(String(txt).replace(/[^\d.+-]/g, ''));
+    const cls = isFinite(a) && isFinite(b) && a !== b
+      ? (b > a ? 'flash-up' : 'flash-down') : 'flash-flat';
+    el.classList.remove('flash-up', 'flash-down', 'flash-flat');
+    void el.offsetWidth; // restart the animation
+    el.classList.add(cls);
+  }
+  prevVals.clear();
+  for (const [k, v] of seen) prevVals.set(k, v);
+}
+
 // ---- ticker tape -------------------------------------------------------------
+const FRESH_MS = 10 * 60 * 1000;
 function tapeHtml(fights) {
   const chips = fights.slice(0, 40).map((f) => {
     const a = f.sides[0], b = f.sides[1], st = f.standings;
@@ -258,7 +463,8 @@ function tapeHtml(fights) {
     const draw = st.red.wins === st.blue.wins;
     const arrow = draw ? '<span class="flat">▶</span>' : aWin ? '<span class="up">▲</span>' : '<span class="down">▼</span>';
     const url = f.matches[0] ? f.matches[0].watchUrl : '';
-    return `<span class="chip" data-watch="${attr(url)}">` +
+    const fresh = f.createdAt && (Date.now() - new Date(f.createdAt).getTime() < FRESH_MS);
+    return `<span class="chip${fresh ? ' fresh' : ''}" data-watch="${attr(url)}" data-fk="tape:${attr(f.dirName)}">` +
       `<b class="cred">${esc(sym(a.coach))}</b>` +
       ` ${arrow} <b>${st.red.wins}–${st.blue.wins}${st.draws ? '–' + st.draws + 'd' : ''}</b> ` +
       `<b class="cblue">${esc(sym(b.coach))}</b>` +
@@ -281,17 +487,19 @@ function heroHtml(d) {
     ? `<span class="tag"><span class="reddot">●</span> <span class="down">LIVE NOW</span> — MATCH ${(lv.matches ? lv.matches.length + 1 : 1)}/${esc(lv.matchesPlanned)} · ARENA #${esc(lv.arenaSeed)}</span>`
     : `<span class="tag dim">LATEST SERIES — FINAL${fresh ? ' (just ended)' : ''} · ARENA #${esc(lv.arenaSeed)} · ${ago(lv.updatedAt)}</span>`;
   const s = lv.series ?? { red: 0, blue: 0, draws: 0 };
-  const mchips = (lv.matches ?? []).map((m) => {
+  const ms = lv.matches ?? [];
+  const mchips = ms.map((m, i) => {
     const cls = m.winnerTeam === 1 ? 'cred' : m.winnerTeam === 2 ? 'cblue' : 'flat';
     const who = m.winnerTeam ? esc(m.winnerCoach ?? '') : 'DRAW';
-    return `<span class="mchip">M${m.n} <b class="${cls}">${who}</b> ${m.redKills}–${m.blueKills}</span>`;
+    const latest = running && i === ms.length - 1;
+    return `<span class="mchip${latest ? ' latest' : ''}" data-fk="hero:m${m.n}">M${m.n} <b class="${cls}">${who}</b> ${m.redKills}–${m.blueKills}</span>`;
   }).join('');
-  return `<div class="hero" data-watch="${attr(lv.watchUrl ?? '')}">
+  return `<div class="hero${running ? ' live-now' : ''}" data-watch="${attr(lv.watchUrl ?? '')}">
     ${tag}
     <span class="watchbtn">${running ? '▶ WATCH LIVE' : '▶ REPLAY'}</span>
     <div class="row">
       <span class="side cred">${esc(lv.red.coach)} <span class="eng">${esc(sym(lv.red.coach))} · ${esc(lv.red.engine)}</span></span>
-      <span class="score">${s.red} — ${s.blue}${s.draws ? `<span class="dim" style="font-size:14px"> (${s.draws}d)</span>` : ''}</span>
+      <span class="score" data-fk="hero:score">${s.red} — ${s.blue}${s.draws ? `<span class="dim" style="font-size:14px"> (${s.draws}d)</span>` : ''}</span>
       <span class="side cblue">${esc(lv.blue.coach)} <span class="eng">${esc(sym(lv.blue.coach))} · ${esc(lv.blue.engine)}</span></span>
     </div>
     <div class="mchips">${mchips || '<span class="dim">first match under way…</span>'}</div>
@@ -305,65 +513,270 @@ function heroFromFight(f) {
     <span class="watchbtn">▶ REPLAY</span>
     <div class="row">
       <span class="side cred">${esc(a.coach)} <span class="eng">${esc(sym(a.coach))} · ${esc(a.engine)}</span></span>
-      <span class="score">${st ? `${st.red.wins} — ${st.blue.wins}` : '?'}</span>
+      <span class="score" data-fk="hero:score">${st ? `${st.red.wins} — ${st.blue.wins}` : '?'}</span>
       <span class="side cblue">${esc(b.coach)} <span class="eng">${esc(sym(b.coach))} · ${esc(b.engine)}</span></span>
     </div>
   </div>`;
 }
 
+// ---- belt lineage strip ---------------------------------------------------------
+// Gantt-style reign bars from the LADDER fight record (computed server-side).
+// Bar width ∝ reign duration; click opens the title fight that crowned them.
+function coachHue(name) {
+  let h = 0;
+  for (const c of String(name)) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return h;
+}
+function beltHtml(d) {
+  const reigns = d.beltLineage || [];
+  if (!reigns.length) return '';
+  const now = Date.now();
+  const durOf = (r) => Math.max(1, (r.to ? new Date(r.to).getTime() : now) - new Date(r.from).getTime());
+  const total = reigns.reduce((s, r) => s + durOf(r), 0);
+  const bars = reigns.map((r, i) => {
+    const ms = durOf(r);
+    const hue = coachHue(r.coach);
+    const bg = `hsl(${hue}, var(--reign-sat), var(--reign-lum))`;
+    const cur = r.to === null;
+    const watch = r.crown && r.crown.watchUrl ? ` data-watch="${attr(r.crown.watchUrl)}"` : '';
+    const title = r.crown
+      ? `took the belt ${r.crown.score} (arena #${r.crown.arena}) — click to watch the title fight`
+      : 'first recorded champion';
+    return `<div class="belt-bar${cur ? ' reigning' : ''}" style="flex-grow:${ms};background:${bg}"${watch} title="${attr(title)}">` +
+      `<div class="bb-who">${esc(sym(r.coach))}</div>` +
+      `<div class="bb-sub">${fmtDur(ms)}${cur ? ' and counting' : ''}${r.crown ? ' · won ' + esc(r.crown.score) : ''}${r.defenses ? ' · ' + r.defenses + ' def' : ''}</div></div>`;
+  }).join('');
+  return `<div class="beltstrip"><div class="bs-head">🏆 Belt lineage — ${reigns.length} reigns · click a bar to watch the title fight</div>` +
+    `<div class="belt-bars">${bars}</div></div>`;
+}
+
 // ---- the big board -------------------------------------------------------------
+// Ranking comes precomputed from build.mjs (decayed score). Rows with REAL
+// history (>= MIN_SERIES series) are the main view; one-off exhibition configs
+// collapse into a fold so the board reads like a real exchange, not a junk
+// drawer of one-night tickers.
+const MIN_SERIES = 3;
+const rowId = (r) => `${String(r.coach).toUpperCase()}|${r.engine}|${r.tweaksSig}`;
+const sigShort = (sig, n = 18) => {
+  const s = String(sig ?? 'stock');
+  return s.length > n ? s.slice(0, n) + '…' : s;
+};
+const rowLabel = (r, n = 18) => `${r.coach}·${r.engine}[${sigShort(r.tweaksSig, n)}]`;
+function fmtDur(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + 'h' + String(m % 60).padStart(2, '0') + 'm';
+  return Math.floor(h / 24) + 'd';
+}
+const clockOf = (iso) => {
+  const d = new Date(iso);
+  return isFinite(d.getTime()) ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : '';
+};
+
+// FORM dots: last 5 series, most recent first. ● win, ○ loss, ◐ draw.
+function formDots(form) {
+  if (!form || !form.length) return '<span class="dim">—</span>';
+  return form.map((r) =>
+    r === 'w' ? '<span class="up">●</span>' :
+    r === 'l' ? '<span class="down">○</span>' : '<span class="flat">◐</span>').join('');
+}
+
+function boardRowHtml(r, hl, champ, beltGivenRef, oneshot) {
+  const last = r.kd[r.kd.length - 1] ?? 0;
+  const prev = r.kd.length > 1 ? r.kd[r.kd.length - 2] : last;
+  const chg = last - prev;
+  const cls = chg > 0.005 ? 'up' : chg < -0.005 ? 'down' : 'flat';
+  const arrow = chg > 0.005 ? '▲' : chg < -0.005 ? '▼' : '▶';
+  const isChamp = !beltGivenRef.given && champ && String(r.coach).toUpperCase() === champ;
+  if (isChamp) beltGivenRef.given = true;
+  const sigTag = r.tweaksSig === 'stock' ? '' :
+    `<span class="dim" style="font-size:10px"> [${esc(sigShort(r.tweaksSig))}]</span>`;
+  const held = r.heldSince
+    ? `<span data-since="${attr(r.heldSince)}" title="at #${r.rank} since ${esc(r.heldSince)}">${fmtDur(Date.now() - new Date(r.heldSince).getTime())}</span>`
+    : '—';
+  const peak = r.peakRank != null
+    ? `#${r.peakRank} <span class="dim" style="font-size:10px">${ago(r.peakTs)}</span>` : '—';
+  const score = r.score ?? 0;
+  const scoreCls = score > 0.005 ? 'up' : score < -0.005 ? 'down' : 'flat';
+  const fk = (col) => `data-fk="bb:${attr(r.key || rowId(r))}:${col}"`;
+  return `<tr class="r${oneshot ? ' oneshot' : ''}" data-watch="${attr(r.lastUrl)}" title="open latest replay">` +
+    `<td class="dim" ${fk('rank')}>#${r.rank}</td>` +
+    `<td class="sym ${isChamp ? 'belt' : ''}">${isChamp ? '🏆 ' : ''}${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:11px"> ${esc(r.coach)}</span>${sigTag}</td>` +
+    `<td>${esc(r.engine)}</td>` +
+    `<td class="${scoreCls}" ${fk('score')} title="decayed W−L (half-life ${hl}h) — the ranking driver"><b>${score.toFixed(2)}</b></td>` +
+    `<td title="last 5 series, newest first">${formDots(r.form)}</td>` +
+    `<td ${fk('kd')}><b>${last.toFixed(2)}</b></td>` +
+    `<td class="${cls}">${arrow} ${Math.abs(chg).toFixed(2)}</td>` +
+    `<td ${fk('rec')}>${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''}</td>` +
+    `<td>${r.shots ? ((r.hits / r.shots) * 100).toFixed(1) + '%' : '—'}</td>` +
+    `<td ${fk('kills')}>${r.kills}</td>` +
+    `<td>${sparkline(r.kd, 90, 22)}</td>` +
+    `<td>${held}</td>` +
+    `<td>${peak}</td>` +
+    `<td class="dim">${ago(r.lastAt)}</td></tr>`;
+}
+
+const BOARD_HEAD = `<tr><th>#</th><th>sym</th><th>engine</th><th>score</th><th>form</th><th>last k/d</th><th>chg</th><th>rec</th><th>hit%</th><th>vol (kills)</th><th>trend</th><th>held</th><th>peak</th><th>updated</th></tr>`;
+
 function boardHtml(d) {
-  const byCoach = new Map();
-  const chrono = d.fights.slice().reverse(); // oldest -> newest
-  for (const f of chrono) {
-    const st = f.standings;
-    if (!st) continue;
-    for (const [side, sideSt] of [[f.sides[0], st.red], [f.sides[1], st.blue]]) {
-      const key = String(side.coach).toUpperCase();
-      if (!byCoach.has(key)) {
-        byCoach.set(key, { coach: side.coach, engine: side.engine, kd: [], w: 0, l: 0, dr: 0,
-          kills: 0, deaths: 0, hits: 0, shots: 0, lastUrl: '', lastAt: null });
-      }
-      const r = byCoach.get(key);
-      r.engine = side.engine;
-      const otherWins = sideSt === st.red ? st.blue.wins : st.red.wins;
-      if (sideSt.wins > otherWins) r.w += 1; else if (sideSt.wins < otherWins) r.l += 1; else r.dr += 1;
-      r.kills += sideSt.kills; r.deaths += sideSt.deaths;
-      r.kd.push(sideSt.kills / Math.max(1, sideSt.deaths));
-      for (const bt of f.bots ?? []) {
-        if ((bt.team === 1) === (sideSt === st.red)) { r.hits += bt.hits; r.shots += bt.shots; }
-      }
-      const url = f.matches[0] ? f.matches[0].watchUrl : '';
-      r.lastUrl = url; r.lastAt = f.createdAt;
-    }
-  }
+  const rows = d.board || [];
+  if (!rows.length) return '';
+  const hl = d.halfLifeHours ?? 3;
   const champ = (() => {
     const m = /champion[^]*?\*\*([A-Z]+)\*\*/i.exec(d.ladderMarkdown ?? '');
     return m ? m[1].toUpperCase() : null;
   })();
-  const rows = [...byCoach.values()]
-    .sort((x, y) => (y.w - y.l) - (x.w - x.l) || y.kd[y.kd.length - 1] - x.kd[x.kd.length - 1]);
-  const body = rows.map((r) => {
-    const last = r.kd[r.kd.length - 1] ?? 0;
-    const prev = r.kd.length > 1 ? r.kd[r.kd.length - 2] : last;
-    const chg = last - prev;
-    const cls = chg > 0.005 ? 'up' : chg < -0.005 ? 'down' : 'flat';
-    const arrow = chg > 0.005 ? '▲' : chg < -0.005 ? '▼' : '▶';
-    const isChamp = champ && String(r.coach).toUpperCase() === champ;
-    return `<tr class="r" data-watch="${attr(r.lastUrl)}" title="open latest replay">` +
-      `<td class="sym ${isChamp ? 'belt' : ''}">${isChamp ? '🏆 ' : ''}${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:11px"> ${esc(r.coach)}</span></td>` +
-      `<td>${esc(r.engine)}</td>` +
-      `<td><b>${last.toFixed(2)}</b></td>` +
-      `<td class="${cls}">${arrow} ${Math.abs(chg).toFixed(2)}</td>` +
-      `<td>${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''}</td>` +
-      `<td>${r.shots ? ((r.hits / r.shots) * 100).toFixed(1) + '%' : '—'}</td>` +
-      `<td>${r.kills}</td>` +
-      `<td>${sparkline(r.kd, 90, 22)}</td>` +
-      `<td class="dim">${ago(r.lastAt)}</td></tr>`;
+  const beltRef = { given: false };
+  const main = rows.filter((r) => (r.series ?? (r.w + r.l + r.dr)) >= MIN_SERIES);
+  const oneShots = rows.filter((r) => (r.series ?? (r.w + r.l + r.dr)) < MIN_SERIES);
+  const mainBody = main.map((r) => boardRowHtml(r, hl, champ, beltRef, false)).join('');
+  const osBody = oneShots.map((r) => boardRowHtml(r, hl, champ, beltRef, true)).join('');
+  const fold = oneShots.length
+    ? `<details class="fold"><summary>▸ one-shot configs (${oneShots.length}) — fewer than ${MIN_SERIES} series fought, ranks kept but folded</summary>` +
+      `<table class="board">${BOARD_HEAD}${osBody}</table></details>`
+    : '';
+  return `<div class="panel"><h2>📈 The Big Board — coach configs by decayed score</h2>
+    <table class="board">${BOARD_HEAD}${mainBody}</table>
+    ${fold}
+    <div class="dim" style="font-size:10px;margin-top:6px">one row per coach+engine+settings config · SCORE = recency-decayed W−L (every series fades by half each ${hl}h — idle rows SINK, kills don't compound forever) · ties broken by decayed K/D · FORM = last 5 series newest first (<span class="up">●</span> win <span class="down">○</span> loss <span class="flat">◐</span> draw) · REC/VOL = raw career totals · main table shows configs with ≥${MIN_SERIES} series of real history · click a row to open the latest replay</div></div>`;
+}
+
+// ---- rank history -------------------------------------------------------------
+function rankAt(snap, id) {
+  const e = (snap.ranks || []).find((r) => rowId(r) === id);
+  return e ? e : null;
+}
+
+/** Cause string for a transition, derived from the trigger dataset. */
+function causeOf(d, trigger, moverId) {
+  const f = (d.fights || []).find((x) => x.dirName === trigger);
+  if (!f) return esc(trigger || '');
+  const [a, b] = f.sides;
+  const idOf = (s) => `${String(s.coach).toUpperCase()}|${s.engine}|${(Object.keys(s.tweaks || {}).sort().map((k) => k + '=' + s.tweaks[k]).join(',')) || 'stock'}`;
+  const st = f.standings;
+  const arena = ` <span class="dim">(arena #${esc(f.arenaSeed)})</span>`;
+  if (st && moverId) {
+    const moverIsA = idOf(a) === moverId, moverIsB = idOf(b) === moverId;
+    if (moverIsA || moverIsB) {
+      const me = moverIsA ? st.red : st.blue, them = moverIsA ? st.blue : st.red;
+      const opp = moverIsA ? b : a;
+      const verb = me.wins > them.wins ? 'beating' : me.wins < them.wins ? 'losing to' : 'drawing';
+      return `after ${verb} <b>${esc(sym(opp.coach))}</b>${arena}`;
+    }
+  }
+  return `after ${esc(sym(a.coach))} × ${esc(sym(b.coach))}${arena}`;
+}
+
+/** Step-line sparkline of rank over time (rank 1 at the top). */
+function rankSpark(points, maxRank, w, h) {
+  if (!points || points.length < 1) return '';
+  const span = Math.max(1, maxRank - 1);
+  const x = (i) => points.length < 2 ? w - 2 : (i / (points.length - 1)) * (w - 4) + 2;
+  const y = (rk) => 2 + ((rk - 1) / span) * (h - 4);
+  let dPath = `M ${x(0).toFixed(1)} ${y(points[0]).toFixed(1)}`;
+  for (let i = 1; i < points.length; i++) {
+    dPath += ` H ${x(i).toFixed(1)} V ${y(points[i]).toFixed(1)}`;
+  }
+  dPath += ` H ${w - 2}`;
+  const color = points[points.length - 1] === 1 ? 'var(--gold)' : 'var(--blue)';
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<path fill="none" stroke="${color}" stroke-width="1.4" d="${dPath}"/></svg>`;
+}
+
+function rankHistoryHtml(d) {
+  const hist = d.rankHistory || [];
+  if (!hist.length) return '';
+
+  // --- reigns at #1 ---
+  const reigns = [];
+  for (const s of hist) {
+    const top = s.ranks[0];
+    if (!top) continue;
+    const id = rowId(top);
+    if (!reigns.length || reigns[reigns.length - 1].id !== id) {
+      reigns.push({ id, who: top, from: s.ts, to: null });
+      if (reigns.length > 1) reigns[reigns.length - 2].to = s.ts;
+    }
+  }
+  const now = Date.now();
+  const reignMs = (rg) => (rg.to ? new Date(rg.to).getTime() : now) - new Date(rg.from).getTime();
+  const longest = reigns.slice().sort((a, b) => reignMs(b) - reignMs(a))[0];
+  const current = reigns[reigns.length - 1];
+  const reignLine = current
+    ? `<div style="font-size:13px;margin:4px 0 8px">👑 <b class="flat">${esc(rowLabel(current.who))}</b> has held <b>#1</b> for ` +
+      `<b class="up" data-since="${attr(current.from)}">${fmtDur(now - new Date(current.from).getTime())}</b>` +
+      ` <span class="dim">(since ${clockOf(current.from)})</span>` +
+      (longest ? ` · longest reign today: <b>${esc(sym(longest.who.coach))}</b> ${fmtDur(reignMs(longest))}` : '') +
+      ` · ${reigns.length} reign${reigns.length === 1 ? '' : 's'}, ${hist.length} board changes</div>`
+    : '';
+
+  // --- bump feed: most recent rank changes, newest first ---
+  const bumps = [];
+  for (let i = hist.length - 1; i >= 1 && bumps.length < 14; i--) {
+    const prev = hist[i - 1], cur = hist[i];
+    const lines = [];
+    for (const r of cur.ranks) {
+      const id = rowId(r);
+      const before = rankAt(prev, id);
+      if (before && before.rank === r.rank) continue;
+      if (!before) {
+        lines.push({ rank: r.rank, id, html: `<b>${esc(rowLabel(r))}</b> debuts at <b>#${r.rank}</b>` });
+        continue;
+      }
+      if (r.rank < before.rank) {
+        const displaced = prev.ranks.find((p) => p.rank === r.rank && rowId(p) !== id);
+        const bump = displaced ? ` — bumped <b>${esc(sym(displaced.coach))}</b>` : '';
+        const cls = r.rank === 1 ? 'flat' : 'up';
+        lines.push({ rank: r.rank, id, html: `<b class="${cls}">${esc(rowLabel(r))}</b> <span class="up">▲ #${before.rank}→#${r.rank}</span>${bump}` });
+      }
+    }
+    lines.sort((a, b) => a.rank - b.rank);
+    for (const ln of lines.slice(0, 3)) {
+      if (bumps.length >= 14) break;
+      bumps.push(`<div class="node"><span class="nt">${ln.html} <span class="dim">${causeOf(d, cur.trigger, ln.id)}</span></span>` +
+        `<span class="nwhen" title="${esc(cur.trigger)}">${ago(cur.ts)}</span></div>`);
+    }
+  }
+
+  // --- per-config timelines: real-history configs first, full opacity ---
+  const maxRank = Math.max(...hist.map((s) => s.ranks.length), 1);
+  const favored = (d.board || []).filter((r) => (r.series ?? 0) >= MIN_SERIES).slice(0, 16);
+  const rowsHtml = favored.map((row) => {
+    const pts = [], trans = [];
+    let prevRank = null;
+    for (const s of hist) {
+      const e = rankAt(s, row.key || rowId(row));
+      if (!e) continue;
+      pts.push(e.rank);
+      if (prevRank !== null && e.rank !== prevRank) {
+        trans.push({ from: prevRank, to: e.rank, ts: s.ts, trigger: s.trigger });
+      }
+      prevRank = e.rank;
+    }
+    const last5 = trans.slice(-5).reverse().map((t) => {
+      const cls = t.to < t.from ? 'up' : 'down';
+      return `<div class="k"><span class="t">${clockOf(t.ts)}</span><span class="${cls}">#${t.from}→#${t.to}</span> ` +
+        `<span class="dim">${causeOf(d, t.trigger, row.key || rowId(row))}</span></div>`;
+    }).join('');
+    const isTop = row.rank === 1;
+    return `<details class="pbp" style="margin:4px 0">` +
+      `<summary style="color:${isTop ? 'var(--gold)' : 'var(--blue)'}">` +
+      `#${row.rank} ${esc(rowLabel(row, 24))} ${rankSpark(pts, maxRank, 110, 20)} ` +
+      `<span class="dim" style="font-size:10px">${row.series} series · peak #${row.peakRank ?? '?'} · ${trans.length} moves</span></summary>` +
+      `<div class="timeline" style="max-height:130px">${last5 || '<span class="dim">never moved — held its slot since debut</span>'}</div></details>`;
   }).join('');
-  return `<div class="panel"><h2>📈 The Big Board — coaches by K/D</h2>
-    <table class="board"><tr><th>sym</th><th>engine</th><th>last k/d</th><th>chg</th><th>rec</th><th>hit%</th><th>vol (kills)</th><th>trend</th><th>updated</th></tr>${body}</table>
-    <div class="dim" style="font-size:10px;margin-top:6px">LAST = K/D of newest series · CHG vs prior series · VOL = career kills · click a row to open the latest replay</div></div>`;
+
+  return `<div class="panel"><h2>🪜 Rank History — who held what, for how long</h2>
+    ${reignLine}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div><div class="dim" style="font-size:10px;letter-spacing:2px;margin-bottom:4px">BUMP FEED — latest slot changes</div>${bumps.join('') || '<div class="dim">no rank changes yet</div>'}</div>
+      <div><div class="dim" style="font-size:10px;letter-spacing:2px;margin-bottom:4px">TIMELINES — configs with real history (≥${MIN_SERIES} series), top 16</div>${rowsHtml}</div>
+    </div>
+    <div class="dim" style="font-size:10px;margin-top:6px">history.jsonl: ${hist.length} snapshots since ${clockOf(hist[0].ts)} · a snapshot is taken whenever the board ordering changes</div></div>`;
 }
 
 // ---- time & sales (fight feed) ---------------------------------------------------
@@ -380,6 +793,7 @@ function coachBlock(s) {
 function matchBlock(m, f) {
   const r = m.result;
   let line = `<span class="mn">M${m.n}</span> <span class="dim">seed ${esc(m.seed)}</span>`;
+  if (m.wildcard) line += ` <span class="flat" title="wildcard armed this match">🔫 ${esc(m.wildcard)}</span>`;
   if (r) {
     const wSide = f.sides[r.winnerTeam - 1];
     const wcls = r.winnerTeam === 1 ? 'cred' : 'cblue';
@@ -426,12 +840,13 @@ function fightBlock(f) {
           `<td>${bt.shots}</td><td>${(bt.hitRate * 100).toFixed(1)}%</td></tr>`;
       }).join('') + '</table>';
   }
-  return `<div class="fight">
+  const fresh = f.createdAt && (Date.now() - new Date(f.createdAt).getTime() < FRESH_MS);
+  return `<div class="fight"${fresh ? ' style="border-color:var(--gold)"' : ''}>
     <div class="fight-head" data-watch="${attr(headUrl)}">
       <span class="vs"><span class="cred">${esc(sym(a.coach))}</span> <span class="dim">${esc(a.engine)}</span> × <span class="cblue">${esc(sym(b.coach))}</span> <span class="dim">${esc(b.engine)}</span></span>
       <span class="arena">arena #${esc(f.arenaSeed)} · ${esc(f.roundSecs)}s rounds</span>
-      <span class="when" title="${esc(f.createdAt)}">${ago(f.createdAt)}</span>
-      <span class="series ${seriesCls}">${series}</span>
+      <span class="when" title="${esc(f.createdAt)}">${fresh ? '<span class="flat">● new</span> ' : ''}${ago(f.createdAt)}</span>
+      <span class="series ${seriesCls}" data-fk="fs:${attr(f.dirName)}">${series}</span>
     </div>
     <div class="coaches">${coachBlock(a)}${coachBlock(b)}</div>
     <div class="matches">
@@ -442,7 +857,509 @@ function fightBlock(f) {
   </div>`;
 }
 
+// ---- the commissioner ----------------------------------------------------------
+// Automated "fresh blood" title defenses staged by arena-live/commissioner.mjs.
+function commissionerHtml(d) {
+  const crs = (d.crucibles || []).slice(-6).reverse();
+  const cm = d.commissioner || {};
+  let countdown = '';
+  if (cm.stateMtime && cm.cycleMs) {
+    const next = new Date(cm.stateMtime).getTime() + cm.cycleMs;
+    countdown = `<div class="dim" style="font-size:11px;margin-bottom:5px">next crucible check in <b class="flat" data-until="${attr(new Date(next).toISOString())}">…</b>` +
+      (cm.state && cm.state.reigning ? ` · watching the throne: <b>${esc(cm.state.reigning.split('|')[0])}</b>` : '') + `</div>`;
+  } else {
+    countdown = '<div class="dim" style="font-size:11px;margin-bottom:5px">commissioner daemon not running</div>';
+  }
+  const rows = crs.map((c) => {
+    const f = (d.fights || []).find((x) => x.dirName === c.dataset);
+    const url = f && f.matches && f.matches[0] ? f.matches[0].watchUrl : '';
+    const s = c.series || {};
+    const champWon = (s.champion ?? 0) > (s.challenger ?? 0);
+    const verdict = champWon
+      ? `<span class="up">champion holds</span>`
+      : (s.champion ?? 0) < (s.challenger ?? 0)
+        ? `<span class="down">CHAMPION BLED</span>`
+        : `<span class="flat">split</span>`;
+    return `<div class="node"${url ? ` data-watch="${attr(url)}" style="cursor:pointer"` : ''}>` +
+      `<span class="badge b-decision">crucible</span>` +
+      `<span class="nt">⚔ <b class="cred">${esc(sym(c.challenger?.coach))}</b> <span class="dim">(fresh blood)</span> summoned vs ` +
+      `<b class="cblue">${esc(sym(c.champion?.coach))}</b> — ` +
+      `<b>${s.challenger ?? '?'}–${s.champion ?? '?'}${s.draws ? `–${s.draws}d` : ''}</b> ${verdict}` +
+      `${url ? ' <span class="dim">▶ watch</span>' : ''} <span class="dim">arena #${esc(c.arena)}</span></span>` +
+      `<span class="nwhen" title="${esc(c.dataset)}">${ago(c.ts)}</span></div>`;
+  }).join('');
+  return `<div class="panel"><h2>🔨 The Commissioner — fresh blood title defenses</h2>
+    ${countdown}
+    ${rows || '<div class="dim" style="font-size:12px">no crucibles staged yet — the first runs when a champion lingers at #1</div>'}
+    <div class="dim" style="font-size:10px;margin-top:6px">every cycle the commissioner checks the board: a #1 that survives a full cycle is forced to defend against the least-fought card of the last 2h · losses bleed decayed score</div></div>`;
+}
+
+// ---- analytics desk (D3) ---------------------------------------------------------
+// Aggregation happens server-side (data.analytics); this section only DRAWS.
+// If the d3 CDN script failed to load (offline), every chart degrades to a
+// note — the page must never break over a chart.
+const hiddenRace = new Set(); // legend toggles persist across re-renders
+
+function analyticsShellHtml(d) {
+  const a = d.analytics;
+  const note = typeof d3 === 'undefined'
+    ? `<div class="chartnote">⚠ d3 unavailable (CDN unreachable) — analytics charts disabled, everything else works</div>`
+    : '';
+  if (!a) return `<div class="panel"><h2>🔬 Analytics Desk</h2><div class="chartnote">analytics unavailable (builder warning)</div></div>`;
+  return `<div class="panel" id="desk"><h2>🔬 Analytics Desk — every bot, all ${(d.fights || []).length} fights</h2>
+    ${note}
+    <details class="chartbox" open><summary>▸ ACCURACY × LETHALITY — hit% vs career K/D (dot = config, radius = kills, ghosted = &lt;${MIN_SERIES} series)</summary><div class="chart" id="ch-scatter"></div></details>
+    <details class="chartbox" open><summary>▸ RANK RACE — board rank over time (rank 1 on top; line weight = series fought)</summary><div class="legend" id="lg-race"></div><div class="chart" id="ch-race"></div></details>
+    <details class="chartbox" open><summary>▸ HEAD-TO-HEAD MATRIX — engine × engine series win rate</summary><div class="chart" id="ch-h2h"></div></details>
+    <details class="chartbox" open><summary>▸ SHOTGUN IMPACT — K/D with the SPAS-12 in the match vs stock</summary><div class="chart" id="ch-shotgun"></div></details>
+  </div>`;
+}
+
+const tipEl = () => document.getElementById('d3tip');
+function showTip(ev, text) {
+  const t = tipEl();
+  t.textContent = text;
+  t.style.display = 'block';
+  const x = Math.min(ev.clientX + 14, window.innerWidth - 330);
+  t.style.left = x + 'px';
+  t.style.top = (ev.clientY + 12) + 'px';
+}
+function hideTip() { tipEl().style.display = 'none'; }
+
+function chartPalette() {
+  return {
+    text: cssVar('--text'), dim: cssVar('--dim'), line: cssVar('--line'),
+    gold: cssVar('--gold'), up: cssVar('--up'), down: cssVar('--down'),
+    blue: cssVar('--blue'), panel3: cssVar('--panel3'),
+  };
+}
+
+function drawCharts(d) {
+  if (typeof d3 === 'undefined' || !d.analytics) return;
+  const P = chartPalette();
+  const engines = [...new Set((d.analytics.configs || []).map((c) => c.engine))].sort();
+  const engColor = d3.scaleOrdinal(d3.schemeTableau10).domain(engines);
+  try { drawScatter(d, P, engColor); } catch (e) { degrade('ch-scatter', e); }
+  try { drawRankRace(d, P, engColor); } catch (e) { degrade('ch-race', e); }
+  try { drawH2H(d, P); } catch (e) { degrade('ch-h2h', e); }
+  try { drawShotgun(d, P); } catch (e) { degrade('ch-shotgun', e); }
+}
+function degrade(id, e) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = `<div class="chartnote">chart failed: ${esc(e.message)}</div>`;
+}
+
+// a. ACCURACY × LETHALITY scatter
+function drawScatter(d, P, engColor) {
+  const el = document.getElementById('ch-scatter');
+  if (!el) return;
+  const rows = (d.analytics.configs || []).filter((c) => c.hitPct != null && c.shots > 0);
+  if (!rows.length) { el.innerHTML = '<div class="chartnote">no data</div>'; return; }
+  const W = 920, H = 340, m = { t: 16, r: 20, b: 34, l: 44 };
+  const x = d3.scaleLinear().domain(d3.extent(rows, (r) => r.hitPct)).nice().range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain(d3.extent(rows, (r) => r.careerKd)).nice().range([H - m.b, m.t]);
+  const rr = d3.scaleSqrt().domain([0, d3.max(rows, (r) => r.kills) || 1]).range([2.5, 16]);
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x).ticks(8).tickFormat((v) => v + '%'))
+    .call((g) => styleAxis(g, P));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6))
+    .call((g) => styleAxis(g, P));
+  svg.append('text').attr('x', W - m.r).attr('y', H - 8).attr('text-anchor', 'end')
+    .attr('fill', P.dim).attr('font-size', 10).text('hit % →');
+  svg.append('text').attr('x', m.l + 4).attr('y', m.t + 2).attr('fill', P.dim).attr('font-size', 10).text('career K/D ↑');
+  // K/D = 1 break-even line
+  if (y.domain()[0] <= 1 && y.domain()[1] >= 1) {
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(1)).attr('y2', y(1))
+      .attr('stroke', P.line).attr('stroke-dasharray', '3,4');
+    svg.append('text').attr('x', m.l + 4).attr('y', y(1) - 4).attr('fill', P.dim).attr('font-size', 9).text('break-even');
+  }
+  svg.selectAll('circle').data(rows).join('circle')
+    .attr('cx', (r) => x(r.hitPct)).attr('cy', (r) => y(r.careerKd)).attr('r', (r) => rr(r.kills))
+    .attr('fill', (r) => engColor(r.engine))
+    .attr('fill-opacity', (r) => r.series >= MIN_SERIES ? 0.85 : 0.15)
+    .attr('stroke', (r) => r.series >= MIN_SERIES ? P.text : 'none').attr('stroke-opacity', 0.35)
+    .style('cursor', 'pointer')
+    .on('mousemove', (ev, r) => showTip(ev,
+      `${r.coach} · ${r.engine} [${r.tweaksSig}]\nhit ${r.hitPct}% · K/D ${r.careerKd} (decayed ${r.decayedKd})\n${r.kills} kills / ${r.shots} shots · ${r.series} series (${r.w}–${r.l})${r.series < MIN_SERIES ? '\n(ghosted: <' + MIN_SERIES + ' series)' : ''}\nclick → latest replay`))
+    .on('mouseleave', hideTip)
+    .on('click', (ev, r) => openUrl(r.lastUrl));
+  // annotate the accuracy standout
+  const standout = rows.slice().sort((a, b) => b.hitPct - a.hitPct)[0];
+  if (standout) {
+    svg.append('line')
+      .attr('x1', x(standout.hitPct)).attr('y1', y(standout.careerKd) - rr(standout.kills) - 2)
+      .attr('x2', x(standout.hitPct) - 40).attr('y2', y(standout.careerKd) - 34)
+      .attr('stroke', P.gold).attr('stroke-width', 0.8);
+    svg.append('text').attr('x', x(standout.hitPct) - 42).attr('y', y(standout.careerKd) - 38)
+      .attr('text-anchor', 'end').attr('fill', P.gold).attr('font-size', 10)
+      .text(`sharpest gun: ${standout.coach}·${standout.engine} ${standout.hitPct}%`);
+  }
+  // engine legend
+  engColor.domain().forEach((e, i) => {
+    const gx = m.l + 8 + (i % 4) * 120, gy = m.t + 14 + Math.floor(i / 4) * 14;
+    svg.append('circle').attr('cx', gx).attr('cy', gy - 3).attr('r', 4).attr('fill', engColor(e));
+    svg.append('text').attr('x', gx + 8).attr('y', gy).attr('fill', P.dim).attr('font-size', 10).text(e);
+  });
+  el.replaceChildren(svg.node());
+}
+
+// b. RANK RACE — step lines of board rank over time
+function drawRankRace(d, P, engColor) {
+  const el = document.getElementById('ch-race');
+  const lgEl = document.getElementById('lg-race');
+  if (!el) return;
+  const hist = d.rankHistory || [];
+  if (hist.length < 2) { el.innerHTML = '<div class="chartnote">not enough history yet</div>'; return; }
+  const favored = (d.board || []).filter((r) => (r.series ?? 0) >= MIN_SERIES).slice(0, 12);
+  const seriesData = favored.map((row) => {
+    const id = row.key || rowId(row);
+    const pts = [];
+    for (const s of hist) {
+      const e = (s.ranks || []).find((r) => rowId(r) === id);
+      if (e) pts.push({ t: new Date(s.ts), r: e.rank });
+    }
+    return { id, row, pts };
+  }).filter((s) => s.pts.length > 1);
+  if (!seriesData.length) { el.innerHTML = '<div class="chartnote">no configs with enough history yet</div>'; return; }
+  const maxRank = Math.max(...hist.map((s) => s.ranks.length), 2);
+  const W = 920, H = 320, m = { t: 14, r: 90, b: 28, l: 36 };
+  const allT = seriesData.flatMap((s) => s.pts.map((p) => p.t));
+  const x = d3.scaleTime().domain(d3.extent(allT)).range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain([1, maxRank]).range([m.t, H - m.b]); // rank 1 on top
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).ticks(7).tickFormat(d3.timeFormat('%H:%M'))).call((g) => styleAxis(g, P));
+  svg.append('g').attr('transform', `translate(${m.l},0)`)
+    .call(d3.axisLeft(y).ticks(Math.min(maxRank, 10)).tickFormat((v) => '#' + v)).call((g) => styleAxis(g, P));
+  const line = d3.line().x((p) => x(p.t)).y((p) => y(p.r)).curve(d3.curveStepAfter);
+  const maxSeries = d3.max(seriesData, (s) => s.row.series) || 1;
+  const widthOf = (s) => 1 + 2.2 * (s.row.series / maxSeries);
+  const opacityOf = (s) => 0.35 + 0.6 * (s.row.series / maxSeries);
+  const g = svg.append('g');
+  for (const s of seriesData) {
+    if (hiddenRace.has(s.id)) continue;
+    const color = engColor(s.row.engine);
+    g.append('path').datum(s.pts)
+      .attr('fill', 'none').attr('stroke', color)
+      .attr('stroke-width', widthOf(s)).attr('stroke-opacity', opacityOf(s))
+      .attr('d', line)
+      .style('cursor', 'pointer')
+      .on('mousemove', function (ev) {
+        d3.select(this).attr('stroke-opacity', 1).attr('stroke-width', widthOf(s) + 1.5);
+        showTip(ev, `${s.row.coach} · ${s.row.engine} [${s.row.tweaksSig}]\nnow #${s.row.rank} · peak #${s.row.peakRank ?? '?'} · ${s.row.series} series`);
+      })
+      .on('mouseleave', function () {
+        d3.select(this).attr('stroke-opacity', opacityOf(s)).attr('stroke-width', widthOf(s));
+        hideTip();
+      });
+    const last = s.pts[s.pts.length - 1];
+    g.append('text').attr('x', x(last.t) + 5).attr('y', y(last.r) + 3)
+      .attr('fill', color).attr('font-size', 9).attr('fill-opacity', opacityOf(s))
+      .text(`${sym(s.row.coach)}·${s.row.engine}`);
+  }
+  el.replaceChildren(svg.node());
+  // legend with toggles
+  if (lgEl) {
+    lgEl.innerHTML = seriesData.map((s) =>
+      `<span class="li${hiddenRace.has(s.id) ? ' off' : ''}" data-race="${attr(s.id)}">` +
+      `<span class="swatch" style="background:${engColor(s.row.engine)}"></span>${esc(sym(s.row.coach))}·${esc(s.row.engine)}` +
+      `<span class="dim">[${esc(sigShort(s.row.tweaksSig, 10))}] ${s.row.series}s</span></span>`).join('');
+    for (const li of lgEl.querySelectorAll('.li')) {
+      li.addEventListener('click', () => {
+        const id = li.getAttribute('data-race');
+        if (hiddenRace.has(id)) hiddenRace.delete(id); else hiddenRace.add(id);
+        drawRankRace(lastData, chartPalette(), engColor);
+      });
+    }
+  }
+}
+
+// c. HEAD-TO-HEAD MATRIX — engine × engine win-rate heatmap
+function drawH2H(d, P) {
+  const el = document.getElementById('ch-h2h');
+  if (!el) return;
+  const h2h = d.analytics.h2h || {};
+  const engines = [...new Set([...Object.keys(h2h), ...Object.values(h2h).flatMap((o) => Object.keys(o))])].sort();
+  if (!engines.length) { el.innerHTML = '<div class="chartnote">no data</div>'; return; }
+  const cellSz = 46, m = { t: 28, l: 72 };
+  const W = m.l + engines.length * cellSz + 130, H = m.t + engines.length * cellSz + 14;
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  const color = (wr) => d3.interpolateRdYlGn(wr); // 0 red … 1 green, 0.5 yellow
+  engines.forEach((eA, i) => {
+    svg.append('text').attr('x', m.l - 6).attr('y', m.t + i * cellSz + cellSz / 2 + 3)
+      .attr('text-anchor', 'end').attr('fill', P.text).attr('font-size', 10).text(eA);
+    svg.append('text').attr('x', m.l + i * cellSz + cellSz / 2).attr('y', m.t - 8)
+      .attr('text-anchor', 'middle').attr('fill', P.text).attr('font-size', 10).text(eA);
+    engines.forEach((eB, j) => {
+      const rec = (h2h[eA] || {})[eB];
+      const gx = m.l + j * cellSz, gy = m.t + i * cellSz;
+      if (i === j) {
+        svg.append('rect').attr('x', gx + 1).attr('y', gy + 1).attr('width', cellSz - 2).attr('height', cellSz - 2)
+          .attr('fill', P.panel3).attr('stroke', P.line);
+        if (rec && rec.w + rec.l + rec.d > 0) {
+          svg.append('text').attr('x', gx + cellSz / 2).attr('y', gy + cellSz / 2 + 3)
+            .attr('text-anchor', 'middle').attr('fill', P.dim).attr('font-size', 9)
+            .text('mirror');
+        }
+        return;
+      }
+      if (!rec || rec.w + rec.l + rec.d === 0) {
+        svg.append('rect').attr('x', gx + 1).attr('y', gy + 1).attr('width', cellSz - 2).attr('height', cellSz - 2)
+          .attr('fill', 'none').attr('stroke', P.line).attr('stroke-dasharray', '2,3');
+        return;
+      }
+      const n = rec.w + rec.l + rec.d;
+      const wr = (rec.w + 0.5 * rec.d) / n;
+      svg.append('rect').attr('x', gx + 1).attr('y', gy + 1).attr('width', cellSz - 2).attr('height', cellSz - 2)
+        .attr('fill', color(wr)).attr('fill-opacity', 0.88).attr('stroke', P.line)
+        .style('cursor', 'default')
+        .on('mousemove', (ev) => showTip(ev,
+          `${eA} vs ${eB}\n${rec.w}W–${rec.l}L${rec.d ? '–' + rec.d + 'D' : ''} over ${n} series\nwin rate ${(wr * 100).toFixed(0)}%`))
+        .on('mouseleave', hideTip);
+      svg.append('text').attr('x', gx + cellSz / 2).attr('y', gy + cellSz / 2 + 3)
+        .attr('text-anchor', 'middle').attr('fill', '#1a1a1a').attr('font-size', 10).attr('font-weight', 'bold')
+        .attr('pointer-events', 'none')
+        .text(Math.round(wr * 100) + '%');
+    });
+  });
+  svg.append('text').attr('x', m.l).attr('y', H - 2).attr('fill', P.dim).attr('font-size', 9)
+    .text('row engine\'s series win rate vs column engine (draws = half) · hover for counts');
+  // scale strip
+  const sx = m.l + engines.length * cellSz + 16;
+  for (let k = 0; k <= 10; k++) {
+    svg.append('rect').attr('x', sx).attr('y', m.t + (10 - k) * 14).attr('width', 12).attr('height', 14)
+      .attr('fill', color(k / 10));
+  }
+  svg.append('text').attr('x', sx + 16).attr('y', m.t + 10).attr('fill', P.dim).attr('font-size', 9).text('100%');
+  svg.append('text').attr('x', sx + 16).attr('y', m.t + 150).attr('fill', P.dim).attr('font-size', 9).text('0%');
+  el.replaceChildren(svg.node());
+}
+
+// d. SHOTGUN IMPACT — grouped bars, wildcard-armed vs stock K/D per engine
+function drawShotgun(d, P) {
+  const el = document.getElementById('ch-shotgun');
+  if (!el) return;
+  const rows = (d.analytics.shotgun || []).filter((r) => r.wcKd != null || r.stockKd != null);
+  if (!rows.length) { el.innerHTML = '<div class="chartnote">no wildcard data yet</div>'; return; }
+  const W = 920, H = 280, m = { t: 22, r: 16, b: 40, l: 40 };
+  const x0 = d3.scaleBand().domain(rows.map((r) => r.engine)).range([m.l, W - m.r]).paddingInner(0.28).paddingOuter(0.1);
+  const x1 = d3.scaleBand().domain(['stock', 'wc']).range([0, x0.bandwidth()]).padding(0.12);
+  const maxKd = d3.max(rows, (r) => Math.max(r.wcKd ?? 0, r.stockKd ?? 0)) || 1;
+  const y = d3.scaleLinear().domain([0, Math.max(1.3, maxKd * 1.12)]).range([H - m.b, m.t]);
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`).call(d3.axisBottom(x0)).call((g) => styleAxis(g, P));
+  svg.append('g').attr('transform', `translate(${m.l},0)`).call(d3.axisLeft(y).ticks(6)).call((g) => styleAxis(g, P));
+  // break-even line
+  svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(1)).attr('y2', y(1))
+    .attr('stroke', P.line).attr('stroke-dasharray', '3,4');
+  svg.append('text').attr('x', m.l + 4).attr('y', y(1) - 4).attr('fill', P.dim).attr('font-size', 9).text('K/D 1.0');
+  for (const r of rows) {
+    for (const [kind, kd, matches] of [['stock', r.stockKd, r.stockMatches], ['wc', r.wcKd, r.wcMatches]]) {
+      if (kd == null) continue;
+      const gx = x0(r.engine) + x1(kind);
+      const fill = kind === 'wc' ? P.gold : P.blue;
+      svg.append('rect').attr('x', gx).attr('y', y(kd)).attr('width', x1.bandwidth())
+        .attr('height', Math.max(0, y(0) - y(kd)))
+        .attr('fill', fill).attr('fill-opacity', kind === 'wc' ? 0.9 : 0.55)
+        .on('mousemove', (ev) => showTip(ev,
+          `${r.engine} — ${kind === 'wc' ? 'SPAS-12 in the match' : 'stock matches'}\nK/D ${kd} over ${matches} matches`))
+        .on('mouseleave', hideTip);
+      svg.append('text').attr('x', gx + x1.bandwidth() / 2).attr('y', y(kd) - 4)
+        .attr('text-anchor', 'middle').attr('fill', P.dim).attr('font-size', 9).text(kd.toFixed(2));
+    }
+    const delta = (r.wcKd ?? 0) - (r.stockKd ?? 0);
+    if (r.wcKd != null && r.stockKd != null) {
+      svg.append('text').attr('x', x0(r.engine) + x0.bandwidth() / 2).attr('y', H - 6)
+        .attr('text-anchor', 'middle').attr('fill', delta >= 0 ? P.up : P.down).attr('font-size', 9)
+        .text((delta >= 0 ? '+' : '') + delta.toFixed(2));
+    }
+  }
+  // legend
+  svg.append('rect').attr('x', W - 190).attr('y', m.t - 14).attr('width', 10).attr('height', 10).attr('fill', P.blue).attr('fill-opacity', 0.55);
+  svg.append('text').attr('x', W - 176).attr('y', m.t - 5).attr('fill', P.dim).attr('font-size', 10).text('stock');
+  svg.append('rect').attr('x', W - 120).attr('y', m.t - 14).attr('width', 10).attr('height', 10).attr('fill', P.gold).attr('fill-opacity', 0.9);
+  svg.append('text').attr('x', W - 106).attr('y', m.t - 5).attr('fill', P.dim).attr('font-size', 10).text('SPAS armed');
+  el.replaceChildren(svg.node());
+}
+
+function styleAxis(g, P) {
+  g.selectAll('text').attr('fill', P.dim).attr('font-size', 10);
+  g.selectAll('line').attr('stroke', P.line);
+  g.selectAll('path.domain').attr('stroke', P.line);
+}
+
+// ---- render ----------------------------------------------------------------------
+const FEED_CAP = 30;
+let feedShown = FEED_CAP; // grows as the user scrolls; survives data refreshes
+let feedObserver = null;
+let lastData = null;
+
+// Infinite scroll: a sentinel below the feed appends +20 fights as it nears
+// the viewport — no full re-render (the charts would redraw), just appends.
+function setupFeedScroll() {
+  if (feedObserver) { feedObserver.disconnect(); feedObserver = null; }
+  const sentinel = document.getElementById('feedSentinel');
+  if (!sentinel) return;
+  feedObserver = new IntersectionObserver((entries) => {
+    if (!entries.some((e) => e.isIntersecting)) return;
+    if (!lastData) return;
+    if (feedShown >= lastData.fights.length) { sentinel.textContent = '— end of tape —'; return; }
+    const list = document.getElementById('feedlist');
+    if (!list) return;
+    const next = lastData.fights.slice(feedShown, feedShown + 20);
+    feedShown += next.length;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = next.map(fightBlock).join('');
+    while (tmp.firstChild) list.appendChild(tmp.firstChild);
+    sentinel.textContent = feedShown >= lastData.fights.length
+      ? '— end of tape —' : `… scroll for more (${lastData.fights.length - feedShown} older fights) …`;
+  }, { rootMargin: '600px' });
+  feedObserver.observe(sentinel);
+}
+
+// --- Brains browser (the prospectus) -----------------------------------------
+// A browsable catalog of every registered engine: doctrine, banner strategy,
+// the full knob sheet (defaults + the source's own comments), career series
+// record aggregated from the tape, the coaches who ran it, and a link to its
+// freshest recorded fight.
+
+let brainsQ = '';
+let brainsSort = 'wins';
+
+/** Career aggregates per engine from the fight feed (series-level). */
+function brainStats(d) {
+  const st = {};
+  const get = (e) => (st[e] ??= {
+    series: 0, w: 0, l: 0, dr: 0, kills: 0, deaths: 0,
+    coaches: new Set(), lastAt: null, lastUrl: null, lastVs: null,
+  });
+  for (const f of d.fights || []) {
+    const red = f.standings?.red; const blue = f.standings?.blue;
+    if (!red?.engine || !blue?.engine) continue;
+    for (const [mine, other] of [[red, blue], [blue, red]]) {
+      const s = get(mine.engine);
+      s.series += 1;
+      s.kills += mine.kills ?? 0;
+      s.deaths += mine.deaths ?? 0;
+      const win = f.standings.winner === mine.engine;
+      const loss = f.standings.winner === other.engine;
+      if (win) s.w += 1; else if (loss) s.l += 1; else s.dr += 1;
+      if (s.lastAt === null || f.createdAt > s.lastAt) {
+        s.lastAt = f.createdAt;
+        s.lastUrl = f.matches?.[0]?.watchUrl ?? null;
+        s.lastVs = other.engine;
+      }
+    }
+    for (const side of f.sides || []) {
+      if (side.engine && side.coach) get(side.engine).coaches.add(side.coach);
+    }
+  }
+  for (const c of d.cards || []) if (c.engine && c.coach) get(c.engine).coaches.add(c.coach);
+  return st;
+}
+
+/** Engine of the reigning belt holder (belt lineage tail -> coach -> card). */
+function beltEngine(d) {
+  const reigning = (d.beltLineage || []).find((r) => r.to === null);
+  if (!reigning) return null;
+  const card = (d.cards || []).find((c) => c.coach === reigning.coach);
+  return card ? card.engine : null;
+}
+
+function brainCardHtml(doc, stats, champEngine) {
+  const s = stats[doc.engine];
+  const wr = s && s.series > 0 ? s.w / s.series : null;
+  const kd = s && s.deaths > 0 ? s.kills / s.deaths : null;
+  const coaches = s ? [...s.coaches].sort() : [];
+  const knobRows = (doc.knobs || []).map((k) =>
+    `<tr><td class="k">${esc(k.key)}</td><td class="v">${k.value}</td><td class="doc">${esc(k.doc)}</td></tr>`).join('');
+  return `<div class="braincard">
+    <div class="bc-head"><span class="bc-name">${esc(doc.engine)}</span>` +
+    (doc.engine === champEngine ? '<span class="bc-belt">🏆 reigning</span>' : '') +
+    (doc.isEngine ? '' : '<span class="bc-helper">helper module</span>') +
+    (doc.tagline ? `<span class="bc-tag">${esc(doc.tagline)}</span>` : '') + `</div>` +
+    (doc.strategy ? `<div class="bc-strat">${esc(doc.strategy)}</div>` : '') +
+    (s ? `<div class="bc-stats">` +
+      `<span>series <b>${s.w}–${s.l}${s.dr ? '–' + s.dr : ''}</b></span>` +
+      (wr !== null ? `<span>win% <b class="${wr >= 0.5 ? 'pos' : 'neg'}">${(wr * 100).toFixed(0)}</b></span>` : '') +
+      (kd !== null ? `<span>K/D <b class="${kd >= 1 ? 'pos' : 'neg'}">${kd.toFixed(2)}</b></span>` : '') +
+      `<span>kills <b>${s.kills}</b></span></div>` : '<div class="bc-stats dim">no tape yet</div>') +
+    (coaches.length ? `<div class="bc-coaches">coached by ${coaches.map((c) => `<span class="chip">${esc(sym(c))} ${esc(c)}</span>`).join('')}</div>` : '') +
+    ((doc.knobs || []).length ?
+      `<details><summary style="cursor:pointer;color:var(--gold);font-size:11px">▸ knob sheet — ${doc.knobs.length} tweakables (defaults + source notes)</summary>` +
+      `<div class="knobwrap"><table class="knobs">${knobRows}</table></div></details>` : '') +
+    `<details class="doctrine"><summary>▸ full doctrine — ${esc(doc.file)}</summary><pre>${esc(doc.doctrine)}</pre></details>` +
+    (s && s.lastUrl ? `<a class="tape" href="${esc(s.lastUrl)}">▶ latest tape (${ago(s.lastAt)}, vs ${esc(s.lastVs)})</a>` : '') +
+    `</div>`;
+}
+
+function brainsGridHtml(d) {
+  const stats = brainStats(d);
+  const champ = beltEngine(d);
+  const q = brainsQ.trim().toLowerCase();
+  let docs = (d.doctrines || []).filter((doc) =>
+    !q ||
+    doc.engine.toLowerCase().includes(q) ||
+    (doc.tagline || '').toLowerCase().includes(q) ||
+    (doc.strategy || '').toLowerCase().includes(q) ||
+    (doc.doctrine || '').toLowerCase().includes(q) ||
+    (doc.knobs || []).some((k) => k.key.toLowerCase().includes(q)));
+  const sorters = {
+    wins: (a, b) => ((stats[b.engine]?.w ?? -1) - (stats[a.engine]?.w ?? -1)),
+    winrate: (a, b) => {
+      const r = (x) => { const s = stats[x.engine]; return s && s.series ? s.w / s.series : -1; };
+      return r(b) - r(a);
+    },
+    kd: (a, b) => {
+      const r = (x) => { const s = stats[x.engine]; return s && s.deaths ? s.kills / s.deaths : -1; };
+      return r(b) - r(a);
+    },
+    name: (a, b) => a.engine.localeCompare(b.engine),
+    knobs: (a, b) => (b.knobs?.length ?? 0) - (a.knobs?.length ?? 0),
+  };
+  docs = [...docs].sort(sorters[brainsSort] ?? sorters.wins);
+  // Real engines first, helper modules trail regardless of sort.
+  docs = [...docs.filter((x) => x.isEngine), ...docs.filter((x) => !x.isEngine)];
+  return docs.map((doc) => brainCardHtml(doc, stats, champ)).join('') ||
+    '<div class="dim">no brains match the filter</div>';
+}
+
+function brainsHtml(d) {
+  const n = (d.doctrines || []).filter((x) => x.isEngine).length;
+  return `<div class="panel" id="brains"><h2>🧠 The Prospectus — brain browser, ${n} engines on offer</h2>
+    <div class="brains-toolbar">
+      <input id="brainsQ" type="search" placeholder="filter: name, doctrine text, knob…" value="${esc(brainsQ)}">
+      <select id="brainsSort">
+        <option value="wins">most series wins</option>
+        <option value="winrate">best win rate</option>
+        <option value="kd">best K/D</option>
+        <option value="knobs">most tweakable</option>
+        <option value="name">name A–Z</option>
+      </select>
+      <span class="count" id="brainsCount"></span>
+    </div>
+    <div class="braingrid" id="braingrid">${brainsGridHtml(d)}</div></div>`;
+}
+
+function setupBrainsUI() {
+  const q = document.getElementById('brainsQ');
+  const sort = document.getElementById('brainsSort');
+  const grid = document.getElementById('braingrid');
+  const count = document.getElementById('brainsCount');
+  if (!q || !sort || !grid) return;
+  sort.value = brainsSort;
+  const refresh = () => {
+    if (!lastData) return;
+    grid.innerHTML = brainsGridHtml(lastData);
+    const shown = grid.querySelectorAll('.braincard').length;
+    count.textContent = brainsQ.trim() ? `${shown} match${shown === 1 ? '' : 'es'}` : '';
+  };
+  q.addEventListener('input', () => { brainsQ = q.value; refresh(); });
+  sort.addEventListener('change', () => { brainsSort = sort.value; refresh(); });
+}
+
 function render(d) {
+  lastData = d;
   document.getElementById('meta').textContent =
     `built ${ago(d.generatedAt)} · ${d.fights.length} fights on record`;
   const wb = document.getElementById('warnbar');
@@ -453,11 +1370,22 @@ function render(d) {
 
   document.getElementById('tape').innerHTML = tapeHtml(d.fights);
   document.getElementById('hero').innerHTML = heroHtml(d);
+  document.getElementById('beltstrip').innerHTML = beltHtml(d);
 
+  // Analytics desk ABOVE the fight tables (user ask); feed infinite-scrolls.
+  const feed = d.fights.slice(0, feedShown);
   document.getElementById('main').innerHTML =
     boardHtml(d) +
+    rankHistoryHtml(d) +
+    analyticsShellHtml(d) +
+    brainsHtml(d) +
     `<h2 style="letter-spacing:3px;color:var(--gold);font-size:12px;margin:4px 0 10px">TIME &amp; SALES — fight feed, newest first</h2>` +
-    (d.fights.length ? d.fights.map(fightBlock).join('') : '<div class="panel">No datasets yet.</div>');
+    `<div id="feedlist">${feed.length ? feed.map(fightBlock).join('') : '<div class="panel">No datasets yet.</div>'}</div>` +
+    `<div id="feedSentinel" class="dim" style="text-align:center;padding:10px;font-size:11px">` +
+    (d.fights.length > feedShown ? `… scroll for more (${d.fights.length - feedShown} older fights) …` : '— end of tape —') +
+    `</div>`;
+  setupFeedScroll();
+  setupBrainsUI();
 
   const nodes = (d.warRoom.nodes || []).map((n) =>
     `<div class="node"><span class="badge b-${esc(n.type)}">${esc(n.type)}</span>` +
@@ -472,10 +1400,24 @@ function render(d) {
   document.getElementById('aside').innerHTML =
     `<div class="panel"><h2>📰 News Wire — live coach feed</h2>` +
     `<div class="dim" style="font-size:10px;margin-bottom:5px">source: ${esc(d.warRoom.source || 'unavailable')}</div>${nodes || '<div class="dim">no nodes</div>'}</div>` +
+    commissionerHtml(d) +
     `<div class="panel"><h2>🏆 The Ladder</h2>${md(d.ladderMarkdown)}</div>` +
     `<div class="panel"><h2>📋 Fighter cards on file</h2>${cards || '<div class="dim">none</div>'}</div>` +
     `<div class="panel"><h2>📜 Engine doctrines</h2>${doctrines || '<div class="dim">none</div>'}</div>`;
+
+  try { drawCharts(d); } catch (e) { console.error('charts failed', e); }
+  applyFlashes();
+  // One-time deep link: #desk etc. only exists after the first render.
+  if (!render.scrolled && location.hash) {
+    render.scrolled = true;
+    try { const t = document.querySelector(location.hash); if (t) t.scrollIntoView(); } catch {}
+  }
 }
+
+document.getElementById('themeBtn').addEventListener('click', () =>
+  applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true));
+document.getElementById('themeBtn').textContent =
+  currentTheme() === 'light' ? '🌙 dark' : '☀ light';
 
 let lastGenerated = null;
 async function tick() {
@@ -492,6 +1434,18 @@ async function tick() {
 }
 tick();
 setInterval(tick, 5000);
+// Live reign/held clocks: any element with data-since shows a ticking duration,
+// data-until a ticking countdown (e.g. the commissioner's next crucible check).
+setInterval(() => {
+  for (const el of document.querySelectorAll('[data-since]')) {
+    const t = new Date(el.getAttribute('data-since')).getTime();
+    if (isFinite(t)) el.textContent = fmtDur(Date.now() - t);
+  }
+  for (const el of document.querySelectorAll('[data-until]')) {
+    const t = new Date(el.getAttribute('data-until')).getTime();
+    if (isFinite(t)) el.textContent = t > Date.now() ? fmtDur(t - Date.now()) : 'any moment';
+  }
+}, 1000);
 </script>
 </body>
 </html>

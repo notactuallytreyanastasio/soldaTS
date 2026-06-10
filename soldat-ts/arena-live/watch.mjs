@@ -12,7 +12,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { build } from './build.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const TS_ROOT = path.resolve(HERE, '..');
@@ -27,6 +26,8 @@ const WATCH_PATHS = [
   path.join(REPO_ROOT, 'docs', 'graph-data.json'),
   path.join(HERE, 'index.template.html'),
   path.join(HERE, 'build.mjs'),
+  path.join(HERE, 'crucibles.jsonl'),
+  path.join(HERE, 'commissioner-state.json'),
 ];
 
 const POLL_MS = 5000;
@@ -62,12 +63,30 @@ function signature() {
   return parts.join('|');
 }
 
+// build.mjs is hot-reloaded on mtime change: a static import would pin the
+// module-cache version from watcher startup, so edits to the builder would
+// rebuild with STALE code forever (watching build.mjs while importing it
+// statically was a silent lie — the brains-browser rollout hit exactly this).
+let buildFn = null;
+let buildMtime = 0;
+async function loadBuild() {
+  const st = fs.statSync(path.join(HERE, 'build.mjs'));
+  if (buildFn === null || st.mtimeMs !== buildMtime) {
+    const mod = await import(`./build.mjs?v=${st.mtimeMs}`);
+    buildFn = mod.build;
+    if (buildMtime !== 0) log('build.mjs changed — hot-reloaded builder');
+    buildMtime = st.mtimeMs;
+  }
+  return buildFn;
+}
+
 let building = false;
-function rebuild(reason) {
+async function rebuild(reason) {
   if (building) return;
   building = true;
   const t0 = Date.now();
   try {
+    const build = await loadBuild();
     const d = build();
     log(`rebuilt (${reason}) in ${Date.now() - t0}ms — ${d.fights.length} fights, ` +
         `${d.warRoom.nodes.length} graph nodes, ${d.warnings.length} warnings`);
@@ -135,11 +154,11 @@ listen(BASE_PORT, BASE_PORT + 50);
 
 let lastSig = signature();
 let lastForced = Date.now();
-setInterval(() => {
+setInterval(async () => {
   try {
     const sig = signature();
     if (sig !== lastSig) {
-      rebuild('inputs changed');
+      await rebuild('inputs changed');
       lastForced = Date.now();
       // Re-snapshot AFTER the build: the build itself runs `deciduous graph`,
       // which appends to deciduous's command log and dirties the db mtime —
@@ -147,7 +166,7 @@ setInterval(() => {
       lastSig = signature();
     } else if (Date.now() - lastForced > FORCE_REBUILD_MS) {
       lastForced = Date.now();
-      rebuild('periodic');
+      await rebuild('periodic');
       lastSig = signature();
     }
   } catch (e) {
