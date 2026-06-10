@@ -175,7 +175,7 @@ export function runMatch(config: MatchConfig): MatchResult {
 
   const bots: MatchBotInfo[] = game.botIndices().map((index) => ({
     index,
-    name: subjectName(index, game.playerIndex),
+    name: subjectName(index, game.playerIndex, config.seed * 7),
     engine: game.engineOf(index),
     team: game.teamOf(index),
   }));

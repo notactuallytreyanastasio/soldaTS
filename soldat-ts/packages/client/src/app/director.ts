@@ -119,24 +119,30 @@ export function pickSubject(
 // indices (bots occupy slots playerIndex+1 ..) for the kill feed / HUD.
 
 export const BOT_NAMES = [
-  'Alpha',
-  'Bravo',
-  'Charlie',
-  'Delta',
-  'Echo',
-  'Foxtrot',
-  'Golf',
-  'Hotel',
-  'India',
-  'Juliett',
-  'Kilo',
-  'Lima',
+  // NATO core...
+  'Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo', 'Foxtrot',
+  'Golf', 'Hotel', 'India', 'Juliett', 'Kilo', 'Lima',
+  // ...plus callsigns so simultaneous matches read as different squads
+  // (user: "we need more names for the players to differentiate").
+  'Maverick', 'Viper', 'Goose', 'Iceman', 'Jester', 'Slider',
+  'Raven', 'Hawk', 'Falcon', 'Osprey', 'Condor', 'Kestrel',
+  'Bullet', 'Tracer', 'Ricochet', 'Magnum', 'Trigger', 'Scope',
+  'Dynamo', 'Turbine', 'Piston', 'Throttle', 'Afterburn', 'Nitro',
+  'Specter', 'Wraith', 'Phantom', 'Banshee', 'Reaver', 'Ghost',
+  'Comet', 'Meteor', 'Nova', 'Quasar', 'Pulsar', 'Zenith',
 ] as const;
 
-/** Display name for a sprite index ('You' for the local player slot). */
-export function subjectName(index: number, playerIndex = 1): string {
+/**
+ * Display name for a sprite index ('You' for the local player slot).
+ * `nameOffset` (pass the match seed) rotates the pool so simultaneous
+ * matches field differently-named squads instead of six identical Alphas.
+ */
+export function subjectName(index: number, playerIndex = 1, nameOffset = 0): string {
   if (index === playerIndex) return 'You';
-  return BOT_NAMES[(index - playerIndex - 1) % BOT_NAMES.length] ?? `Bot ${index}`;
+  const at =
+    (((index - playerIndex - 1 + nameOffset) % BOT_NAMES.length) + BOT_NAMES.length) %
+    BOT_NAMES.length;
+  return BOT_NAMES[at] ?? `Bot ${index}`;
 }
 
 // --- Kill tally / feed (pure helpers for the spectate HUD) -------------------

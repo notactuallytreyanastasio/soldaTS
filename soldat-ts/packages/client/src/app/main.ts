@@ -559,7 +559,8 @@ async function main(): Promise<void> {
   // though the normal-mode HUD currently keeps its placeholder scores.
   const director = new Director(game.botIndices()[0] ?? game.playerIndex);
   const board: KillBoard = { kills: new Map(), feed: [] };
-  const nameOf = (i: number): string => subjectName(i, game.playerIndex);
+  // Rotate the name pool by seed: every match fields a distinct squad.
+  const nameOf = (i: number): string => subjectName(i, game.playerIndex, seed * 7);
 
   // --- Match telemetry (spectate only) ------------------------------------
   // Records samples/shots/hits/kills under a versioned JSON schema so agents
