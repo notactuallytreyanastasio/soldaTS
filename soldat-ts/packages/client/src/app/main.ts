@@ -33,7 +33,7 @@ import { buildTexturedMap } from '../render/mapTextured';
 import { AudioEngine } from '../audio/audio';
 import { SoundManager } from '../audio/soundManager';
 import { Game, DEFAULT_TUNING, type RoundResult } from './game';
-import { buildArena, ARENA_SPAWNS } from './arena';
+import { buildArena, ARENA_SPAWNS, generateArena } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 import {
   Director,
@@ -45,7 +45,7 @@ import {
   type SubjectInfo,
 } from './director';
 import { MatchRecorder } from './telemetry';
-import { engineIds } from '../ai';
+import { engineIds, createEngine } from '../ai';
 import { parseTournament, showTournament, resolveVariant, tuningDeltas, type Variant } from './tournament';
 import { LeaderboardPanel, TeamScorePanel, type FighterRow } from '../ui/leaderboard';
 
@@ -184,6 +184,17 @@ const SPECTATE_MAX_BOTS = 12;
  * `?spectate=n` still picks the bot count; `?ai=<engine>` picks the bot
  * brain (decision node 136).
  */
+/** Parse 'KEY=V,KEY=V' (the ?tweak-a/?tweak-b format) into a tweak record. */
+export function parseTweakParam(raw: string | null): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const part of (raw ?? '').split(',')) {
+    const [k, v] = part.split('=');
+    const num = Number(v);
+    if (k !== undefined && k.length > 0 && Number.isFinite(num)) out[k] = num;
+  }
+  return out;
+}
+
 export function parseSpectate(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): {
@@ -192,6 +203,14 @@ export function parseSpectate(
   aiEngine: string | undefined;
   seed: number;
   teams: boolean | undefined;
+  /** CLAUDE ARENA (node 185): per-side brain tweaks + coach names from the
+   *  URL, so any tweaked matchup is a shareable, watchable link. */
+  tweakA: Record<string, number>;
+  tweakB: Record<string, number>;
+  coachA: string | undefined;
+  coachB: string | undefined;
+  /** Generated-arena seed (?arena=N; 0 = canonical Skyreach). */
+  arenaSeed: number;
   variant: string | undefined;
   roundSecs: number;
 } {
@@ -210,13 +229,26 @@ export function parseSpectate(
   // Parsed in both modes but only ARMED in spectate (play stays endless).
   const roundRaw = parseInt(params.get('round') ?? '', 10);
   const roundSecs = Number.isFinite(roundRaw) && roundRaw > 0 ? roundRaw : 600;
+  // Claude Arena params: per-side tweaks + coach labels.
+  const tweakA = parseTweakParam(params.get('tweak-a'));
+  const tweakB = parseTweakParam(params.get('tweak-b'));
+  const coachA = params.get('coach-a') ?? undefined;
+  const coachB = params.get('coach-b') ?? undefined;
+  const arenaRaw = parseInt(params.get('arena') ?? '', 10);
+  const arenaSeed = Number.isFinite(arenaRaw) && arenaRaw >= 0 ? arenaRaw : 0;
   if (params.has(PLAY_QUERY_PARAM)) {
-    return { spectate: false, botCount: 3, aiEngine, seed, teams, variant, roundSecs };
+    return {
+      spectate: false, botCount: 3, aiEngine, seed, teams, variant, roundSecs,
+      tweakA, tweakB, coachA, coachB, arenaSeed,
+    };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
   const botCount =
     Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
-  return { spectate: true, botCount, aiEngine, seed, teams, variant, roundSecs };
+  return {
+    spectate: true, botCount, aiEngine, seed, teams, variant, roundSecs,
+    tweakA, tweakB, coachA, coachB, arenaSeed,
+  };
 }
 
 /**
@@ -322,7 +354,26 @@ const TEAM_COLORS: Record<number, string> = { 1: '#d23c3c', 2: '#4060d2' };
  * are ~half-screen iframes) get a COMPACT corner card that never covers the
  * action. B (or the i button) toggles it.
  */
-function showEngineBanner(game: Game, variant: Variant): InfoCard {
+/** 'pilot: RANGE_MAX 420→460 · FUEL_RESERVE 130→160' per tweaked side. */
+function engineTweakDeltas(game: Game): string {
+  const lines: string[] = [];
+  for (const id of game.engineGroups()) {
+    const resolved = game.resolvedTweaks(id);
+    if (resolved === undefined) continue;
+    const defaults = createEngine(id).tweaks;
+    const diffs = Object.entries(resolved)
+      .filter(([k, v]) => defaults[k] !== v)
+      .map(([k, v]) => `${k} ${defaults[k]}→${v}`);
+    if (diffs.length > 0) lines.push(`${id}: ${diffs.join(' · ')}`);
+  }
+  return lines.join('   ');
+}
+
+function showEngineBanner(
+  game: Game,
+  variant: Variant,
+  coaches: { a: string | undefined; b: string | undefined },
+): InfoCard {
   const compact = window.innerWidth < 1000;
   const banner = document.createElement('div');
   banner.style.cssText = compact
@@ -365,14 +416,26 @@ function showEngineBanner(game: Game, variant: Variant): InfoCard {
   variantLine.textContent =
     `VARIANT: ${variant.name.toUpperCase()} — ${variant.blurb}` +
     (knobs !== '' ? ` · ${knobs}` : '');
+  // Claude Arena line: per-side coach tweaks (the knob turns each coach
+  // filed for this fight) — empty when nobody tweaked anything.
+  const arenaLine = document.createElement('div');
+  arenaLine.style.cssText = `font-size:${compact ? 10 : 11}px;color:#9be07f;margin-top:3px;letter-spacing:0.1em`;
+  const deltas = engineTweakDeltas(game);
+  arenaLine.textContent = deltas;
+  arenaLine.style.display = deltas === '' ? 'none' : '';
   // Following line: who the camera is on, highlighted in their TEAM color.
   const followLine = document.createElement('div');
   followLine.style.cssText = `font-size:${compact ? 11 : 13}px;font-weight:bold;margin-top:3px;letter-spacing:0.12em`;
-  banner.append(name, tagline, variantLine, followLine);
+  banner.append(name, tagline, variantLine, arenaLine, followLine);
   document.body.appendChild(banner);
   const update = (): void => {
     const groups = game.engineGroups();
-    name.textContent = groups.map((g) => g.toUpperCase()).join(' vs ');
+    // Coach labels (Claude Arena): 'PILOT (VEGA) vs REAPER (OKONKWO)'.
+    const labels = groups.map((g, i) => {
+      const coach = i === 0 ? coaches.a : coaches.b;
+      return coach !== undefined ? `${g.toUpperCase()} (${coach.toUpperCase()})` : g.toUpperCase();
+    });
+    name.textContent = labels.join(' vs ');
     name.style.color =
       groups.length === 1 ? (ENGINE_COLORS[groups[0] ?? ''] ?? '#ffffff') : '#ffffff';
     tagline.textContent = game.aiStrategy;
@@ -396,6 +459,7 @@ function showEngineBanner(game: Game, variant: Variant): InfoCard {
       banner.style.display = '';
       tagline.style.display = minimal ? 'none' : '';
       variantLine.style.display = minimal ? 'none' : '';
+      arenaLine.style.display = minimal || arenaLine.textContent === '' ? 'none' : '';
       followLine.style.display = minimal ? 'none' : '';
     },
   };
@@ -486,7 +550,10 @@ async function main(): Promise<void> {
   // built-in Skyreach aerial arena — the jetpack-dogfight level the bot match
   // is tuned for — unless ?map= explicitly asks for a stock map. Play mode
   // keeps the stock-map default.
-  const { spectate, botCount, aiEngine, seed, teams, variant: variantName, roundSecs } = parseSpectate();
+  const {
+    spectate, botCount, aiEngine, seed, teams,
+    variant: variantName, roundSecs, tweakA, tweakB, coachA, coachB, arenaSeed,
+  } = parseSpectate();
   // Gameplay-tuning variant (tournament tiles each run a different one;
   // unknown/absent names are baseline = stock rules).
   const variant = resolveVariant(variantName);
@@ -494,8 +561,11 @@ async function main(): Promise<void> {
   let map: PmsMap;
   let spawns: readonly { x: number; y: number }[];
   if (spectate && !explicitMap) {
-    map = buildArena();
-    spawns = ARENA_SPAWNS;
+    // Generated arena family: ?arena=N rolls a deterministic Skyreach-kin
+    // map; 0 (default) is the canonical hand-built layout.
+    const gen = generateArena(arenaSeed);
+    map = gen.map;
+    spawns = gen.spawns;
   } else {
     const mapUrl = pickMapUrl();
     try {
@@ -537,6 +607,16 @@ async function main(): Promise<void> {
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
   // Round timer: SIM ticks (60 Hz), never wall clock — and only ever armed in
   // spectate mode, so plain ?play stays endless and byte-for-byte unchanged.
+  // Claude Arena: side tweaks map onto the side ENGINES (team A = first id
+  // in the ?ai list, team B = second). Uniform matches apply tweak-a only.
+  const sideIds = (aiEngine ?? 'classic').split(',').map((s) => s.trim());
+  const engineTweaks: Record<string, Record<string, number>> = {};
+  if (Object.keys(tweakA).length > 0 && sideIds[0] !== undefined) {
+    engineTweaks[sideIds[0]] = tweakA;
+  }
+  if (Object.keys(tweakB).length > 0 && sideIds[1] !== undefined) {
+    engineTweaks[sideIds[1]] = tweakB;
+  }
   const game = new Game({
     seed,
     spawns,
@@ -544,6 +624,7 @@ async function main(): Promise<void> {
     spectate,
     aiEngine,
     teams,
+    engineTweaks,
     tuning: variant.tuning,
     roundTicks: spectate ? roundSecs * 60 : 0,
   });
@@ -673,7 +754,9 @@ async function main(): Promise<void> {
   }
   // Match-info card: engines, strategy, knob turns, and who the camera is
   // following — compact in small windows so the game stays watchable.
-  const infoCard = spectate ? showEngineBanner(game, variant) : null;
+  const infoCard = spectate
+    ? showEngineBanner(game, variant, { a: coachA, b: coachB })
+    : null;
 
   // CLEAN VIEW (H, or a tournament-page broadcast): hide every overlay except
   // the engine names so the shooting is fully visible.

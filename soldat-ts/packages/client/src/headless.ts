@@ -20,7 +20,7 @@ export {
   type MatchDump,
   type KillEvent,
 } from './app/telemetry';
-export { buildArena, ARENA_SPAWNS } from './app/arena';
+export { buildArena, ARENA_SPAWNS, generateArena } from './app/arena';
 export { subjectName } from './app/director';
 export { VARIANTS, resolveVariant, type Variant } from './app/tournament';
 // Registers classic/pilot/reaper on import (side effect) and re-exports the

@@ -314,6 +314,7 @@ export function showTournament(opts: TournamentOptions): void {
     frame.src =
       `${window.location.pathname}?spectate&ai=${encodeURIComponent(rosters[g]!)}` +
       `&teams&seed=${opts.gen * TOURNAMENT_GAMES + g + 2}` +
+      `&arena=${opts.gen * TOURNAMENT_GAMES + g}` +
       `&variant=${encodeURIComponent(VARIANTS[g % VARIANTS.length]!.name)}` +
       `&round=${opts.roundSecs}`;
     frame.style.cssText =

@@ -217,3 +217,115 @@ export function buildArena(): PmsMap {
     waypoints: [],
   };
 }
+
+// ---------------------------------------------------------------------------
+// Seeded arena generator (goal node 170 / action 186): "we can't just play
+// one map." Deterministic Skyreach-FAMILY layouts — same sealed-box aerial
+// recipe (thin ground, tall walls, ceiling, floating perch pads) with the
+// geometry rolled from a seed. Same seed → byte-identical map, so dataset
+// manifests stay reproducible; different seeds give bots genuinely different
+// sightlines, lane widths, and verticality to generalize over.
+// ---------------------------------------------------------------------------
+
+/** Tiny deterministic PRNG (mulberry32) — map generation must never touch
+ *  ambient randomness; the seed IS the map's identity. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return (): number => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export interface GeneratedArena {
+  map: PmsMap;
+  spawns: readonly { x: number; y: number }[];
+}
+
+/**
+ * Generate a deterministic aerial arena from a seed. Seed 0 returns the
+ * hand-built Skyreach (the canonical map stays the default everywhere).
+ */
+export function generateArena(seed: number): GeneratedArena {
+  if (seed === 0) return { map: buildArena(), spawns: ARENA_SPAWNS };
+  const rnd = mulberry32(seed);
+  const ri = (lo: number, hi: number): number => lo + Math.floor(rnd() * (hi - lo + 1));
+
+  // Box: width/height rolled per map; the sealed-box recipe is fixed.
+  const halfW = ri(1200, 1800);
+  const airH = ri(900, 1240); // ceiling sits this far above the ground top
+  const groundTop = 560;
+  const ceilY = groundTop - airH;
+
+  const platforms: Platform[] = [
+    { x: -halfW, y: groundTop, w: halfW * 2, h: 140, color: COLOR_GROUND },
+    { x: -halfW, y: ceilY, w: WALL_THICKNESS, h: airH, color: COLOR_WALL },
+    { x: halfW - WALL_THICKNESS, y: ceilY, w: WALL_THICKNESS, h: airH, color: COLOR_WALL },
+    { x: -halfW, y: ceilY - 40, w: halfW * 2, h: 40, color: COLOR_WALL },
+  ];
+
+  // Pads: rejection-sample so no two pads crowd the same airspace. Pads are
+  // perches (narrow), never floors — the aerial identity is non-negotiable.
+  const pads: Platform[] = [];
+  const wanted = ri(11, 17);
+  for (let tries = 0; pads.length < wanted && tries < 400; tries++) {
+    const w = ri(120, 300);
+    const h = ri(18, 32);
+    const x = ri(-halfW + 140, halfW - 140 - w);
+    const y = ri(ceilY + 130, groundTop - 100);
+    const crowded = pads.some(
+      (p) =>
+        Math.abs(p.y - y) < 110 &&
+        x < p.x + p.w + 90 &&
+        p.x < x + w + 90,
+    );
+    if (crowded) continue;
+    pads.push({ x, y, w, h, color: COLOR_PLATFORM });
+  }
+  platforms.push(...pads);
+
+  // Spawns: spread across the pad set by x-order stride so both teams start
+  // distributed (Game alternates spawn indices per bot).
+  const byX = [...pads].sort((a, b) => a.x - b.x);
+  const spawnPads = byX.filter((_, i) => i % Math.max(1, Math.floor(byX.length / 8)) === 0).slice(0, 10);
+  const spawns = (spawnPads.length >= 4 ? spawnPads : byX.slice(0, 4)).map((p) => ({
+    x: p.x + p.w / 2,
+    y: p.y - SPAWN_LIFT,
+  }));
+
+  const polygons: MapPolygon[] = [];
+  for (const p of platforms) {
+    const [a, b] = rect(p.x, p.y, p.w, p.h, p.color);
+    polygons.push(a, b);
+  }
+
+  return {
+    map: {
+      hash: 0,
+      version: 0,
+      mapName: `Skyreach-#${seed}`,
+      textures: [],
+      bgColorTop: BG_TOP,
+      bgColorBtm: BG_BTM,
+      startJet: 0,
+      grenadePacks: 0,
+      medikits: 0,
+      weather: 0,
+      steps: 0,
+      randomId: seed,
+      polygons,
+      sectorsDivision: 0,
+      sectorsNum: 0,
+      sectors: [],
+      props: [],
+      scenery: [],
+      colliders: [],
+      spawnpoints: spawns.map((s) => spawn(s.x, s.y)),
+      waypoints: [],
+    },
+    spawns,
+  };
+}

@@ -118,9 +118,22 @@ export const TEXTURE_SCALE = 0.5;
 // --- Tint colors ---------------------------------------------------------
 const SKIN_TINT = 0xc8a08c;
 function teamMain(team: number): number {
-  if (team === 1) return 0xd23c3c; // alpha red
-  if (team === 2) return 0x4060d2; // bravo blue
+  if (team === 1) return 0xff5648; // alpha red (bright — tints multiply DOWN)
+  if (team === 2) return 0x5a82ff; // bravo blue
   return 0x4a9e4a; // neutral green
+}
+/**
+ * Lighter team wash for every part that previously rendered the raw camo
+ * texture untinted. The camo art is dark and busy, so tinting only the
+ * shirt/pants slots left red and blue soldiers visually identical at
+ * spectator zoom (user report, twice). pixi tints multiply, so a bright
+ * wash over dark camo yields a clearly reddish vs blueish soldier while
+ * keeping the texture detail.
+ */
+function teamWash(team: number): number {
+  if (team === 1) return 0xffb0a0; // warm red wash
+  if (team === 2) return 0xa8c0ff; // cool blue wash
+  return 0xc0e0c0; // neutral
 }
 function teamPants(team: number): number {
   // darker shade of the main color
@@ -263,6 +276,7 @@ export class TexturedGostek {
 
     const mainTint = teamMain(opts.team);
     const pantsTint = teamPants(opts.team);
+    const washTint = teamWash(opts.team);
 
     for (let i = 0; i < PARTS.length; i++) {
       const part = PARTS[i];
@@ -305,8 +319,9 @@ export class TexturedGostek {
       void texH;
       sprite.scale.set(scaleX, scaleY);
 
-      // tint
-      let tint = 0xffffff;
+      // tint — every non-skin part carries the team (wash for parts that
+      // used to render raw camo; see teamWash).
+      let tint = washTint;
       if (part.color === Col.Main) tint = mainTint;
       else if (part.color === Col.Pants) tint = pantsTint;
       else if (part.color === Col.Skin) tint = SKIN_TINT;

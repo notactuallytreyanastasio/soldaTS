@@ -8,10 +8,10 @@
 // Same MatchConfig ⇒ byte-identical replayJsonl, events, telemetry.
 
 import {
-  ARENA_SPAWNS,
+
   Game,
   MatchRecorder,
-  buildArena,
+  generateArena,
   engineIds,
   resolveVariant,
   subjectName,
@@ -32,6 +32,9 @@ export interface TeamSpec {
 }
 
 export interface MatchConfig {
+  /** Generated-arena seed (0/omitted = the canonical hand-built Skyreach).
+   *  Deterministic: the seed IS the map's identity in the manifest. */
+  arenaSeed?: number | undefined;
   seed: number;
   /** [0] = red (team 1), [1] = blue (team 2) — Game.teamFor maps engine
    *  group 0 → red, group 1 → blue. */
@@ -91,9 +94,10 @@ export function runMatch(config: MatchConfig): MatchResult {
   const roundTicks = config.roundTicks ?? DEFAULT_ROUND_TICKS;
   const maxTicks = config.maxTicks ?? roundTicks + 600;
 
+  const arena = generateArena(config.arenaSeed ?? 0);
   const game = new Game({
     seed: config.seed,
-    spawns: ARENA_SPAWNS,
+    spawns: arena.spawns,
     botCount,
     spectate: true,
     aiEngine: `${red.engine},${blue.engine}`, // red = group 0, blue = group 1
@@ -105,7 +109,7 @@ export function runMatch(config: MatchConfig): MatchResult {
       ...(blue.tweaks ? { [blue.engine]: blue.tweaks } : {}),
     },
   });
-  game.loadMap(buildArena());
+  game.loadMap(arena.map);
 
   // Recorder FIRST: its constructor claims game.onShot and world.onDamage —
   // the event-stream taps below CHAIN onto whatever it installed.

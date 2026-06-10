@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "VEGA",
+  "engine": "pilot",
+  "tweaks": { "RANGE_MAX": 360, "HEIGHT_EDGE_MIN": 80, "FUEL_RESERVE": 160 },
+  "rationale": "Session 1 winner shape: tight 200-360 band keeps fights where tap-burst accuracy lives; early fuel peel avoids low-tank chase-downs against committed divers."
+}

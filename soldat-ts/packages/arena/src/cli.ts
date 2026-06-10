@@ -4,6 +4,7 @@
 //   pnpm arena --teams "pilot vs reaper" --matches 8 --round 120 --variant baseline
 //   pnpm arena --teams pilot vs reaper --tweak-a RANGE_MAX=500 --tweak-b KILL_RANGE=220
 //   pnpm arena --teams pilot vs reaper --sweep a:RANGE_MAX=380,420,460 --matches 4
+//   pnpm arena fight fights/vega.json fights/okonkwo.json --round 120
 //
 // Wall-clock timing here is PRINT-ONLY: nothing time-based is written into
 // the dataset files except manifest.createdAt — determinism lives in runner.ts.
@@ -14,6 +15,9 @@ import { VARIANTS, engineIds } from '@soldat/client/headless';
 import { buildRunPlans, parseSweep, parseTeams, parseTweaks, type RunPlan } from './cliArgs';
 import { runMatch, type MatchResult } from './runner';
 import { buildManifest, makeRunId, writeRun } from './store';
+import { buildWatchUrl, validateCard, type FighterCard } from './fighterCard';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 const HELP = `soldat arena — headless bot-vs-bot deathmatches + training datasets
 
@@ -33,7 +37,15 @@ OPTIONS:
   --variant NAME         gameplay variant: ${VARIANTS.map((v) => v.name).join(' | ')}
   --seed N               base seed; match k uses seed+k (default 1337)
   --out DIR              dataset base dir (default soldat-ts/datasets)
+  --arena N              generated-arena seed (0 = canonical Skyreach)
   --help                 this text
+
+CLAUDE ARENA:
+  pnpm arena fight <cardA.json> <cardB.json> [--matches N --round S --seed N --arena N]
+                         two fighter cards (see ARENA.md) face off; the match
+                         is recorded as a dataset AND printed as a WATCH URL
+                         that replays it in the browser, coach names on the
+                         banner. Card schema: soldat-fighter-card/1.
 `;
 
 interface RunOutcome {
@@ -55,6 +67,7 @@ function main(): void {
       seed: { type: 'string' },
       sweep: { type: 'string' },
       out: { type: 'string' },
+      arena: { type: 'string' },
       help: { type: 'boolean' },
     },
     allowPositionals: true,
@@ -62,6 +75,12 @@ function main(): void {
 
   if (values.help === true) {
     console.log(HELP);
+    return;
+  }
+
+  // CLAUDE ARENA: `fight cardA.json cardB.json` — two coaches face off.
+  if (positionals[0] === 'fight') {
+    fight(positionals.slice(1), values);
     return;
   }
 
@@ -204,3 +223,110 @@ function main(): void {
 }
 
 main();
+
+/** The Claude Arena fight runner: two fighter cards in, dataset + watch URL out. */
+function fight(
+  cardPaths: readonly string[],
+  values: {
+    matches?: string | undefined;
+    round?: string | undefined;
+    bots?: string | undefined;
+    seed?: string | undefined;
+    arena?: string | undefined;
+    out?: string | undefined;
+  },
+): void {
+  if (cardPaths.length !== 2) {
+    console.error('arena fight: exactly two fighter-card paths required (see ARENA.md)');
+    process.exitCode = 1;
+    return;
+  }
+  let a: FighterCard;
+  let b: FighterCard;
+  // pnpm runs this with cwd = packages/arena; resolve card paths against the
+  // directory the user actually typed the command from.
+  const userCwd = process.env['INIT_CWD'] ?? process.cwd();
+  try {
+    a = validateCard(JSON.parse(readFileSync(path.resolve(userCwd, cardPaths[0]!), 'utf8'))).card;
+    b = validateCard(JSON.parse(readFileSync(path.resolve(userCwd, cardPaths[1]!), 'utf8'))).card;
+  } catch (err) {
+    console.error(`arena fight: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (a.engine === b.engine) {
+    console.error('arena fight: mirror matches need engine aliasing (next slice) — pick different engines');
+    process.exitCode = 1;
+    return;
+  }
+  const matches = Math.max(1, parseInt(values.matches ?? '1', 10) || 1);
+  const roundSecs = Math.max(10, parseInt(values.round ?? '120', 10) || 120);
+  const botCount = Math.max(2, parseInt(values.bots ?? '6', 10) || 6);
+  const seedBase = parseInt(values.seed ?? '1337', 10) || 1337;
+  const arenaSeed = Math.max(0, parseInt(values.arena ?? '0', 10) || 0);
+  const outDir =
+    values.out ?? fileURLToPath(new URL('../../../datasets', import.meta.url));
+
+  console.log(
+    `CLAUDE ARENA — ${a.coach} (${a.engine}) vs ${b.coach} (${b.engine}) · ` +
+      `${matches} match(es) · ${roundSecs}s rounds · arena #${arenaSeed}`,
+  );
+  if (a.rationale !== undefined) console.log(`  ${a.coach}: "${a.rationale}"`);
+  if (b.rationale !== undefined) console.log(`  ${b.coach}: "${b.rationale}"`);
+
+  const results: MatchResult[] = [];
+  for (let k = 0; k < matches; k++) {
+    const seed = seedBase + k;
+    const started = performance.now();
+    const result = runMatch({
+      seed,
+      arenaSeed,
+      botCount,
+      roundTicks: roundSecs * 60,
+      teams: [
+        { engine: a.engine, tweaks: a.tweaks },
+        { engine: b.engine, tweaks: b.tweaks },
+      ],
+    });
+    results.push(result);
+    const r = result.round;
+    const verdict =
+      r === null
+        ? 'cap'
+        : r.winnerTeam === 1
+          ? `${a.coach} wins (${r.redKills}-${r.blueKills})`
+          : r.winnerTeam === 2
+            ? `${b.coach} wins (${r.blueKills}-${r.redKills})`
+            : `draw (${r.redKills}-${r.blueKills})`;
+    console.log(
+      `  match ${k + 1}/${matches}  seed ${seed}  ${verdict}  ` +
+        `${((performance.now() - started) / 1000).toFixed(1)}s`,
+    );
+  }
+
+  const runId = makeRunId(`${a.coach}-${a.engine}`, `${b.coach}-${b.engine}`);
+  const manifest = buildManifest({
+    runId,
+    botCount,
+    roundTicks: roundSecs * 60,
+    maxTicks: roundSecs * 60 + 600,
+    variantName: 'baseline',
+    teams: [
+      { engine: a.engine, tweaks: a.tweaks },
+      { engine: b.engine, tweaks: b.tweaks },
+    ],
+    results,
+    cli: process.argv.slice(2).join(' '),
+  });
+  const dir = writeRun(outDir, runId, manifest, results);
+  console.log(`  dataset: ${dir}`);
+
+  const aWins = results.filter((x) => x.round?.winnerTeam === 1).length;
+  const bWins = results.filter((x) => x.round?.winnerTeam === 2).length;
+  console.log(`  series: ${a.coach} ${aWins} — ${bWins} ${b.coach}`);
+  console.log('');
+  console.log('  WATCH (replays the exact match-1 sim in the browser — pnpm play first):');
+  console.log(
+    `  ${buildWatchUrl('http://localhost:5173', a, b, { seed: seedBase, roundSecs, arenaSeed })}`,
+  );
+}

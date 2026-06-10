@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "OKONKWO",
+  "engine": "reaper",
+  "tweaks": { "KILL_RANGE": 150, "FIRE_RANGE": 540, "DIVE_HEIGHT": 380, "DIVE_ENTRY_DIST": 360, "JITTER_MIN_TICKS": 8, "JITTER_VAR_TICKS": 12, "HUNT_MEMORY_TICKS": 180, "FUEL_FLOOR": 45 },
+  "rationale": "The match-4 closer that beat VEGA 23-22: commit only at true knife range, suppress the whole approach from 540, cross the death zone vertically with sky-high plunges."
+}
