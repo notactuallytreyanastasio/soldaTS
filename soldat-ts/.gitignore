@@ -3,3 +3,7 @@ dist/
 *.tsbuildinfo
 .vitest/
 coverage/
+
+# Training datasets (pnpm arena) — formats documented in datasets/README.md
+datasets/*
+!datasets/README.md

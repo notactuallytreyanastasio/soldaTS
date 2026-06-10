@@ -6,6 +6,7 @@
     { "path": "./packages/assets" },
     { "path": "./packages/client" },
     { "path": "./packages/netcode" },
-    { "path": "./packages/modding" }
+    { "path": "./packages/modding" },
+    { "path": "./packages/arena" }
   ]
 }

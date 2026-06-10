@@ -27,34 +27,61 @@
 import { findTarget } from '@soldat/sim';
 import {
   createRoamState,
+  resolveTweaks,
   roamTick,
   type BotBrain,
   type BotEngine,
   type BotEngineContext,
+  type EngineTweaks,
   type RoamState,
 } from './engine';
 
 // --- Tuning -----------------------------------------------------------------
-const AK_BULLET_SPEED = 24.6; // px/tick (guns.ts AK74) — lead/drop math
-const RANGE_MIN = 200; // px — closer than this: back off
-const RANGE_MAX = 420; // px — farther: close in
-const FIRE_MAX_DIST = 600; // px — don't waste mag beyond this
-const HEIGHT_EDGE_MIN = 50; // px — minimum height advantage worth holding
-const HEIGHT_EDGE_MAX = 220; // px — above this, stop climbing (overextended)
-const FUEL_RESERVE = 130; // ticks — below this, perch and regen
-const FUEL_COMMIT = 260; // ticks — needed to start an attack climb
-const JUKE_MIN_TICKS = 18; // strafe-juke clock (rng-rolled per leg)
-const JUKE_VAR_TICKS = 26;
-const HUNT_MEMORY_TICKS = 240; // ~4 s of last-seen pursuit after losing LOS
-const BURST_PERIOD = 14; // ticks — long-range fire discipline cycle
-const BURST_OPEN = 5; // ticks of the period spent firing (tap-bursts)
-// Ceiling-stall give-up (goal node 150): two pilots each demanding a height
-// edge over the other is an unwinnable arms race that ends pinned to the
-// ceiling. Burning jet without actually rising for this long means the climb
-// is going nowhere — concede the height contest and fight from here.
-const STALL_RISE_VY = -0.1; // rising at all = velocityY below this (y is down)
-const STALL_TRIGGER = 25; // ticks of jetting-without-rising before giving up
-const STALL_COOLDOWN = 180; // ticks (~3 s) with climbing suppressed
+// Physics fact of the gun (guns.ts AK74), NOT a strategy knob — stays a const.
+const AK_BULLET_SPEED = 24.6; // px/tick — lead/drop math
+
+/** Pilot's strategy knobs — every value is tweakable per match (node 170).
+ *  A `type` (not interface) so the implicit index signature satisfies the
+ *  generic Record<string, number> bound in resolveTweaks/BotEngine.tweaks. */
+export type PilotConfig = {
+  RANGE_MIN: number;
+  RANGE_MAX: number;
+  FIRE_MAX_DIST: number;
+  HEIGHT_EDGE_MIN: number;
+  HEIGHT_EDGE_MAX: number;
+  FUEL_RESERVE: number;
+  FUEL_COMMIT: number;
+  JUKE_MIN_TICKS: number;
+  JUKE_VAR_TICKS: number;
+  HUNT_MEMORY_TICKS: number;
+  BURST_PERIOD: number;
+  BURST_OPEN: number;
+  STALL_RISE_VY: number;
+  STALL_TRIGGER: number;
+  STALL_COOLDOWN: number;
+};
+
+export const PILOT_DEFAULTS: Readonly<PilotConfig> = {
+  RANGE_MIN: 200, // px — closer than this: back off
+  RANGE_MAX: 420, // px — farther: close in
+  FIRE_MAX_DIST: 600, // px — don't waste mag beyond this
+  HEIGHT_EDGE_MIN: 50, // px — minimum height advantage worth holding
+  HEIGHT_EDGE_MAX: 220, // px — above this, stop climbing (overextended)
+  FUEL_RESERVE: 130, // ticks — below this, perch and regen
+  FUEL_COMMIT: 260, // ticks — needed to start an attack climb
+  JUKE_MIN_TICKS: 18, // strafe-juke clock (rng-rolled per leg)
+  JUKE_VAR_TICKS: 26,
+  HUNT_MEMORY_TICKS: 240, // ~4 s of last-seen pursuit after losing LOS
+  BURST_PERIOD: 14, // ticks — long-range fire discipline cycle
+  BURST_OPEN: 5, // ticks of the period spent firing (tap-bursts)
+  // Ceiling-stall give-up (goal node 150): two pilots each demanding a height
+  // edge over the other is an unwinnable arms race that ends pinned to the
+  // ceiling. Burning jet without actually rising for this long means the climb
+  // is going nowhere — concede the height contest and fight from here.
+  STALL_RISE_VY: -0.1, // rising at all = velocityY below this (y is down)
+  STALL_TRIGGER: 25, // ticks of jetting-without-rising before giving up
+  STALL_COOLDOWN: 180, // ticks (~3 s) with climbing suppressed
+};
 
 class PilotBrain implements BotBrain {
   private readonly roam: RoamState = createRoamState();
@@ -67,6 +94,8 @@ class PilotBrain implements BotBrain {
   private stallTicks = 0;
   /** Climbing is conceded until this tick (ceiling-stall give-up). */
   private noClimbUntil = 0;
+
+  constructor(private readonly cfg: PilotConfig) {}
 
   tick(botIndex: number, ctx: BotEngineContext): void {
     const { world } = ctx;
@@ -82,14 +111,14 @@ class PilotBrain implements BotBrain {
     // pilot). Concede: cut thrust and stop chasing height for a while —
     // gravity brings the duel back into the arena.
     const vy = parts.velocityY[botIndex] ?? 0;
-    if (c.jetpack && vy >= STALL_RISE_VY) {
+    if (c.jetpack && vy >= this.cfg.STALL_RISE_VY) {
       this.stallTicks += 1;
     } else {
       this.stallTicks = 0;
     }
-    if (this.stallTicks >= STALL_TRIGGER) {
+    if (this.stallTicks >= this.cfg.STALL_TRIGGER) {
       this.stallTicks = 0;
-      this.noClimbUntil = world.mainTickCounter + STALL_COOLDOWN;
+      this.noClimbUntil = world.mainTickCounter + this.cfg.STALL_COOLDOWN;
       c.jetpack = false;
     }
   }
@@ -126,12 +155,13 @@ class PilotBrain implements BotBrain {
     }
 
     // MEMORY: lost LOS recently → hunt the last seen position.
-    if (this.lastSeenAt >= 0 && clock - this.lastSeenAt < HUNT_MEMORY_TICKS) {
+    const cfg = this.cfg;
+    if (this.lastSeenAt >= 0 && clock - this.lastSeenAt < cfg.HUNT_MEMORY_TICKS) {
       if (px < this.lastSeenX - 40) c.right = true;
       else if (px > this.lastSeenX + 40) c.left = true;
       if (
-        this.lastSeenY < py - HEIGHT_EDGE_MIN &&
-        s.jetsCount > FUEL_RESERVE &&
+        this.lastSeenY < py - cfg.HEIGHT_EDGE_MIN &&
+        s.jetsCount > cfg.FUEL_RESERVE &&
         clock >= this.noClimbUntil
       ) {
         c.jetpack = true;
@@ -145,6 +175,7 @@ class PilotBrain implements BotBrain {
 
   private engage(botIndex: number, targetIdx: number, ctx: BotEngineContext): void {
     const { world } = ctx;
+    const cfg = this.cfg;
     const s = world.sprites[botIndex]!;
     const c = s.control;
     const parts = world.spriteParts!;
@@ -165,14 +196,14 @@ class PilotBrain implements BotBrain {
     const reloading = ctx.reloadingOf(botIndex);
     if (!reloading && ammo === 0) c.reload = true;
     // Proactive reload: safely out of the duel band with a low mag.
-    if (!reloading && ammo > 0 && ammo <= 6 && dist > RANGE_MAX) c.reload = true;
+    if (!reloading && ammo > 0 && ammo <= 6 && dist > cfg.RANGE_MAX) c.reload = true;
 
     if (reloading) {
       // DISENGAGE: open range away from the threat, keep/take height (going
       // up is safer than running on the floor), never return fire dry.
       if (dx > 0) c.left = true;
       else c.right = true;
-      if (s.jetsCount > FUEL_RESERVE && clock >= this.noClimbUntil) {
+      if (s.jetsCount > cfg.FUEL_RESERVE && clock >= this.noClimbUntil) {
         c.jetpack = true;
       }
       return;
@@ -180,22 +211,22 @@ class PilotBrain implements BotBrain {
 
     // --- Positioning: hold the height edge, keep the range band ------------
     if (
-      heightEdge < HEIGHT_EDGE_MIN &&
-      s.jetsCount > (heightEdge < 0 ? FUEL_RESERVE : FUEL_COMMIT - 100) &&
+      heightEdge < cfg.HEIGHT_EDGE_MIN &&
+      s.jetsCount > (heightEdge < 0 ? cfg.FUEL_RESERVE : cfg.FUEL_COMMIT - 100) &&
       clock >= this.noClimbUntil
     ) {
       // Below or level: climb. Attacking from underneath is a losing duel.
       c.jetpack = true;
-    } else if (heightEdge > HEIGHT_EDGE_MAX) {
+    } else if (heightEdge > cfg.HEIGHT_EDGE_MAX) {
       // Overextended above the fight: let gravity bring the angle back.
       c.down = true;
     }
 
-    if (dist < RANGE_MIN) {
+    if (dist < cfg.RANGE_MIN) {
       // Too close: spread is free for the enemy here — give ground.
       if (dx > 0) c.left = true;
       else c.right = true;
-    } else if (dist > RANGE_MAX) {
+    } else if (dist > cfg.RANGE_MAX) {
       if (dx > 0) c.right = true;
       else c.left = true;
     } else {
@@ -204,7 +235,7 @@ class PilotBrain implements BotBrain {
       if (clock >= this.jukeFlipAt) {
         this.jukeDir = world.rng.nextInt(2) === 0 ? 1 : -1;
         this.jukeFlipAt =
-          clock + JUKE_MIN_TICKS + world.rng.nextInt(JUKE_VAR_TICKS);
+          clock + cfg.JUKE_MIN_TICKS + world.rng.nextInt(cfg.JUKE_VAR_TICKS);
       }
       if (this.jukeDir > 0) c.right = true;
       else c.left = true;
@@ -225,20 +256,22 @@ class PilotBrain implements BotBrain {
     c.mouseAimY = Math.round(aimY);
 
     // --- Fire discipline ----------------------------------------------------
-    if (dist > FIRE_MAX_DIST) return; // out of effective range: hold fire
-    if (dist > RANGE_MAX) {
+    if (dist > cfg.FIRE_MAX_DIST) return; // out of effective range: hold fire
+    if (dist > cfg.RANGE_MAX) {
       // Long range: tap-burst so spray bloom recovers between bursts.
-      c.fire = clock % BURST_PERIOD < BURST_OPEN;
+      c.fire = clock % cfg.BURST_PERIOD < cfg.BURST_OPEN;
     } else {
       c.fire = true;
     }
   }
 }
 
-export function createPilotEngine(): BotEngine {
+export function createPilotEngine(tweaks?: EngineTweaks): BotEngine {
+  const cfg = resolveTweaks('pilot', PILOT_DEFAULTS, tweaks);
   return {
     id: 'pilot',
     strategy: 'FIRST-PRINCIPLES AERIAL — take height, hold the range band, juke, reload behind cover',
-    createBrain: (): BotBrain => new PilotBrain(),
+    tweaks: cfg,
+    createBrain: (): BotBrain => new PilotBrain(cfg),
   };
 }

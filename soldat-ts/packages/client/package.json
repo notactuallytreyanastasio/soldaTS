@@ -2,6 +2,7 @@
   "name": "@soldat/client",
   "version": "0.0.0",
   "type": "module",
+  "exports": { "./headless": "./src/headless.ts" },
   "scripts": { "dev": "vite", "build": "vite build" },
   "dependencies": {
     "@soldat/sim": "workspace:*",

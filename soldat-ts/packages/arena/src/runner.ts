@@ -1,0 +1,197 @@
+// MatchRunner (goal node 170): one COMPLETE headless deathmatch, far faster
+// than realtime — a 7200-tick (120 s) round finishes in a few seconds because
+// game.tick(1/60) in a tight loop runs exactly one 60 Hz sim step per call
+// with zero wall-clock coupling.
+//
+// DETERMINISM: the runner introduces no ambient randomness or wall-clock
+// reads into the recorded artifacts (timing/printing lives in cli.ts only).
+// Same MatchConfig ⇒ byte-identical replayJsonl, events, telemetry.
+
+import {
+  ARENA_SPAWNS,
+  Game,
+  MatchRecorder,
+  buildArena,
+  engineIds,
+  resolveVariant,
+  subjectName,
+  type GameTuning,
+  type MatchDump,
+  type RoundResult,
+} from '@soldat/client/headless';
+import {
+  buildReplayRow,
+  rowsToJsonl,
+  type ArenaEvent,
+  type ReplayRow,
+} from './replay';
+
+export interface TeamSpec {
+  engine: string;
+  tweaks?: Record<string, number> | undefined;
+}
+
+export interface MatchConfig {
+  seed: number;
+  /** [0] = red (team 1), [1] = blue (team 2) — Game.teamFor maps engine
+   *  group 0 → red, group 1 → blue. */
+  teams: readonly [TeamSpec, TeamSpec];
+  botCount?: number; // default 6 (3v3)
+  variant?: string; // tournament variant NAME, default 'baseline'
+  roundTicks?: number; // default 7200 (120 s)
+  maxTicks?: number; // hard cap, default roundTicks + 600
+}
+
+export interface MatchBotInfo {
+  index: number;
+  name: string;
+  engine: string;
+  team: number;
+}
+
+export interface MatchResult {
+  seed: number;
+  ticks: number; // world.mainTickCounter at exit
+  round: RoundResult | null; // null only if the maxTicks cap hit
+  telemetry: MatchDump;
+  replayJsonl: string; // UNcompressed JSONL (gzipped at store time)
+  events: ArenaEvent[];
+  bots: MatchBotInfo[];
+  tuning: GameTuning; // the resolved tuning the match ran (game.tuning)
+  /** Per team, the FULL config each side's brains ran with. */
+  resolvedTweaks: [Record<string, number>, Record<string, number>];
+}
+
+const DEFAULT_BOT_COUNT = 6;
+const DEFAULT_ROUND_TICKS = 7200; // 120 s at 60 Hz
+const TICK_DT = 1 / 60;
+
+/** Run one complete headless deathmatch; throws on invalid team specs. */
+export function runMatch(config: MatchConfig): MatchResult {
+  const [red, blue] = config.teams;
+
+  // v1 limitation: Game groups teams by engine ID, so the same engine on
+  // both sides would collapse into one team. Same-engine-different-tweaks
+  // needs engine aliasing — next slice.
+  if (red.engine === blue.engine) {
+    throw new Error(
+      "mirror matches (same engine both sides) aren't supported yet: Game groups teams by engine id",
+    );
+  }
+  // Unknown ids would silently fall back to classic and corrupt the
+  // dataset's provenance — refuse instead.
+  for (const spec of config.teams) {
+    if (!engineIds().includes(spec.engine)) {
+      throw new Error(`unknown engine '${spec.engine}' (registered: ${engineIds().join(', ')})`);
+    }
+  }
+
+  const variant = resolveVariant(config.variant);
+  const botCount = config.botCount ?? DEFAULT_BOT_COUNT;
+  const roundTicks = config.roundTicks ?? DEFAULT_ROUND_TICKS;
+  const maxTicks = config.maxTicks ?? roundTicks + 600;
+
+  const game = new Game({
+    seed: config.seed,
+    spawns: ARENA_SPAWNS,
+    botCount,
+    spectate: true,
+    aiEngine: `${red.engine},${blue.engine}`, // red = group 0, blue = group 1
+    teams: true,
+    tuning: variant.tuning,
+    roundTicks,
+    engineTweaks: {
+      ...(red.tweaks ? { [red.engine]: red.tweaks } : {}),
+      ...(blue.tweaks ? { [blue.engine]: blue.tweaks } : {}),
+    },
+  });
+  game.loadMap(buildArena());
+
+  // Recorder FIRST: its constructor claims game.onShot and world.onDamage —
+  // the event-stream taps below CHAIN onto whatever it installed.
+  const recorder = new MatchRecorder(game, 'Skyreach', botCount, true, variant.name);
+
+  const events: ArenaEvent[] = [];
+  const tick = (): number => game.world.mainTickCounter;
+
+  const prevShot = game.onShot;
+  game.onShot = (shooter): void => {
+    prevShot?.(shooter);
+    events.push({ tick: tick(), type: 'shot', bot: shooter });
+  };
+  const prevDamage = game.world.onDamage;
+  game.world.onDamage = (victim, attacker, amount): void => {
+    prevDamage?.(victim, attacker, amount);
+    if (attacker > 0 && attacker !== victim) {
+      events.push({
+        tick: tick(),
+        type: 'hit',
+        attacker,
+        victim,
+        damage: Number(amount.toFixed(1)),
+      });
+    }
+  };
+  game.onKill = (killer, victim): void => {
+    recorder.recordKill(killer, victim);
+    // Positions read NOW (same instant recordKill uses), same rounding.
+    const parts = game.world.spriteParts;
+    const pos = (i: number): { x: number; y: number } => ({
+      x: Math.round(parts?.posX[i] ?? 0),
+      y: Math.round(parts?.posY[i] ?? 0),
+    });
+    const attributed = killer > 0 && killer !== victim;
+    const victimPos = pos(victim);
+    const killerPos = attributed ? pos(killer) : null;
+    events.push({
+      tick: tick(),
+      type: 'kill',
+      killer,
+      victim,
+      killerPos,
+      victimPos,
+      dist:
+        killerPos !== null
+          ? Math.round(Math.hypot(killerPos.x - victimPos.x, killerPos.y - victimPos.y))
+          : null,
+    });
+  };
+
+  // Replay sampling: post-think, pre-physics (see replay.ts header).
+  const rows: ReplayRow[] = [];
+  game.onBrainsTicked = (t): void => {
+    for (const i of game.botIndices()) {
+      const row = buildReplayRow(game, i, t);
+      if (row !== null) rows.push(row);
+    }
+  };
+
+  // Tick loop — one sim tick per call; maxTicks is a hard safety cap (a
+  // teams+roundTicks game always freezes itself first).
+  while (game.roundResult === null && game.world.mainTickCounter < maxTicks) {
+    game.tick(TICK_DT);
+    recorder.maybeSample();
+  }
+
+  const bots: MatchBotInfo[] = game.botIndices().map((index) => ({
+    index,
+    name: subjectName(index, game.playerIndex),
+    engine: game.engineOf(index),
+    team: game.teamOf(index),
+  }));
+
+  return {
+    seed: config.seed,
+    ticks: game.world.mainTickCounter,
+    round: game.roundResult,
+    telemetry: recorder.dump(),
+    replayJsonl: rowsToJsonl(rows),
+    events,
+    bots,
+    tuning: game.tuning,
+    resolvedTweaks: [
+      { ...(game.resolvedTweaks(red.engine) ?? {}) },
+      { ...(game.resolvedTweaks(blue.engine) ?? {}) },
+    ],
+  };
+}

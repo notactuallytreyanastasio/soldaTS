@@ -25,29 +25,53 @@
 import { findTarget } from '@soldat/sim';
 import {
   createRoamState,
+  resolveTweaks,
   roamTick,
   type BotBrain,
   type BotEngine,
   type BotEngineContext,
+  type EngineTweaks,
   type RoamState,
 } from './engine';
 
 // --- Tuning -----------------------------------------------------------------
+// Physics fact of the gun (guns.ts AK74), NOT a strategy knob — stays a const.
 const AK_BULLET_SPEED = 24.6; // px/tick — lead/drop math (AK74)
-const KILL_RANGE = 180; // px — inside this: committed, full-auto, push through
-const FIRE_RANGE = 460; // px — return fire on the run-in (eating pokes for free lost round 1)
-const DIVE_HEIGHT = 200; // px — approach ABOVE pilot's preferred height edge
-const DIVE_ENTRY_DIST = 260; // px — inside this with height: cut jets and FALL on them
-const JITTER_MIN_TICKS = 12; // approach-jitter clock (rng-rolled per leg)
-const JITTER_VAR_TICKS = 18;
-const JITTER_ODDS = 3; // 1-in-N legs jitter AGAINST the approach direction
-const FUEL_FLOOR = 60; // ticks — even a brawler won't strand a bone-dry tank
-const HUNT_MEMORY_TICKS = 300; // ~5 s pursuit — reapers chase harder than pilots
-// Ceiling-stall give-up (same failure mode as pilot, node 150): burning jet
-// without rising means the climb is blocked — concede and fight from here.
-const STALL_RISE_VY = -0.1;
-const STALL_TRIGGER = 25;
-const STALL_COOLDOWN = 150;
+
+/** Reaper's strategy knobs — every value is tweakable per match (node 170).
+ *  A `type` (not interface) so the implicit index signature satisfies the
+ *  generic Record<string, number> bound in resolveTweaks/BotEngine.tweaks. */
+export type ReaperConfig = {
+  KILL_RANGE: number;
+  FIRE_RANGE: number;
+  DIVE_HEIGHT: number;
+  DIVE_ENTRY_DIST: number;
+  JITTER_MIN_TICKS: number;
+  JITTER_VAR_TICKS: number;
+  JITTER_ODDS: number;
+  FUEL_FLOOR: number;
+  HUNT_MEMORY_TICKS: number;
+  STALL_RISE_VY: number;
+  STALL_TRIGGER: number;
+  STALL_COOLDOWN: number;
+};
+
+export const REAPER_DEFAULTS: Readonly<ReaperConfig> = {
+  KILL_RANGE: 180, // px — inside this: committed, full-auto, push through
+  FIRE_RANGE: 460, // px — return fire on the run-in (eating pokes for free lost round 1)
+  DIVE_HEIGHT: 200, // px — approach ABOVE pilot's preferred height edge
+  DIVE_ENTRY_DIST: 260, // px — inside this with height: cut jets and FALL on them
+  JITTER_MIN_TICKS: 12, // approach-jitter clock (rng-rolled per leg)
+  JITTER_VAR_TICKS: 18,
+  JITTER_ODDS: 3, // 1-in-N legs jitter AGAINST the approach direction
+  FUEL_FLOOR: 60, // ticks — even a brawler won't strand a bone-dry tank
+  HUNT_MEMORY_TICKS: 300, // ~5 s pursuit — reapers chase harder than pilots
+  // Ceiling-stall give-up (same failure mode as pilot, node 150): burning jet
+  // without rising means the climb is blocked — concede and fight from here.
+  STALL_RISE_VY: -0.1,
+  STALL_TRIGGER: 25,
+  STALL_COOLDOWN: 150,
+};
 
 class ReaperBrain implements BotBrain {
   private readonly roam: RoamState = createRoamState();
@@ -58,6 +82,8 @@ class ReaperBrain implements BotBrain {
   private lastSeenAt = -1;
   private stallTicks = 0;
   private noClimbUntil = 0;
+
+  constructor(private readonly cfg: ReaperConfig) {}
 
   tick(botIndex: number, ctx: BotEngineContext): void {
     const { world } = ctx;
@@ -71,14 +97,14 @@ class ReaperBrain implements BotBrain {
     // Ceiling-stall give-up (see pilot.ts — symmetric arms races end pinned
     // to the slab; concede and let gravity restart the fight).
     const vy = parts.velocityY[botIndex] ?? 0;
-    if (c.jetpack && vy >= STALL_RISE_VY) {
+    if (c.jetpack && vy >= this.cfg.STALL_RISE_VY) {
       this.stallTicks += 1;
     } else {
       this.stallTicks = 0;
     }
-    if (this.stallTicks >= STALL_TRIGGER) {
+    if (this.stallTicks >= this.cfg.STALL_TRIGGER) {
       this.stallTicks = 0;
-      this.noClimbUntil = world.mainTickCounter + STALL_COOLDOWN;
+      this.noClimbUntil = world.mainTickCounter + this.cfg.STALL_COOLDOWN;
       c.jetpack = false;
     }
   }
@@ -112,12 +138,13 @@ class ReaperBrain implements BotBrain {
     }
 
     // Chase the last sighting hard — a brawler hunts, it doesn't patrol.
-    if (this.lastSeenAt >= 0 && clock - this.lastSeenAt < HUNT_MEMORY_TICKS) {
+    const cfg = this.cfg;
+    if (this.lastSeenAt >= 0 && clock - this.lastSeenAt < cfg.HUNT_MEMORY_TICKS) {
       if (px < this.lastSeenX - 30) c.right = true;
       else if (px > this.lastSeenX + 30) c.left = true;
       if (
         this.lastSeenY < py - 40 &&
-        s.jetsCount > FUEL_FLOOR &&
+        s.jetsCount > cfg.FUEL_FLOOR &&
         clock >= this.noClimbUntil
       ) {
         c.jetpack = true;
@@ -130,6 +157,7 @@ class ReaperBrain implements BotBrain {
 
   private engage(botIndex: number, targetIdx: number, ctx: BotEngineContext): void {
     const { world } = ctx;
+    const cfg = this.cfg;
     const s = world.sprites[botIndex]!;
     const c = s.control;
     const parts = world.spriteParts!;
@@ -153,12 +181,12 @@ class ReaperBrain implements BotBrain {
     }
 
     // --- Movement: converge, always ---------------------------------------
-    if (dist <= KILL_RANGE) {
+    if (dist <= cfg.KILL_RANGE) {
       // COMMITTED: push THROUGH the target — overshooting keeps the fight at
       // zero range and forces the disengager to spend fuel, not us.
       if (inbound > 0) c.right = true;
       else c.left = true;
-      if (above < -30 && s.jetsCount > FUEL_FLOOR && clock >= this.noClimbUntil) {
+      if (above < -30 && s.jetsCount > cfg.FUEL_FLOOR && clock >= this.noClimbUntil) {
         c.jetpack = true; // below them: jet up into their feet
       }
     } else {
@@ -166,21 +194,21 @@ class ReaperBrain implements BotBrain {
       // the enemy's kill band doesn't track a straight, leadable line.
       if (clock >= this.jitterFlipAt) {
         this.jitterDir =
-          world.rng.nextInt(JITTER_ODDS) === 0 ? (-inbound as 1 | -1) : inbound;
+          world.rng.nextInt(cfg.JITTER_ODDS) === 0 ? (-inbound as 1 | -1) : inbound;
         this.jitterFlipAt =
-          clock + JITTER_MIN_TICKS + world.rng.nextInt(JITTER_VAR_TICKS);
+          clock + cfg.JITTER_MIN_TICKS + world.rng.nextInt(cfg.JITTER_VAR_TICKS);
       }
       if (this.jitterDir > 0) c.right = true;
       else c.left = true;
 
       // DIVE GEOMETRY: hold DIVE_HEIGHT above the target on the way in; once
       // close, cut the jets and fall onto them (gravity is the best juke).
-      const wantHeight = above < DIVE_HEIGHT - 40;
-      const diving = dist <= DIVE_ENTRY_DIST && above >= 40;
+      const wantHeight = above < cfg.DIVE_HEIGHT - 40;
+      const diving = dist <= cfg.DIVE_ENTRY_DIST && above >= 40;
       if (
         !diving &&
         wantHeight &&
-        s.jetsCount > FUEL_FLOOR &&
+        s.jetsCount > cfg.FUEL_FLOOR &&
         clock >= this.noClimbUntil
       ) {
         c.jetpack = true;
@@ -195,17 +223,19 @@ class ReaperBrain implements BotBrain {
     c.mouseAimY = Math.round(ty + tvy * tof - py - drop);
 
     // --- Fire: never on the long run-in, always inside the circle ----------
-    if (dist <= FIRE_RANGE) {
+    if (dist <= cfg.FIRE_RANGE) {
       c.fire = true; // bloom is irrelevant where the reaper fights
     }
   }
 }
 
-export function createReaperEngine(): BotEngine {
+export function createReaperEngine(tweaks?: EngineTweaks): BotEngine {
+  const cfg = resolveTweaks('reaper', REAPER_DEFAULTS, tweaks);
   return {
     id: 'reaper',
     strategy:
       'DIVE BRAWLER — close the gap, drop from above, fight at knife range, never retreat',
-    createBrain: (): BotBrain => new ReaperBrain(),
+    tweaks: cfg,
+    createBrain: (): BotBrain => new ReaperBrain(cfg),
   };
 }

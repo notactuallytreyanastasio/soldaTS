@@ -1,0 +1,12 @@
+{
+  "name": "@soldat/arena",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "cli": "tsx src/cli.ts" },
+  "dependencies": {
+    "@soldat/sim": "workspace:*",
+    "@soldat/client": "workspace:*"
+  },
+  "devDependencies": { "tsx": "^4.19.0" }
+}

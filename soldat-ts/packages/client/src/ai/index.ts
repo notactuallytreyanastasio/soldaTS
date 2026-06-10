@@ -12,3 +12,6 @@ registerEngine('pilot', createPilotEngine);
 registerEngine('reaper', createReaperEngine);
 
 export * from './engine';
+export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
+export { PILOT_DEFAULTS, type PilotConfig } from './pilot';
+export { REAPER_DEFAULTS, type ReaperConfig } from './reaper';

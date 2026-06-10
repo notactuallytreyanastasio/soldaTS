@@ -13,6 +13,7 @@
     "test:strict": "STRICT_F32=1 vitest run",
     "play": "pnpm --filter @soldat/client dev",
     "dev": "pnpm --filter @soldat/client dev",
+    "arena": "pnpm --filter @soldat/arena cli",
     "assets": "bash tools/fetch-assets.sh"
   },
   "devDependencies": {

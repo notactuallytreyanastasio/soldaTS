@@ -9,16 +9,33 @@
 import { createBotState, updateBot, type BotState } from '@soldat/sim';
 import {
   createRoamState,
+  resolveTweaks,
   roamTick,
   type BotBrain,
   type BotEngine,
   type BotEngineContext,
+  type EngineTweaks,
   type RoamState,
 } from './engine';
 
+/** Classic's one strategy knob — tweakable per match (node 170). A `type`
+ *  (not interface) so the implicit index signature satisfies the generic
+ *  Record<string, number> bound in resolveTweaks/BotEngine.tweaks. */
+export type ClassicConfig = {
+  ACCURACY: number;
+};
+
+export const CLASSIC_DEFAULTS: Readonly<ClassicConfig> = {
+  ACCURACY: 9, // Pascal-band aim accuracy
+};
+
 class ClassicBrain implements BotBrain {
-  private readonly brain: BotState = createBotState({ accuracy: 9 });
+  private readonly brain: BotState;
   private readonly roam: RoamState = createRoamState();
+
+  constructor(cfg: ClassicConfig) {
+    this.brain = createBotState({ accuracy: cfg.ACCURACY });
+  }
 
   tick(botIndex: number, ctx: BotEngineContext): void {
     const { world, graph, spectate } = ctx;
@@ -56,10 +73,12 @@ class ClassicBrain implements BotBrain {
   }
 }
 
-export function createClassicEngine(): BotEngine {
+export function createClassicEngine(tweaks?: EngineTweaks): BotEngine {
+  const cfg = resolveTweaks('classic', CLASSIC_DEFAULTS, tweaks);
   return {
     id: 'classic',
     strategy: 'REFLEX BANDS — faithful Pascal port: react by distance, fight where you stand',
-    createBrain: (): BotBrain => new ClassicBrain(),
+    tweaks: cfg,
+    createBrain: (): BotBrain => new ClassicBrain(cfg),
   };
 }

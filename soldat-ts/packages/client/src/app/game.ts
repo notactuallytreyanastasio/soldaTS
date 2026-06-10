@@ -173,6 +173,9 @@ export interface GameOptions {
   tuning?: Partial<GameTuning> | undefined;
   /** Round length in sim ticks; 0/undefined = endless. Only enforced when teamsEnabled. */
   roundTicks?: number | undefined;
+  /** Per-engine tweak overrides, keyed by engine id; applied when engines are
+   *  instantiated (mixed matches: each side's tweaks tracked separately). */
+  engineTweaks?: Record<string, Record<string, number>> | undefined;
 }
 
 // --- Timed rounds (goal node 157) -------------------------------------------
@@ -260,6 +263,15 @@ export class Game {
   /** Optional shot hook — invoked for every bullet spawned (telemetry). */
   onShot: ((shooter: number) => void) | null = null;
 
+  /**
+   * Replay/training hook (goal node 170) — fires once per sim tick
+   * immediately after every living brain has written its control and BEFORE
+   * firing/physics run, so a recorder reads exactly the observation the
+   * brains acted on plus the action they chose. `tick` is
+   * world.mainTickCounter at decision time.
+   */
+  onBrainsTicked: ((tick: number) => void) | null = null;
+
   private accumulator = 0;
   private readonly spectate: boolean;
   private readonly spawns: readonly { x: number; y: number }[];
@@ -285,6 +297,9 @@ export class Game {
    * scoreboard counting kills per engine (goal node 148).
    */
   private engines: BotEngine[];
+  /** Per-engine tweak overrides (engine id → knob overrides), frozen for the
+   *  match: setEngine hot-swaps preserve them so provenance stays accurate. */
+  private readonly engineTweaks: Record<string, Record<string, number>>;
   /** Per-bot engine id (mixed matches assign round-robin). */
   private readonly botEngine = new Map<number, string>();
   /** Per-sprite team (1 red / 2 blue); empty in FFA. Survives respawns. */
@@ -342,7 +357,8 @@ export class Game {
     // Bots. `aiEngine` may be one id ('pilot') or a comma list
     // ('classic,pilot') — a list splits the bots round-robin into a MIXED
     // match where the engines fight each other in the same arena.
-    this.engines = Game.resolveEngines(opts.aiEngine);
+    this.engineTweaks = opts.engineTweaks ?? {};
+    this.engines = Game.resolveEngines(opts.aiEngine, this.engineTweaks);
     this.teamsEnabled = opts.teams ?? this.engineGroups().length > 1;
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
@@ -388,13 +404,22 @@ export class Game {
     return this.botTeam.get(index) ?? 0;
   }
 
-  /** Parse 'a' or 'a,b,...' into engine instances (unknown ids → classic). */
-  private static resolveEngines(spec: string | undefined): BotEngine[] {
+  /** Parse 'a' or 'a,b,...' into engine instances (unknown ids → classic),
+   *  threading each id's tweak overrides into its factory. */
+  private static resolveEngines(
+    spec: string | undefined,
+    tweaks: Record<string, Record<string, number>>,
+  ): BotEngine[] {
     const ids = (spec ?? 'classic')
       .split(',')
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
-    return (ids.length > 0 ? ids : ['classic']).map((id) => createEngine(id));
+    return (ids.length > 0 ? ids : ['classic']).map((id) => createEngine(id, tweaks[id]));
+  }
+
+  /** RESOLVED full config of engine `id` in this match (undefined if not in play). */
+  resolvedTweaks(id: string): Readonly<Record<string, number>> | undefined {
+    return this.engines.find((e) => e.id === id)?.tweaks;
   }
 
   /** Active engine id(s) — mixed matches join with '+' (telemetry-compact). */
@@ -425,7 +450,8 @@ export class Game {
    * fuel, and ammo carry over untouched — only the thinking changes.
    */
   setEngine(spec: string): void {
-    this.engines = Game.resolveEngines(spec);
+    // Hot-swap PRESERVES the match's tweaks — provenance survives the E key.
+    this.engines = Game.resolveEngines(spec, this.engineTweaks);
     this.bots.forEach((bot, b) => {
       const engine = this.engineForSlot(b);
       this.botEngine.set(bot.index, engine.id);
@@ -613,6 +639,10 @@ export class Game {
       if (s === undefined || s.deadMeat) continue;
       bot.brain.tick(bot.index, this.engineCtx);
     }
+
+    // Replay seam: brains have thought, nothing has moved yet — a recorder
+    // sampling here gets (observation, chosen action) pairs.
+    this.onBrainsTicked?.(this.world.mainTickCounter);
 
     // Firing: anyone holding fire whose weapon is off cooldown spawns a bullet.
     const clock = this.world.mainTickCounter;

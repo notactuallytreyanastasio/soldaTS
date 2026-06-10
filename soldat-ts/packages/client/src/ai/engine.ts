@@ -31,15 +31,21 @@ export interface BotBrain {
   tick(botIndex: number, ctx: BotEngineContext): void;
 }
 
+/** A tweak set: subset of a brain's numeric config, keyed by knob name. */
+export type EngineTweaks = Record<string, number>;
+
 /** An engine = a named brain factory that can describe its strategy. */
 export interface BotEngine {
   readonly id: string;
   /** One-line strategy description (shown in the per-window engine banner). */
   readonly strategy: string;
+  /** The RESOLVED full numeric config this engine's brains run with
+   *  (defaults + applied tweaks) — consumers report provenance from this. */
+  readonly tweaks: Readonly<Record<string, number>>;
   createBrain(): BotBrain;
 }
 
-type EngineFactory = () => BotEngine;
+type EngineFactory = (tweaks?: EngineTweaks) => BotEngine;
 const REGISTRY = new Map<string, EngineFactory>();
 
 /** Register an engine factory under its id (last registration wins). */
@@ -54,14 +60,41 @@ export function engineIds(): readonly string[] {
 
 /**
  * Resolve an engine by id; unknown ids fall back to `classic` so a typo'd
- * ?ai= never bricks a match.
+ * ?ai= never bricks a match. `tweaks` (goal node 170) are per-brain config
+ * overrides — passed through to the factory, which resolves them against its
+ * defaults (unknown keys warn-ignored).
  */
-export function createEngine(id: string | undefined): BotEngine {
+export function createEngine(id: string | undefined, tweaks?: EngineTweaks): BotEngine {
   const factory = REGISTRY.get(id ?? 'classic') ?? REGISTRY.get('classic');
   if (factory === undefined) {
     throw new Error('no bot engines registered (classic missing)');
   }
-  return factory();
+  return factory(tweaks);
+}
+
+/**
+ * Resolve defaults + overrides. Unknown keys and non-finite values are
+ * IGNORED with a console.warn — a typo'd knob never bricks a match. Pure:
+ * the defaults object is never mutated.
+ */
+export function resolveTweaks<T extends Record<string, number>>(
+  engineId: string,
+  defaults: Readonly<T>,
+  tweaks: EngineTweaks | undefined,
+): T {
+  const out: Record<string, number> = { ...defaults };
+  for (const [k, v] of Object.entries(tweaks ?? {})) {
+    if (!(k in defaults)) {
+      console.warn(`[ai] ${engineId}: ignoring unknown tweak '${k}'`);
+      continue;
+    }
+    if (typeof v !== 'number' || !Number.isFinite(v)) {
+      console.warn(`[ai] ${engineId}: ignoring non-finite tweak '${k}'`);
+      continue;
+    }
+    out[k] = v;
+  }
+  return out as T;
 }
 
 // ---------------------------------------------------------------------------
