@@ -52,3 +52,15 @@ Release
 # arena-live site builder is SOURCE, not a build artifact (build.* above
 # is for the old Pascal/C++ build dirs)
 !soldat-ts/arena-live/build.mjs
+
+node_modules
+
+packages/arena/node_modules/
+packages/client/node_modules/
+packages/netcode/node_modules/
+packages/sim/node_modules/
+packages/assets/node_modules/
+packages/modding/node_modules/
+packages/protocol/node_modules/
+
+datasets/
