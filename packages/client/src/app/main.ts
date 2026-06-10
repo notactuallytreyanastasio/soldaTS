@@ -27,6 +27,7 @@ import { EntityRenderer } from '../render/entityRender';
 import { InputController } from '../input/input';
 import { Hud, type HudState, type HudScores } from '../ui/hud';
 import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
+import { isBareUrl, showMenuScreen } from '../ui/menuScreen';
 import { START_HEALTH } from '../ui/helpers';
 import { BloodFx, Crosshair } from '../render/fx';
 import { resolveWildcard } from './wildcardChance';
@@ -531,6 +532,14 @@ function showSpectateHint(): HTMLDivElement {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  // Bare URL (no mode params at all): show the START MENU and stop — no game
+  // boots. Every parameterised URL (all recorded watch links carry ?spectate)
+  // skips this and behaves exactly as before; the old bare-URL default
+  // (auto-start the spectate broadcast) is the menu's 'watch' link now.
+  if (isBareUrl()) {
+    showMenuScreen();
+    return;
+  }
   // Duel mode: hand the page over to two side-by-side matches and stop —
   // each iframe boots its own full game through this same entry point.
   const duel = parseDuel();
@@ -568,13 +577,29 @@ async function main(): Promise<void> {
   // Gameplay-tuning variant (tournament tiles each run a different one;
   // unknown/absent names are baseline = stock rules).
   const variant = resolveVariant(variantName);
-  const explicitMap = new URLSearchParams(window.location.search).has('map');
+  const urlParams = new URLSearchParams(window.location.search);
+  const explicitMap = urlParams.has('map');
+  const explicitArena = urlParams.has('arena');
   let map: PmsMap;
   let spawns: readonly { x: number; y: number }[];
-  if (spectate && !explicitMap) {
+  if (!explicitMap) {
     // Generated arena family: ?arena=N rolls a deterministic Skyreach-kin
-    // map; 0 (default) is the canonical hand-built layout.
-    const gen = generateArena(arenaSeed);
+    // map; 0 (spectate default) is the canonical hand-built layout. PLAY
+    // mode without an explicit ?arena rolls a RANDOM seed (goal node 372) —
+    // Math.random is fine here: play is never recorded; the deterministic
+    // paths (spectate/headless, which must replay byte-identically) only
+    // ever take the parsed arenaSeed. The rolled seed is written back into
+    // the URL so a reload reproduces the same map.
+    let genSeed = arenaSeed;
+    if (!spectate && !explicitArena) {
+      genSeed = 1 + Math.floor(Math.random() * 999);
+      history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${window.location.search}&arena=${genSeed}${window.location.hash}`,
+      );
+    }
+    const gen = generateArena(genSeed);
     map = gen.map;
     spawns = gen.spawns;
   } else {
