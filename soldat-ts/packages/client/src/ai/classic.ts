@@ -59,6 +59,7 @@ class ClassicBrain implements BotBrain {
 export function createClassicEngine(): BotEngine {
   return {
     id: 'classic',
+    strategy: 'REFLEX BANDS — faithful Pascal port: react by distance, fight where you stand',
     createBrain: (): BotBrain => new ClassicBrain(),
   };
 }

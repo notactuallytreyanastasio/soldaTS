@@ -45,6 +45,7 @@ import {
   type SubjectInfo,
 } from './director';
 import { MatchRecorder } from './telemetry';
+import { engineIds } from '../ai';
 
 // ---------------------------------------------------------------------------
 // Synthetic map
@@ -234,35 +235,58 @@ function showDuel(engines: readonly string[]): void {
     col.style.cssText =
       `flex:1 1 ${basis};display:flex;flex-direction:column;min-width:0;position:relative;` +
       `min-height:${engines.length > 2 ? 'calc(50% - 1px)' : '100%'}`;
-    const label = document.createElement('div');
-    label.textContent = `ENGINE: ${engine.toUpperCase()}`;
-    label.style.cssText = [
-      'position:absolute',
-      'top:8px',
-      'left:50%',
-      'transform:translateX(-50%)',
-      'z-index:10',
-      'color:#fff',
-      'font:bold 14px ui-monospace,monospace',
-      'letter-spacing:0.2em',
-      'background:rgba(10,12,16,0.6)',
-      'padding:4px 12px',
-      'border-radius:4px',
-      'pointer-events:none',
-    ].join(';');
     const frame = document.createElement('iframe');
     frame.src = `${window.location.pathname}?spectate&ai=${encodeURIComponent(engine)}`;
     frame.style.cssText = 'flex:1;border:0;width:100%;height:100%';
-    col.append(label, frame);
+    col.append(frame);
     row.appendChild(col);
   }
   document.body.appendChild(row);
 }
 
+/** Per-engine banner accent so windows are tellable-apart at a glance. */
+const ENGINE_COLORS: Record<string, string> = {
+  classic: '#ffb347', // amber — the old reflexes
+  pilot: '#47d8ff', // cyan — the new aerialist
+};
+
+/**
+ * BIG top-center banner naming the engine driving this window and its
+ * strategy in one line. Returns an updater so the E-key hot-swap can relabel
+ * the window live.
+ */
+function showEngineBanner(game: Game): () => void {
+  const banner = document.createElement('div');
+  banner.style.cssText = [
+    'position:fixed',
+    'top:34px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'z-index:20',
+    'text-align:center',
+    'pointer-events:none',
+    'font-family:ui-monospace,Menlo,monospace',
+    'text-shadow:0 2px 8px rgba(0,0,0,0.9)',
+  ].join(';');
+  const name = document.createElement('div');
+  name.style.cssText = 'font-size:34px;font-weight:bold;letter-spacing:0.35em';
+  const tagline = document.createElement('div');
+  tagline.style.cssText = 'font-size:12px;color:#cfd6e4;margin-top:2px;letter-spacing:0.08em';
+  banner.append(name, tagline);
+  document.body.appendChild(banner);
+  const update = (): void => {
+    name.textContent = game.aiEngineId.toUpperCase();
+    name.style.color = ENGINE_COLORS[game.aiEngineId] ?? '#ffffff';
+    tagline.textContent = game.aiStrategy;
+  };
+  update();
+  return update;
+}
+
 /** Fixed bottom-left hint so a spectator knows the camera keys. */
-function showSpectateHint(engineLabel: string): void {
+function showSpectateHint(): void {
   const hint = document.createElement('div');
-  hint.textContent = `SPECTATE [${engineLabel}] — ←/→ follow · A auto · ?play to fight · ?duel to race engines`;
+  hint.textContent = 'SPECTATE — ←/→ follow · A auto · E swap brain · ?play to fight · ?duel to race engines';
   hint.style.cssText = [
     'position:fixed',
     'left:12px',
@@ -465,8 +489,10 @@ async function main(): Promise<void> {
     showControlsScreen();
   }
   if (spectate) {
-    showSpectateHint(game.aiEngineId);
+    showSpectateHint();
   }
+  // Big engine banner: which brain drives this window (updates on hot-swap).
+  const updateEngineBanner = spectate ? showEngineBanner(game) : (): void => {};
 
   const player = game.world.sprites[game.playerIndex];
   if (player === undefined) {
@@ -580,6 +606,15 @@ async function main(): Promise<void> {
         director.setManual(live[prev] ?? director.followed, tick);
       } else if (key === 'a' || key === '0') {
         director.setAuto();
+      } else if (key === 'e') {
+        // HOT-SWAP the brain: cycle to the next registered engine. Sprites,
+        // scores, and fuel carry over — only the thinking changes.
+        const ids = engineIds();
+        const next = ids[(ids.indexOf(game.aiEngineId) + 1) % ids.length];
+        if (next !== undefined) {
+          game.setEngine(next);
+          updateEngineBanner();
+        }
       }
     });
   }

@@ -194,6 +194,7 @@ class PilotBrain implements BotBrain {
 export function createPilotEngine(): BotEngine {
   return {
     id: 'pilot',
+    strategy: 'FIRST-PRINCIPLES AERIAL — take height, hold the range band, juke, reload behind cover',
     createBrain: (): BotBrain => new PilotBrain(),
   };
 }

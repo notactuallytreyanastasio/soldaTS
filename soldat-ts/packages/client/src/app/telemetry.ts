@@ -323,7 +323,8 @@ export class MatchRecorder {
     };
     return {
       schema: SCHEMA,
-      meta: this.meta,
+      // engine re-read at dump time: the E-key hot-swap can change it.
+      meta: { ...this.meta, engine: this.game.aiEngineId },
       ...raw,
       derived: deriveStats(raw, this.meta.names),
     };

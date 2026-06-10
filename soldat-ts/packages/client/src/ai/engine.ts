@@ -31,9 +31,11 @@ export interface BotBrain {
   tick(botIndex: number, ctx: BotEngineContext): void;
 }
 
-/** An engine = a named brain factory. */
+/** An engine = a named brain factory that can describe its strategy. */
 export interface BotEngine {
   readonly id: string;
+  /** One-line strategy description (shown in the per-window engine banner). */
+  readonly strategy: string;
   createBrain(): BotBrain;
 }
 

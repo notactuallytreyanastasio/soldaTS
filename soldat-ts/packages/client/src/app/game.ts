@@ -23,7 +23,12 @@ import {
   type PmsWaypoint,
   type Gun,
 } from '@soldat/sim';
-import { createEngine, type BotBrain, type BotEngineContext } from '../ai';
+import {
+  createEngine,
+  type BotBrain,
+  type BotEngine,
+  type BotEngineContext,
+} from '../ai';
 
 type PolyMapSource = Parameters<typeof buildPolyMap>[0];
 
@@ -107,8 +112,9 @@ export function applyAimAssist(
 
 interface BotEntry {
   readonly index: number;
-  /** The bot's brain, behind the engine adapter (decision node 136). */
-  readonly brain: BotBrain;
+  /** The bot's brain, behind the engine adapter (decision node 136).
+   *  Mutable: setEngine() hot-swaps brains mid-match. */
+  brain: BotBrain;
 }
 
 export interface GameOptions {
@@ -187,8 +193,8 @@ export class Game {
   private readonly sprayHeat: number[] = [];
   /** Context handed to every bot brain (graph resolves live via getter). */
   private readonly engineCtx: BotEngineContext;
-  /** Resolved bot-AI engine id (for HUD labels / telemetry). */
-  readonly aiEngineId: string;
+  /** The active bot-AI engine (hot-swappable via setEngine). */
+  private engine: BotEngine;
 
   constructor(opts: GameOptions = {}) {
     this.world = createWorld();
@@ -225,13 +231,34 @@ export class Game {
     }
 
     // Bots, each driven by a brain from the selected engine.
-    const engine = createEngine(opts.aiEngine);
-    this.aiEngineId = engine.id;
+    this.engine = createEngine(opts.aiEngine);
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
       const index = this.playerIndex + 1 + b;
       this.spawnSprite(index, this.spawnFor(index));
-      this.bots.push({ index, brain: engine.createBrain() });
+      this.bots.push({ index, brain: this.engine.createBrain() });
+    }
+  }
+
+  /** Active bot-AI engine id (for banners / telemetry). */
+  get aiEngineId(): string {
+    return this.engine.id;
+  }
+
+  /** One-line strategy description of the active engine. */
+  get aiStrategy(): string {
+    return this.engine.strategy;
+  }
+
+  /**
+   * HOT-SWAP the bot-AI engine mid-match: every bot gets a fresh brain from
+   * the new engine on the next tick. Sprites, scores, fuel, and ammo carry
+   * over untouched — only the thinking changes.
+   */
+  setEngine(id: string): void {
+    this.engine = createEngine(id);
+    for (const bot of this.bots) {
+      bot.brain = this.engine.createBrain();
     }
   }
 
