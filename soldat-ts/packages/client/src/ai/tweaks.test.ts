@@ -246,6 +246,7 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
 
   it('SHRIKE_DEFAULTS', () => {
     expect(SHRIKE_DEFAULTS).toEqual({
+      ESCORT_FOCUS: 0,
       BLAST_RANGE: 200,
       EFFECT_MAX: 280,
       PUSH_DIST: 90,

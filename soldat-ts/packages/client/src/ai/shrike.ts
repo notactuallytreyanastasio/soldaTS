@@ -51,6 +51,7 @@ const SPAS_BULLET_SPEED = 14; // px/tick — breacher lead/drop math
  *  A `type` (not interface) so the implicit index signature satisfies the
  *  generic Record<string, number> bound in resolveTweaks/BotEngine.tweaks. */
 export type ShrikeConfig = {
+  ESCORT_FOCUS: number;
   BLAST_RANGE: number;
   EFFECT_MAX: number;
   PUSH_DIST: number;
@@ -83,6 +84,10 @@ export type ShrikeConfig = {
 };
 
 export const SHRIKE_DEFAULTS: Readonly<ShrikeConfig> = {
+  ESCORT_FOCUS: 0, // 1 = overwatch shares the escort focus target; 0 = every
+  // non-carrier duels independently (kestrel-style). The A/B vs hydra said
+  // shared focus chases the rotation even as an escort — independent dueling
+  // with a breacher in the mix is the stronger composition.
   BLAST_RANGE: 200, // px — inside this: every pump, full commitment
   EFFECT_MAX: 280, // px — first shells; beyond this the fan is confetti
   PUSH_DIST: 90, // px — closer: push THROUGH (re-opening range helps them)
@@ -236,6 +241,12 @@ class ShrikeBrain implements BotBrain {
 
     this.scanBullets(botIndex, ctx);
 
+    // Role machinery only runs while a breach exists. With no SPAS on the
+    // field (stock match, or the carrier is down) the shared-focus targeting
+    // is pure downside — hydra's rotation starves exactly that rule, and the
+    // controlled A/B (arena 57) showed stock shrike at 0.82 K/D where plain
+    // kestrel dueling posts 1.05. No breacher → fight like a kestrel.
+    const breacher = this.breacherOf(botIndex, ctx);
     const cur = world.sprites[this.focus];
     const focusAlive =
       this.focus > 0 &&
@@ -243,13 +254,13 @@ class ShrikeBrain implements BotBrain {
       cur.active &&
       !cur.deadMeat &&
       !(s.team > 0 && cur.team === s.team);
-    if (!focusAlive || clock % cfg.FOCUS_RETARGET === 0) {
+    if (breacher > 0 && (!focusAlive || clock % cfg.FOCUS_RETARGET === 0)) {
       this.focus = this.pickFocus(botIndex, ctx);
     }
 
-    if (this.isBreacher(botIndex, ctx)) {
+    if (breacher === botIndex) {
       this.breach(botIndex, ctx);
-    } else if (this.focus > 0) {
+    } else if (breacher > 0 && this.focus > 0 && cfg.ESCORT_FOCUS > 0) {
       this.overwatch(botIndex, this.focus, ctx);
     } else {
       const seen = findTarget(world, botIndex);

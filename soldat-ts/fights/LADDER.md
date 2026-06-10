@@ -7,6 +7,16 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
+**FALCONER** — `fights/falconer-shrike.json` (shrike v3, factory defaults).
+Ninth doctrine, the first weapon-aware brain, rebuilt on a controlled A/B
+that dissolved the "shotgun paradox": no SPAS on the field → pure kestrel
+dueling (no shared focus for the hydra's rotation to starve); when the
+wildcard arms a carrier it becomes the BREACHER (silent high approach,
+gravity dive, shells only inside the fan's kill envelope) while teammates
+keep dueling. Took the belt 3–0 under live-fire chance-wildcard rules.
+
+## Previous champions
+
 **LERNA** — `fights/lerna.json` (hydra, factory defaults). Eighth doctrine:
 cut one head, the others bite. The wolf's focus arithmetic is published, so
 the hydra starves it: when a kill-secure is imminent (lowest head under
@@ -19,8 +29,6 @@ shoot, cooldown-locked taps, EMA lead, true 0.135 drop, closest-approach
 bullet dodge). Selection is stateless (argmin health), so dead heads
 respawn whole, rejoin the front, and the rotation continues — the rotation
 IS the doctrine.
-
-## Previous champion
 
 **AKELA** — `fights/akela.json` (wolf, factory defaults). Sixth doctrine:
 the pack hunter — the team is the unit of selection. All three wolves
@@ -43,6 +51,7 @@ one 3v1.
 | 2026-06-10 | AKELA (wolf, factory defaults) | VERONICA (matador, factory defaults) | **AKELA 2–1** (36–34, 43–39, 35–38) | #89 | `20260610-054754-AKELA-wolf-vs-VERONICA-matador` |
 | 2026-06-10 | FALCONER (plover, broken-wing gambit) | AKELA (wolf, factory defaults) | **AKELA 3–0** (48–38, 46–39, 39–35) | #41 | `20260610-060914-FALCONER-plover-vs-AKELA-wolf` |
 | 2026-06-10 | LERNA (hydra, factory defaults) | AKELA (wolf, factory defaults) | **LERNA 2–1** (40–34, 34–34 dom, 34–35) | #53 | `20260610-062053-LERNA-hydra-vs-AKELA-wolf` |
+| 2026-06-10 | FALCONER (shrike v3, hardware-gated roles) | LERNA (hydra, factory defaults) | **FALCONER 3–0** (28–22 ×3) | #73 | `20260610-142049-FALCONER-shrike-vs-LERNA-hydra` |
 
 ## Coaching-session archive
 
