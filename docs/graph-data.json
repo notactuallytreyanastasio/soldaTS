@@ -1847,6 +1847,17 @@
       "created_at": "2026-06-09T23:41:05.165613-04:00",
       "updated_at": "2026-06-09T23:41:05.165613-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"a3fe86f\",\"confidence\":95}"
+    },
+    {
+      "id": 169,
+      "change_id": "d41a28c9-70f7-4750-9a32-672c02cfd29a",
+      "node_type": "observation",
+      "title": "LINE IN THE SAND: v0.2-ai-arena tagged at 9aae1da — AI arena era complete, large turn coming",
+      "description": "User: 'Let's commit where this is at as a line in the sand. we are going to take a large turn now.' State at the tag: 3 bot engines (classic/pilot/reaper) behind the adapter, red-vs-blue engine warfare with chevrons + MVP scoreboards + leaderboards, 10-min rounds with winner banners, 4-game knob-variant tournaments with crowned champions, telemetry pipeline + headless runner, keyboard-only human play. 439 tests. All pushed to origin main+develop, annotated tag v0.2-ai-arena.",
+      "status": "pending",
+      "created_at": "2026-06-09T23:43:31.041658-04:00",
+      "updated_at": "2026-06-09T23:43:31.041658-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3939,6 +3950,17 @@
       "weight": 1.0,
       "rationale": "Follow-on legibility fix",
       "created_at": "2026-06-09T23:41:05.310471-04:00"
+    },
+    {
+      "id": 201,
+      "from_node_id": 163,
+      "to_node_id": 169,
+      "from_change_id": "48636ab4-890d-44b2-96a7-c8275fc5cda2",
+      "to_change_id": "d41a28c9-70f7-4750-9a32-672c02cfd29a",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Era closed at the tag",
+      "created_at": "2026-06-09T23:43:31.271331-04:00"
     }
   ]
 }
