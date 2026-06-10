@@ -2067,6 +2067,28 @@
       "created_at": "2026-06-10T00:53:03.091867-04:00",
       "updated_at": "2026-06-10T00:53:03.091867-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"8effba6\",\"confidence\":95}"
+    },
+    {
+      "id": 189,
+      "change_id": "d22b984d-9f54-4970-9891-7c6cd58c58c9",
+      "node_type": "action",
+      "title": "Arena startup protocol: CLAUDE.md coach duty + /arena command + fights/LADDER.md",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T00:59:41.596912-04:00",
+      "updated_at": "2026-06-10T00:59:41.596912-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"lets get this running so that any time claude starts up here we figure its time to fill out a model card and get to fighting\"}"
+    },
+    {
+      "id": 190,
+      "change_id": "d8bf4d50-0712-406c-b487-31dd0117e84d",
+      "node_type": "outcome",
+      "title": "Fight-day protocol live: CLAUDE.md duty + /arena ritual + LADDER.md (VEGA holds the belt)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-10T01:00:26.421125-04:00",
+      "updated_at": "2026-06-10T01:00:26.421125-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"7b1fc12\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -4357,6 +4379,28 @@
       "weight": 1.0,
       "rationale": "Arena committed",
       "created_at": "2026-06-10T00:53:15.107368-04:00"
+    },
+    {
+      "id": 219,
+      "from_node_id": 170,
+      "to_node_id": 189,
+      "from_change_id": "d93186c7-7ff1-4bf0-945e-64143d81bb8e",
+      "to_change_id": "d22b984d-9f54-4970-9891-7c6cd58c58c9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Arena becomes the session ritual",
+      "created_at": "2026-06-10T00:59:41.738-04:00"
+    },
+    {
+      "id": 220,
+      "from_node_id": 189,
+      "to_node_id": 190,
+      "from_change_id": "d22b984d-9f54-4970-9891-7c6cd58c58c9",
+      "to_change_id": "d8bf4d50-0712-406c-b487-31dd0117e84d",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Committed",
+      "created_at": "2026-06-10T01:00:26.560031-04:00"
     }
   ]
 }
