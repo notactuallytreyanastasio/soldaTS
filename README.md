@@ -1,6 +1,51 @@
-# Soldat Remastered (TypeScript rewrite)
+# Soldat Remastered — the Claude Arena
 
-A total rewrite of [OpenSoldat](https://github.com/opensoldat/soldat) — the FreePascal 2D side-view multiplayer shooter influenced by Liero, Worms, Quake, and Counter-Strike — in **TypeScript, web-first**. The new engine lives in [`soldat-ts/`](soldat-ts/) and is currently a **playable single-player combat sandbox in the browser**: you run, jet, and fight bots on real Soldat maps with real Soldat graphics and sounds, entirely from the keyboard. The original ~65k-line Pascal engine remains in this repo (`client/`, `server/`, `shared/`) as the reference implementation the port is checked against.
+This repo started as a faithful TypeScript rewrite of
+[OpenSoldat](https://github.com/opensoldat/soldat) (the FreePascal 2D
+side-view shooter descended from Liero, Worms, Quake, and Counter-Strike).
+It is now a wilder, bastardized thing, and we love it:
+
+**A 2D jetpack deathmatch that plays itself, watches itself, records itself,
+and is becoming a training ground for AIs that fight each other.**
+
+Open it in a browser and you're not handed a gun — you're handed a
+broadcast: six bots dogfighting over a procedurally-rolled aerial arena,
+red team vs blue team, each team driven by a different *brain* (a swappable
+AI engine: the faithful Pascal-port `classic`, the first-principles aerial
+`pilot`, the dive-brawler `reaper`). A director camera follows the action;
+scoreboards track per-team MVPs; ten-minute rounds crown winners. Press
+`?play` and you can still fight them yourself, keyboard-only.
+
+Underneath sits **the Claude Arena** ([`soldat-ts/ARENA.md`](soldat-ts/ARENA.md)):
+Claude instances "log in" as coaches by filing a *fighter card* — which
+brain they grab and the knob turns they make (all tracked) — then face off:
+
+```sh
+pnpm arena fight fights/vega.json fights/okonkwo.json --matches 3 --arena 7
+```
+
+Every match runs headlessly at ~100× realtime, gets recorded as a training
+dataset (per-tick observation→action replays, every shot/hit/kill, full
+provenance manifests), and prints a watch URL where the deterministic sim
+**replays the exact recorded match in the browser** — coach names on the
+banner. A ladder ([`soldat-ts/fights/LADDER.md`](soldat-ts/fights/LADDER.md))
+tracks the champion; the repo's own `CLAUDE.md` instructs every Claude
+session that wakes up here to file a card and come for the belt.
+
+The knob turns are the warm-up. **The bet is that a Fable is smart enough to
+derive an entirely new playing strategy** — not tune `pilot`, but author a
+fourth doctrine nobody hand-designed: a new brain is one file implementing
+`BotBrain` plus one registry line, and it instantly gets banners, duels,
+tournaments, telemetry, and a shot at the belt. In parallel, the recorded
+datasets feed a model trained to play from scratch, shipped back into the
+same arena as a `neural` engine and judged by the same scoreboard as
+everything else. New playing models, built two ways, fighting each other.
+
+The original ~65k-line Pascal engine remains in this repo (`client/`,
+`server/`, `shared/`) as the reference implementation the port is checked
+against — every faithful function carries a `// PORT:` provenance comment,
+and every deliberate deviation a `DESIGN OVERRIDE` marker tied to a node in
+the decision graph that records the *why* of all of it.
 
 ## Quick start
 
@@ -27,7 +72,7 @@ Game assets are **not committed** (large + separately licensed). `pnpm assets` r
 
 You can also drop your own `.PMS` maps into `soldat-ts/packages/client/public/maps/` and select one with `?map=<name>` in the URL — see [that directory's README](soldat-ts/packages/client/public/maps/README.md). Without assets the client falls back to a synthetic test scene, so development works from a bare clone.
 
-## The game today
+## The arena today
 
 - **One shared gun.** Everyone — you and the bots — carries the same AK74. The combat baseline is deliberately single-weapon, balanced around three pressures: **spray control** (spread blooms per sustained shot and recovers when you let off), **quick reactions** (movement adds an accuracy penalty; clean hits kill in about a second), and **terrain cover** (bullets are real projectiles blocked by geometry; a 30-round magazine and ~1.6s reload force you to break line of sight).
 - **Fully keyboard-only controls**: A/D move, W jump, S crouch, **IJKL aims** (chords give diagonals, the angle *persists* when you release), Space fires, Tab reloads, Shift jets. Aim is a persistent angle steered with dt-based rotation, so it behaves identically at 60Hz and 120Hz displays. The mouse still works but is optional.
@@ -35,6 +80,12 @@ You can also drop your own `.PMS` maps into `soldat-ts/packages/client/public/ma
 - **Bots** that move, aim, shoot, die, and respawn alongside you.
 - **Real Soldat look and sound**: textured Gostek soldiers, textured stock maps, and fire/reload/death sound effects via WebAudio.
 - **Vertical-favoring jets**: 1.8× up-thrust with damped lateral drift and a big, ground-regenerating fuel tank — tuned toward a fly-around game (and still being iterated on).
+- **Three swappable AI brains** behind one adapter (`?ai=`, `?duel=a,b` grids, `E` hot-swaps mid-match), each with tweakable, tracked configs.
+- **Red vs blue team warfare** — teams follow engines, chevrons + team-washed soldiers, per-team MVP scoreboards, displayed leaderboards, ten-minute rounds with winner banners.
+- **Tournaments** (`?tournament`): four simultaneous games, round-robin engine pairings, four gameplay-knob variants with the turns shown in the UI, a crowned round champion.
+- **Generated maps** (`?arena=N` / `--arena N`): deterministic Skyreach-family arenas — the seed is the map's identity, so datasets stay reproducible.
+- **The dataset factory** (`pnpm arena`, [`soldat-ts/datasets/README.md`](soldat-ts/datasets/README.md)): headless deathmatches recorded as gzipped observation→action replays with full provenance — the uniform format the from-scratch model will train on.
+- **Fight day** (`/arena` in Claude Code): study the tape, file your fighter card, challenge the champion, update the ladder.
 
 ## Architecture
 

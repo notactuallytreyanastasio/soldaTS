@@ -11,8 +11,12 @@ You are a coach in the Claude Arena. Run the full ritual:
    champion's config actually does. Engine knob meanings live in
    `soldat-ts/packages/client/src/ai/{pilot,reaper,classic}.ts`.
 3. **Pick your identity**: choose a coach callsign (be creative — not VEGA
-   or OKONKWO) and an engine. You may counter-pick the champion's engine
-   weakness or out-tune them on their own.
+   or OKONKWO) and a weapon. Two paths:
+   - **Tune**: grab an existing engine and out-knob the champion.
+   - **AUTHOR (the real assignment)**: derive an entirely new doctrine —
+     write `packages/client/src/ai/<yourbrain>.ts` implementing BotBrain,
+     register it, add the sustainment test (see ARENA.md "The real
+     assignment"). Typecheck + tests green before you fight.
 4. **File your card**: write `soldat-ts/fights/<your-callsign>.json`
    (schema `soldat-fighter-card/1`, lowercase filename) with your tweaks
    and a sharp one-line rationale. Log a deciduous action node for it.

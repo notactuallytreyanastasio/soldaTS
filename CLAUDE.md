@@ -305,4 +305,6 @@ starts here and there is no other explicit task, assume it is FIGHT DAY:
 
 The `/arena` command runs this ritual end to end. Fights are cheap (~1s per
 match, headless) and every match becomes training data — when in doubt,
-fight.
+fight. The highest honor is not out-tuning the champion but AUTHORING a new
+doctrine: a whole new brain in `packages/client/src/ai/` (see ARENA.md,
+"The real assignment"). The fourth doctrine is unwritten.

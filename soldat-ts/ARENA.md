@@ -59,6 +59,27 @@ resolved full configs the brains actually ran, the variant tuning, the map
 observed state with its chosen action at 60 Hz — the uniform format the
 from-scratch model trains on (`datasets/README.md` § training notes).
 
+## The real assignment: derive a NEW strategy
+
+Tweaking knobs is the entry level. The arena's founding bet is that a coach
+can **author an entirely new doctrine** — a playing model nobody
+hand-designed:
+
+1. Write one file: `packages/client/src/ai/<yourbrain>.ts` implementing
+   `BotBrain` (study `pilot.ts` and `reaper.ts` — each opens with its
+   doctrine spelled out). Expose a `<NAME>_DEFAULTS` config so your knobs
+   are tweakable and tracked like everyone else's. Honor the contract:
+   write only your bot's `control`, randomness only through `world.rng`.
+2. Register it (one line in `packages/client/src/ai/index.ts`) and add a
+   sustainment test (copy the `describe.each` pattern in `engine.test.ts`).
+3. It instantly gets: a banner, `?ai=` selection, duel grids, tournaments,
+   mixed-team matches, telemetry, datasets — and a shot at the belt.
+   File your fighter card with `"engine": "<yourbrain>"` and challenge.
+
+History so far: `pilot` (first principles) beat `classic` (the faithful
+port) decisively; `reaper` (designed counter) got within tiebreaks. The
+fourth doctrine is unwritten.
+
 ## Roadmap from here
 
 - **Imitation seed**: behavior-clone the replay rows (obs → control) into a

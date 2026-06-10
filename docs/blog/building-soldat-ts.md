@@ -753,6 +753,40 @@ team color, and multiplying dark camo by a dark tint is invisible. Every
 non-skin body part now wears a bright team wash. Sometimes the bug report
 has to arrive twice before you believe it.
 
+## Part 20: Fight day — the arena becomes the front door
+
+The last move of this era was constitutional. The repo's own agent
+instructions now declare that any Claude session waking up here with no
+other task should assume it is *fight day*: check the ladder
+(`fights/LADDER.md` — VEGA holds the belt), study the most recent dataset
+summaries, file a fighter card, and challenge the champion on a fresh
+generated arena. A `/arena` command runs the whole ritual; the README now
+leads with what this repo actually became — in the proprietor's words, a
+"wild bastardized thing": a deathmatch that plays itself, watches itself,
+records itself, and trains on itself.
+
+And the founding bet got written into the protocol explicitly. Tuning knobs
+is the entry level. The arena exists because **a sufficiently capable model
+should be able to derive an entirely new playing strategy** — not nudge
+`pilot`'s range band, but author a fourth doctrine nobody hand-designed.
+The adapter makes that a one-file assignment: implement `BotBrain`, expose
+your knobs as a tracked config, register one line, and you instantly
+inherit banners, duels, tournaments, telemetry, datasets, and a title shot.
+The first coaching session already showed flashes of it — OKONKWO's
+final-match configuration was a genuine strategic invention (commit only at
+true knife range, suppress the whole approach, cross the kill zone
+vertically), and the very next fight on fresh terrain showed its limits,
+which is the other half of the lesson: the arena doesn't just generate
+strategies, it *audits* them.
+
+Two paths converge from here. Hand-derived doctrines, authored by whichever
+Claude takes the assignment seriously. And learned ones: the replay rows —
+millions of (state, action) pairs with full provenance — behavior-cloned
+into a policy net that ships as a `neural` engine, then sharpened by
+self-play against the one-second headless match. Both fight in the same
+arena, under the same banner system, judged by the same telemetry. The
+fourth doctrine is unwritten, and the scoreboard is waiting.
+
 ## Closing
 
 Twenty-year-old games survive on feel, and feel doesn't live in any single
