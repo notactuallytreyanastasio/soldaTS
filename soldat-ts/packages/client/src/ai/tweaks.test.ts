@@ -208,12 +208,13 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
 
   it('HYDRA_DEFAULTS', () => {
     expect(HYDRA_DEFAULTS).toEqual({
-      ROTATE_BELOW: 100,
+      ROTATE_BELOW: 55,
       ANCHOR_MIN: 600,
       ANCHOR_MAX: 760,
       ANCHOR_FIRE_MAX: 700,
       ANCHOR_STUCK_TICKS: 30,
       BEARING_OFF: 340,
+      HIGH_OFF: 0,
       X_SLACK: 40,
       GIVE_GROUND: 240,
       KNIFE_DIST: 170,
@@ -224,6 +225,8 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
       TAP_OPEN: 1,
       EMA_ALPHA: 0.15,
       DROP_G: 0.135,
+      JUKE_MIN_TICKS: 0,
+      JUKE_VAR_TICKS: 22,
       BOB_UP_TICKS: 12,
       BOB_DOWN_MIN: 18,
       BOB_DOWN_VAR: 14,

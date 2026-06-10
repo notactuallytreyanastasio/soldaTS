@@ -67,6 +67,7 @@ export type HydraConfig = {
   ANCHOR_FIRE_MAX: number;
   ANCHOR_STUCK_TICKS: number;
   BEARING_OFF: number;
+  HIGH_OFF: number;
   X_SLACK: number;
   GIVE_GROUND: number;
   KNIFE_DIST: number;
@@ -77,6 +78,8 @@ export type HydraConfig = {
   TAP_OPEN: number;
   EMA_ALPHA: number;
   DROP_G: number;
+  JUKE_MIN_TICKS: number;
+  JUKE_VAR_TICKS: number;
   BOB_UP_TICKS: number;
   BOB_DOWN_MIN: number;
   BOB_DOWN_VAR: number;
@@ -93,12 +96,17 @@ export type HydraConfig = {
 };
 
 export const HYDRA_DEFAULTS: Readonly<HydraConfig> = {
-  ROTATE_BELOW: 100, // health (of 150) — lowest head withdraws once under this
+  ROTATE_BELOW: 55, // health (of 150) — lowest head withdraws once under this.
+  // Swept 0/40/55/70/100 vs the wolf: 55 wins. Rotate only to DENY the
+  // kill-secure; rotating earlier donates a front gun, rotating later is
+  // rotating a corpse.
   ANCHOR_MIN: 600, // px from ENEMY centroid — outside published prey radius/fire max
   ANCHOR_MAX: 760, // px — farther: drift back toward the fight
   ANCHOR_FIRE_MAX: 700, // px — the anchor's planted taps reach this far
   ANCHOR_STUCK_TICKS: 30, // ticks of no horizontal progress while fleeing = climb out
   BEARING_OFF: 340, // px — front slots sit this far left/right of the focus
+  HIGH_OFF: 0, // px — with 3+ fronts the highest index holds this far ABOVE (0 = off;
+  // tested at 200: the top head burns its fuel hovering and dies first — 1-7 vs wolf)
   X_SLACK: 40, // px — horizontal deadband around the slot (plant inside it)
   GIVE_GROUND: 240, // px — prey closer than this: back out (their bloom stops mattering)
   KNIFE_DIST: 170, // px — inside: fire every open tick while backing out
@@ -109,6 +117,8 @@ export const HYDRA_DEFAULTS: Readonly<HydraConfig> = {
   TAP_OPEN: 1, // one shot per period = full volume at zero bloom
   EMA_ALPHA: 0.15, // per-tick velocity smoothing (jukes average to center)
   DROP_G: 0.135, // px/tick² — TRUE bullet gravity (GRAV 0.06 × 2.25)
+  JUKE_MIN_TICKS: 0, // >0: strafe-juke in slot on this rng clock instead of bobbing
+  JUKE_VAR_TICKS: 22, // rng spread of the juke clock
   BOB_UP_TICKS: 12, // jet-pulse length of the hover bob
   BOB_DOWN_MIN: 18, // fall phase length (rng-rolled per cycle)
   BOB_DOWN_VAR: 14,
@@ -144,6 +154,9 @@ class HydraBrain implements BotBrain {
   private dodgeUntil = 0;
   /** Anchor corner handling: climb out when fleeing into geometry. */
   private fleeStuck = 0;
+  /** In-slot strafe-juke clock (used only when JUKE_MIN_TICKS > 0). */
+  private jukeDir: 1 | -1 = 1;
+  private jukeFlipAt = 0;
   private stallTicks = 0;
   private noClimbUntil = 0;
 
@@ -555,7 +568,6 @@ class HydraBrain implements BotBrain {
     const ty = parts.posY[targetIdx] ?? 0;
     const clock = world.mainTickCounter;
     const dist = Math.hypot(tx - px, ty - py);
-    const heightEdge = ty - py; // + = I'm above the target
 
     if (hasLineOfSight(world, { x: px, y: py }, { x: tx, y: ty })) {
       this.lastSeenX = tx;
@@ -584,17 +596,33 @@ class HydraBrain implements BotBrain {
       return;
     }
 
-    // Bearing slot: position-based left/right split among the fronts.
-    const sorted = [...fronts].sort((a, b) => {
-      const ax = parts.posX[a] ?? 0;
-      const bx = parts.posX[b] ?? 0;
-      return ax === bx ? a - b : ax - bx;
-    });
-    const k = Math.max(0, sorted.indexOf(botIndex));
-    const leftCount = Math.ceil(sorted.length / 2);
-    const dir = k < leftCount ? -1 : 1;
-    const slotX = tx + dir * cfg.BEARING_OFF;
+    // Bearing slots: with 3+ fronts the highest index takes TOP (vertical
+    // crossfire — escape from the side lines walks under the plunging one);
+    // the rest split left/right BY POSITION so nobody crosses the prey.
+    const top =
+      fronts.length >= 3 && cfg.HIGH_OFF > 0 ? fronts[fronts.length - 1] : -1;
+    const wantHigh = botIndex === top;
+    let slotX: number;
+    if (wantHigh) {
+      slotX = tx;
+    } else {
+      const sides = fronts.filter((i) => i !== top);
+      const sorted = [...sides].sort((a, b) => {
+        const ax = parts.posX[a] ?? 0;
+        const bx = parts.posX[b] ?? 0;
+        return ax === bx ? a - b : ax - bx;
+      });
+      const k = Math.max(0, sorted.indexOf(botIndex));
+      const leftCount = Math.ceil(sorted.length / 2);
+      const dir = k < leftCount ? -1 : 1;
+      slotX = tx + dir * cfg.BEARING_OFF;
+    }
     const inSlot = Math.abs(px - slotX) <= cfg.X_SLACK;
+    // The top head aims to HOLD altitude above the prey; sides just avoid
+    // deep deficits. (y grows downward: climb when the slot is above us.)
+    const desiredY = wantHigh ? ty - cfg.HIGH_OFF : ty;
+    const slotHeightDef = desiredY - py; // negative → slot is above me
+    const climbSlack = wantHigh ? 30 : cfg.HEIGHT_SLACK;
 
     // Movement: take the slot, give ground when crowded, bob when planted.
     if (dist < cfg.GIVE_GROUND) {
@@ -604,22 +632,36 @@ class HydraBrain implements BotBrain {
       if (px < slotX - cfg.X_SLACK) c.right = true;
       else c.left = true;
       if (
-        heightEdge < -cfg.HEIGHT_SLACK &&
+        slotHeightDef < -climbSlack &&
         s.jetsCount > cfg.FUEL_FLOOR &&
         clock >= this.noClimbUntil
       ) {
         c.jetpack = true;
       }
-    } else if (s.jetsCount > cfg.FUEL_FLOOR && clock >= this.noClimbUntil) {
-      if (heightEdge < -cfg.HEIGHT_SLACK) {
-        c.jetpack = true;
-      } else {
-        if (clock >= this.bobFallUntil) {
-          this.bobJetUntil = clock + cfg.BOB_UP_TICKS;
-          this.bobFallUntil =
-            this.bobJetUntil + cfg.BOB_DOWN_MIN + world.rng.nextInt(cfg.BOB_DOWN_VAR);
+    } else {
+      // IN the slot. Either strafe-juke (pay the move tax for angular
+      // unpredictability — under pack fire committed dodges read as straight
+      // lines) or plant-and-bob (zero tax, vertical-only motion).
+      if (cfg.JUKE_MIN_TICKS > 0) {
+        if (clock >= this.jukeFlipAt) {
+          this.jukeDir = world.rng.nextInt(2) === 0 ? 1 : -1;
+          this.jukeFlipAt =
+            clock + cfg.JUKE_MIN_TICKS + world.rng.nextInt(cfg.JUKE_VAR_TICKS);
         }
-        c.jetpack = clock < this.bobJetUntil;
+        if (this.jukeDir > 0) c.right = true;
+        else c.left = true;
+      }
+      if (s.jetsCount > cfg.FUEL_FLOOR && clock >= this.noClimbUntil) {
+        if (slotHeightDef < -climbSlack) {
+          c.jetpack = true;
+        } else if (cfg.JUKE_MIN_TICKS <= 0) {
+          if (clock >= this.bobFallUntil) {
+            this.bobJetUntil = clock + cfg.BOB_UP_TICKS;
+            this.bobFallUntil =
+              this.bobJetUntil + cfg.BOB_DOWN_MIN + world.rng.nextInt(cfg.BOB_DOWN_VAR);
+          }
+          c.jetpack = clock < this.bobJetUntil;
+        }
       }
     }
 

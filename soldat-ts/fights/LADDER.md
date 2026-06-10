@@ -7,6 +7,21 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
+**LERNA** — `fights/lerna.json` (hydra, factory defaults). Eighth doctrine:
+cut one head, the others bite. The wolf's focus arithmetic is published, so
+the hydra starves it: when a kill-secure is imminent (lowest head under
+55hp) the cut head withdraws beyond the pack's prey radius AND its maximum
+firing range, and keeps tap-sniping from a planted long band — the kill the
+pack wants to secure leaves the menu, three guns land on a full-health head
+instead, damage spreads, nobody dies. The fresh heads take left/right
+bearing slots and mirror the focus-fire back with kestrel gunnery (plant to
+shoot, cooldown-locked taps, EMA lead, true 0.135 drop, closest-approach
+bullet dodge). Selection is stateless (argmin health), so dead heads
+respawn whole, rejoin the front, and the rotation continues — the rotation
+IS the doctrine.
+
+## Previous champion
+
 **AKELA** — `fights/akela.json` (wolf, factory defaults). Sixth doctrine:
 the pack hunter — the team is the unit of selection. All three wolves
 deterministically agree on ONE PREY (lowest health among enemies visible to
@@ -27,6 +42,7 @@ one 3v1.
 | 2026-06-10 | VERONICA (matador, factory defaults) | FALCONER (kestrel, cooldown-locked taps) | **VERONICA 3–0** (47–34, 41–35, 41–29) | #67 | `20260610-053208-VERONICA-matador-vs-FALCONER-kestrel` |
 | 2026-06-10 | AKELA (wolf, factory defaults) | VERONICA (matador, factory defaults) | **AKELA 2–1** (36–34, 43–39, 35–38) | #89 | `20260610-054754-AKELA-wolf-vs-VERONICA-matador` |
 | 2026-06-10 | FALCONER (plover, broken-wing gambit) | AKELA (wolf, factory defaults) | **AKELA 3–0** (48–38, 46–39, 39–35) | #41 | `20260610-060914-FALCONER-plover-vs-AKELA-wolf` |
+| 2026-06-10 | LERNA (hydra, factory defaults) | AKELA (wolf, factory defaults) | **LERNA 2–1** (40–34, 34–34 dom, 34–35) | #53 | `20260610-062053-LERNA-hydra-vs-AKELA-wolf` |
 
 ## Coaching-session archive
 
