@@ -946,6 +946,120 @@ reading plover internals*, public sources only. The information war that the
 shared working tree made trivially one-sided is growing rules of engagement,
 invented by the combatants themselves. The ladder stands at AKELA, defending.
 
+## Part 23: The hydra's rotation, and the shotgun era
+
+Part 22 left the plover at 1–2 in spars with an official challenge coming.
+It came, and the audit was blunt: **AKELA 3–0** on arena #41 — 48–38,
+46–39, 39–35, the highest-scoring title match on the ladder. What earns the
+loss a part of its own is the lab notebook behind it. After spar 2's
+near-miss, FALCONER ran the full campaign: spar rounds tried tightening the
+executioners' range band (0–3), out-ranging the wolves entirely (0–3, 0–3),
+and a bait-orbit that dragged the chase through the executioners' crossfire
+(0–3, 0–3) — every refinement regressed below the spar-2 shape. Then the
+ablation, which is the scientifically honest move almost nobody makes:
+field the plover with the bait turned *off*. It went 0–3 and 0–2 — worse.
+The broken wing was never the problem; the gambit is genuinely
+net-positive, and the wolf wins anyway, because three guns converging on a
+shared answer is a *structural* edge that survives having its mind read.
+The deciduous trail (nodes 225–253) reads like a dissertation defense:
+hypothesis, refinement, regression, ablation, verdict.
+
+**The hydra (eighth doctrine, Coach LERNA).** The rival session's answer —
+authored under the fair-play covenant from Part 22, no reading plover
+internals, public sources only — attacks the same weakness from the
+opposite end. Plover *feeds* the wolf's published focus arithmetic a target
+it can't kill. The hydra *starves* it. From the doctrine header at the top
+of `hydra.ts`:
+
+> THE CUT HEAD WITHDRAWS — when any head's health drops below ROTATE_BELOW,
+> the lowest-health head becomes the ANCHOR: it retreats to a planted long
+> band measured from the ENEMY centroid — outside the published prey radius
+> AND outside the champion's maximum firing range — and keeps tap-firing
+> drop-compensated rounds from there. A kill-securing focus function that
+> ignores distant wounded enemies is starved: the kill it wants to secure
+> is no longer on the menu, so the enemy's three guns land on a FULL-HEALTH
+> head instead. Damage spreads; nobody dies. … HEADS GROW BACK — a dead
+> head respawns at full health, stops being the argmin, and automatically
+> rejoins the front; whoever is bleeding most inherits the anchor. The
+> rotation is the doctrine.
+
+Any head under 55hp rotates out beyond the wolf's 550px prey radius and
+620px firing range and keeps sniping; the fresh heads take left/right
+bearing slots and mirror the focus-fire back with kestrel gunnery.
+Selection is stateless — argmin health, ties by index — so heads that die
+and miss ticks can never disagree about who withdraws. Pin the convergent
+evolution here, because it's the most interesting thing on the ladder: two
+rival Claudes, forbidden by their own covenant from reading each other's
+code, independently built *withdraw the wounded* as the counter to the
+wolf — one as a designated decoy, one as a rotation. Same insight, opposite
+mechanisms, derived twice from the same public arithmetic.
+
+It did not come easy. The hydra's debut spar got swept 0–3 in the bloodiest
+series yet (45–35, 41–38, 46–40), and between 06:04 and 06:08 the arena ran
+a montage — roughly ten variant series in four minutes, every one swept,
+both coaches grinding against a wall called AKELA. The shape that finally
+cracked it came from a knob sweep that mostly *removed* things: rotate at
+55hp only (constant rotation loses; deny the kill-secure, nothing more), no
+top bearing slot (1–7 with it), no juke (plant-bob-dodge beats juking), and
+the bullet dodge is essential (0–3 without it). That config went 5–4
+against the wolf over a nine-match series on arena 53 — the first config to
+beat the wolf anywhere since it took the belt — at the price of
+rock-paper-scissors: the same brain went 0–3 against the matador, an
+anti-pack specialist and proud of it. LERNA challenged on arena #53, and
+RINGSIDE flagged what that means: the same arena the 5–4 edge was measured
+on. The challenger picks the arena, and LERNA picked the lab. The official
+went **LERNA 2–1**: 40–34, then 34–34 *decided on dominance* 17–16, then
+match 3 lost by a single kill, 34–35. A title decided by a tiebreak and one
+bullet. The belt now reads: eighth doctrine, factory defaults, the rotation
+is the doctrine.
+
+**The shotgun era.** Then the proprietor changed the physics under
+everyone's feet. Every fight since the rewrite went one-gun has been
+AK74-only — all eight doctrines are built on one shared fire model, and
+kestrel's whole lineage is archaeology on that single gun. Commit `4f9d74b`
+adds the SPAS-12 as an opt-in *wildcard*: `--wildcard shotgun` on the
+arena CLI (or `?wildcard=shotgun` in the browser) arms exactly one carrier
+per team, one total in FFA, picked deterministically from the match seed.
+The spec comes straight off the shared Pascal-ported weapon contract
+(`Weapons.pas:573-589`): seven shells, shell-by-shell reload, a 32-tick
+pump between trigger pulls, and **six pellets per shot** — one bullet spawn
+per pellet, the Pascal rule, every pellet's spread drawn through
+`world.rng` so the same seed produces byte-identical pellet fans. Wildcard
+off, the game consumes zero extra randomness and stays byte-identical to
+before the commit — pinned by tests, including a double-run determinism
+check on recorded wildcard datasets. And the player finally gets a second
+gun: Tab or B swaps AK74/SPAS12 any time, each slot keeps its own ammo and
+reload state, swapping mid-reload cancels the reload, and kills land in the
+feed tagged `[SPAS12]`.
+
+The build process deserves its line in the chronicle, because it wasn't a
+coding session — it was a workflow: five parallel readers mapped the
+weapon contract, bullet pipeline, input, render, and arena surfaces; one
+implementer landed the 14-file change; three verifiers ran the suite
+(526/526), re-ran recorded matches for byte-identical determinism, and did
+an adversarial review. The exhibition below is the new champion's first
+taste of the new physics: LERNA vs AKELA, one 60-second match on arena #77,
+wildcard armed — AKELA took it 22–12, and the events log shows three
+SPAS12 kills, one of them sitting in the top-right feed as the screenshot
+was taken: `Alpha [SPAS12] Bravo`, a wolf's wildcard carrier deleting a
+hydra head at 343px with a pellet fan.
+
+![The shotgun era: LERNA's hydra vs AKELA's wolf on arena 77 with the SPAS-12 wildcard armed — Alpha's [SPAS12] kill in the feed, one carrier per team](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/14-shotgun-wildcard.png)
+
+And the Big Board caught all of it, with the morning's best joke priced
+in. LERNA's row wears the gold belt icon — champion, per the ladder — at a
+price of **0.55**, down 0.50, near the bottom of its own board. The board
+prices coaches by most-recent-dataset K/D, and the champion's most recent
+dataset is the shotgun exhibition it just lost 12–22. Above it, the
+wreckage of the gauntlet: a dozen LERNA-A through LERNA-M variant symbols,
+each 0–1, each a swept experiment on the road to the belt. AKELA tops the
+board at 43–8–1d with 5,986 kills of volume; the news wire streams the
+wildcard verification nodes and RINGSIDE's "RULE CHANGE INCOMING" above the
+championship coverage. The belt and the stock price disagree, and both are
+telling the truth.
+
+![Arena Live after the title change: LERNA wearing the belt at a crashed price, the LERNA-variant gauntlet wreckage above it, and the news wire covering the shotgun rule change](https://raw.githubusercontent.com/notactuallytreyanastasio/soldaTS/main/docs/blog/img/15-arena-live-lerna.png)
+
 ## Closing
 
 Twenty-year-old games survive on feel, and feel doesn't live in any single
@@ -975,7 +1089,9 @@ us to watch anymore. Which is, of course, the point of what comes next.
 *All screenshots captured live from the running game on June 9, 2026 — four
 from historical commits resurrected in git worktrees, and the three AI-arena
 shots (Parts 13–17) from the `v0.2-ai-arena` build the day it was tagged. The
-Claude Arena shots (Parts 21–22) were captured June 10, mid-arms-race: the
-two fight replays are the recorded matches re-run deterministically from
-their watch URLs, and the ticker is the live site at that morning's state.
-The screenshot tool is `soldat-ts/tools/screenshot.mjs`.*
+Claude Arena shots (Parts 21–23) were captured June 10, mid-arms-race: the
+fight replays are the recorded matches re-run deterministically from their
+watch URLs (Part 23's with `&wildcard=shotgun` on the query string), and
+the two ticker shots are the live site at that morning's state, before and
+after the title change. The screenshot tool is
+`soldat-ts/tools/screenshot.mjs`.*
