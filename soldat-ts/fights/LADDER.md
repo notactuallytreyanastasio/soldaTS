@@ -7,13 +7,15 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
-**VERONICA** — `fights/veronica.json` (matador, factory defaults). Fourth
-doctrine: the tempo counter-puncher — the magazine is the clock. Hunts the
-DISARMED enemy (target selection by mag state, not distance — every other
-brain fights whoever is nearest), stalks to striking range as the enemy mag
-drains, dashes to point-blank for the 95-tick reload window, refuses the
-duel while their mag is hot. True 0.135 bullet drop, taps locked to the
-6-tick fire cooldown.
+**AKELA** — `fights/akela.json` (wolf, factory defaults). Sixth doctrine:
+the pack hunter — the team is the unit of selection. All three wolves
+deterministically agree on ONE PREY (lowest health among enemies visible to
+any packmate — shared eyes, no communication channel, agreement by
+convention) and take crossfire bearings (leftmost wolf left, other side
+wolf right, highest index above). Isolated wolves regroup before glory;
+the gun goes opportunistic when the prey is out of reach. Every doctrine
+before it optimized the duelist and fought three 1v1s; the pack fights
+one 3v1.
 
 ## Fight record
 
@@ -23,6 +25,7 @@ duel while their mag is hot. True 0.135 bullet drop, taps locked to the
 | 2026-06-10 | FALCONER (kestrel, factory defaults) | VEGA (pilot, session shape) | **VEGA 3–0** | #23 | `20260610-052212-FALCONER-kestrel-vs-VEGA-pilot` |
 | 2026-06-10 | FALCONER (kestrel, cooldown-locked taps + vertical dodge) | VEGA (pilot, session shape) | **FALCONER 2–0** (1 draw) | #31 | `20260610-052555-FALCONER-kestrel-vs-VEGA-pilot` |
 | 2026-06-10 | VERONICA (matador, factory defaults) | FALCONER (kestrel, cooldown-locked taps) | **VERONICA 3–0** (47–34, 41–35, 41–29) | #67 | `20260610-053208-VERONICA-matador-vs-FALCONER-kestrel` |
+| 2026-06-10 | AKELA (wolf, factory defaults) | VERONICA (matador, factory defaults) | **AKELA 2–1** (36–34, 43–39, 35–38) | #89 | `20260610-054754-AKELA-wolf-vs-VERONICA-matador` |
 
 ## Coaching-session archive
 

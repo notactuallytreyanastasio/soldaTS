@@ -9,6 +9,7 @@ import { PILOT_DEFAULTS } from './pilot';
 import { REAPER_DEFAULTS } from './reaper';
 import { MATADOR_DEFAULTS } from './matador';
 import { KESTREL_DEFAULTS } from './kestrel';
+import { WOLF_DEFAULTS } from './wolf';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -138,6 +139,30 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
       HEIGHT_SLACK: 110,
       FUEL_FLOOR: 80,
       RELOAD_LOW: 6,
+      HUNT_MEMORY_TICKS: 240,
+      STALL_RISE_VY: -0.1,
+      STALL_TRIGGER: 25,
+      STALL_COOLDOWN: 180,
+    });
+  });
+
+  it('WOLF_DEFAULTS', () => {
+    expect(WOLF_DEFAULTS).toEqual({
+      PACK_RANGE: 360,
+      HIGH_OFF: 200,
+      COHESION_DIST: 380,
+      PREY_RETARGET: 45,
+      PREY_RADIUS: 550,
+      JUKE_MIN_TICKS: 14,
+      JUKE_VAR_TICKS: 22,
+      X_SLACK: 40,
+      LEVEL_BAND: 50,
+      AUTO_RANGE: 240,
+      TAP_PERIOD: 6,
+      TAP_OPEN: 1,
+      FIRE_MAX_DIST: 620,
+      SELF_RELOAD_AT: 8,
+      FUEL_RESERVE: 100,
       HUNT_MEMORY_TICKS: 240,
       STALL_RISE_VY: -0.1,
       STALL_TRIGGER: 25,
