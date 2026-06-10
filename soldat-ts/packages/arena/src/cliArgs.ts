@@ -57,6 +57,18 @@ export function parseTweaks(list: readonly string[] | undefined): Record<string,
   return out;
 }
 
+/** Known opt-in wildcards (the match-rule mutators a run may arm). */
+export const WILDCARDS = ['shotgun'] as const;
+
+/** Validate --wildcard; undefined passes through (no wildcard). */
+export function parseWildcard(raw: string | undefined): string | undefined {
+  if (raw === undefined) return undefined;
+  if (!(WILDCARDS as readonly string[]).includes(raw)) {
+    throw new Error(`unknown wildcard '${raw}' (known: ${WILDCARDS.join(', ')})`);
+  }
+  return raw;
+}
+
 export interface SweepSpec {
   team: 'a' | 'b';
   key: string;
@@ -85,6 +97,8 @@ export interface RunPlan {
   botCount: number;
   variant: string;
   roundTicks: number;
+  /** Opt-in wildcard ('shotgun') applied to every match of the run. */
+  wildcard?: string | undefined;
   runIdSuffix?: string | undefined;
 }
 
@@ -103,6 +117,7 @@ export function buildRunPlans(args: {
   botCount: number;
   variant: string;
   roundSeconds: number;
+  wildcard?: string | undefined;
 }): RunPlan[] {
   const roundTicks = args.roundSeconds * 60;
   const base = (tweakA: Record<string, number>, tweakB: Record<string, number>): [TeamSpec, TeamSpec] => [
@@ -119,6 +134,7 @@ export function buildRunPlans(args: {
         botCount: args.botCount,
         variant: args.variant,
         roundTicks,
+        wildcard: args.wildcard,
       },
     ];
   }
@@ -135,6 +151,7 @@ export function buildRunPlans(args: {
       botCount: args.botCount,
       variant: args.variant,
       roundTicks,
+      wildcard: args.wildcard,
       runIdSuffix: label,
     };
   });

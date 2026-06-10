@@ -56,11 +56,16 @@ export interface GameTuning {
   respawnTicks: number; // dead-to-respawn delay
 }
 
-// --- The ONE gun -----------------------------------------------------------
-// Everyone shares a single automatic rifle. The whole game balances around it:
-// spray control (accuracy blooms as you hold fire), quick reactions (fast but
-// not instant TTK + dodgeable projectiles), and terrain protection (bullets are
-// blocked by geometry; reloading forces you behind cover).
+// --- The guns ---------------------------------------------------------------
+// Everyone defaults to the automatic rifle (slot 0) — the game balances around
+// it: spray control (accuracy blooms as you hold fire), quick reactions (fast
+// but not instant TTK + dodgeable projectiles), and terrain protection
+// (bullets are blocked by geometry; reloading forces you behind cover).
+//
+// Slot 1 is the SPAS-12 (shared weapon contract, guns.ts) — reachable only via
+// the opt-in 'shotgun' wildcard (one bot per team) or the player's weapon-swap
+// key. With the wildcard off and the player never swapping, slot 1 is inert:
+// no rng draw, no sim effect, byte-identical default matches.
 //
 // --- Rocket boots ------------------------------------------------------------
 // This is a VERY vertical game (decision node 94): flying around is the point.
@@ -84,6 +89,60 @@ export const DEFAULT_TUNING: Readonly<GameTuning> = {
 
 /** Kept for compatibility (legacy importers). Equals DEFAULT_TUNING.jetFuelMax. */
 export const JET_FUEL_MAX = DEFAULT_TUNING.jetFuelMax;
+
+// --- Weapon slots ------------------------------------------------------------
+/** Slot 0: the default rifle every sprite starts with. */
+export const SLOT_AK = 0;
+/** Slot 1: the SPAS-12 (wildcard carriers / player swap). */
+export const SLOT_SPAS = 1;
+/** Pellets per SPAS-12 trigger pull. PORT: the Pascal fire path spawns one
+ *  bullet per pellet — 6 pellets per shell. */
+export const SPAS_PELLETS = 6;
+/** Kill-feed / HUD weapon labels per slot (kept terse: `Killer [SPAS12] Victim`). */
+export const WEAPON_LABELS: readonly [string, string] = ['AK74', 'SPAS12'];
+
+/** Per-slot effective numbers derived from GameTuning + the weapon contract. */
+interface SlotTuning {
+  fireInterval: number;
+  magSize: number;
+  reloadTicks: number;
+  spreadBase: number; // rad — per-shot (per-pellet for the SPAS) angle jitter
+}
+
+/**
+ * Derive both weapon slots' numbers from the match tuning.
+ *
+ * Slot 0 (AK) uses the tuning fields VERBATIM — a default match is
+ * byte-for-byte the single-gun game.
+ *
+ * Slot 1 (SPAS-12) is scaled from the shared weapon contract the same way
+ * DEFAULT_TUNING rebalanced the AK74: the stock 6/30/95 relate to the AK's
+ * contract 10/35/165 as ratios 6/10, 30/35, 95/165 — so each SPAS stat is
+ * contractStat * (tunedAkStat / contractAkStat), which both preserves the
+ * AK:SPAS contract ratios and lets gameplay variants tune the SPAS in step:
+ *   fireInterval 32 → 19, magSize 7 → 6, reloadTicks 175 → 101 (stock).
+ * The contract's bulletSpread is a velocity perturbation (±0.8 on speed 14);
+ * as the angular half-fan this game's spread model needs, that is
+ * atan(bulletSpread / bulletSpeed) ≈ 0.057 rad per pellet.
+ */
+function deriveSlotTuning(tuning: GameTuning, ak: Gun, spas: Gun): [SlotTuning, SlotTuning] {
+  const scale = (spasStat: number, akStat: number, tunedAk: number): number =>
+    Math.max(1, Math.round((spasStat * tunedAk) / akStat));
+  return [
+    {
+      fireInterval: tuning.fireInterval,
+      magSize: tuning.magSize,
+      reloadTicks: tuning.reloadTicks,
+      spreadBase: tuning.spreadBase,
+    },
+    {
+      fireInterval: scale(spas.fireInterval, ak.fireInterval, tuning.fireInterval),
+      magSize: scale(spas.ammo, ak.ammo, tuning.magSize),
+      reloadTicks: scale(spas.reloadTime, ak.reloadTime, tuning.reloadTicks),
+      spreadBase: Math.atan(spas.bulletSpread / spas.bulletSpeed),
+    },
+  ];
+}
 
 // Spread shape that is NOT part of the per-match tuning surface (the variants
 // tweak base accuracy and bloom-per-shot; the cap/decay/move-penalty define
@@ -176,6 +235,12 @@ export interface GameOptions {
   /** Per-engine tweak overrides, keyed by engine id; applied when engines are
    *  instantiated (mixed matches: each side's tweaks tracked separately). */
   engineTweaks?: Record<string, Record<string, number>> | undefined;
+  /**
+   * Opt-in wildcard ('shotgun'): exactly one bot per team (one bot total in
+   * FFA) carries the SPAS-12, picked deterministically from the match seed
+   * via world.rng. Absent/undefined = stock loadouts, zero rng consumed.
+   */
+  wildcard?: string | undefined;
 }
 
 // --- Timed rounds (goal node 157) -------------------------------------------
@@ -278,17 +343,28 @@ export class Game {
   private readonly bots: BotEntry[] = [];
   /** Bot navigation graph; rebuilt from real map waypoints in spectate mode. */
   private graph: WaypointGraph;
-  private readonly gun: Gun;
-  /** Per-sprite next-fire tick (world.mainTickCounter clock). */
-  private readonly nextFireTick: number[] = [];
+  /** The two guns from the shared weapon contract: [AK74, SPAS12]. */
+  private readonly guns: readonly [Gun, Gun];
+  /** Per-slot effective fire/mag/reload/spread numbers (see deriveSlotTuning). */
+  private readonly slotTuning: readonly [SlotTuning, SlotTuning];
+  /** Per-sprite active weapon slot (SLOT_AK everywhere by default). */
+  private readonly weaponSlot: number[] = [];
+  /** Per-sprite previous changeWeapon flag — swap on the rising edge only. */
+  private readonly prevChangeWeapon: boolean[] = [];
+  /** Sprite indices armed with the SPAS-12 by the wildcard (survives respawn). */
+  private readonly spasCarriers = new Set<number>();
+  /** The active wildcard ('shotgun') or undefined (stock loadouts). */
+  readonly wildcard: string | undefined;
+  /** Per-slot per-sprite next-fire tick (world.mainTickCounter clock). */
+  private readonly nextFireTick: [number[], number[]] = [[], []];
   /** Per-sprite respawn countdown (ticks); 0 = alive. */
   private readonly respawnIn: number[] = [];
-  /** Per-sprite rounds left in the magazine. */
-  private readonly ammo: number[] = [];
-  /** Per-sprite tick the current reload completes (0 = not reloading). */
-  private readonly reloadUntil: number[] = [];
-  /** Per-sprite spray bloom (radians) — grows while firing, decays at rest. */
-  private readonly sprayHeat: number[] = [];
+  /** Per-slot per-sprite rounds left in the magazine. */
+  private readonly ammo: [number[], number[]] = [[], []];
+  /** Per-slot per-sprite tick the current reload completes (0 = not reloading). */
+  private readonly reloadUntil: [number[], number[]] = [[], []];
+  /** Per-slot per-sprite spray bloom (radians) — grows firing, decays at rest. */
+  private readonly sprayHeat: [number[], number[]] = [[], []];
   /** Context handed to every bot brain (graph resolves live via getter). */
   private readonly engineCtx: BotEngineContext;
   /**
@@ -330,7 +406,9 @@ export class Game {
     // aim and fire at the nearest enemy; navigation is a no-op (they hold
     // ground — engines layer their own fallbacks, see ../ai/).
     this.graph = buildWaypoints({ waypoints: [] });
-    this.gun = getGun(WeaponIndex.AK74, false);
+    this.guns = [getGun(WeaponIndex.AK74, false), getGun(WeaponIndex.SPAS12, false)];
+    this.slotTuning = deriveSlotTuning(this.tuning, this.guns[SLOT_AK], this.guns[SLOT_SPAS]);
+    this.wildcard = opts.wildcard;
 
     // The brain context: a narrow window onto the world plus the client-owned
     // weapon state. `graph` is a getter because loadMap may rebuild it.
@@ -369,6 +447,37 @@ export class Game {
       this.spawnSprite(index, this.spawnFor(index));
       this.bots.push({ index, brain: engine.createBrain() });
     }
+
+    // Shotgun wildcard: ONE carrier per team (one total in FFA), picked from
+    // the match seed through world.rng — the only randomness source — so the
+    // same seed always arms the same bot. Skipped entirely (no rng draw) when
+    // the wildcard is off: default matches stay byte-identical.
+    if (this.wildcard === 'shotgun' && this.bots.length > 0) {
+      const pools: number[][] = this.teamsEnabled
+        ? [1, 2].map((team) =>
+            this.bots.filter((b) => this.teamOf(b.index) === team).map((b) => b.index),
+          )
+        : [this.bots.map((b) => b.index)];
+      for (const pool of pools) {
+        if (pool.length === 0) continue;
+        const pick = pool[this.world.rng.nextInt(pool.length)];
+        if (pick === undefined) continue;
+        this.spasCarriers.add(pick);
+        this.weaponSlot[pick] = SLOT_SPAS;
+        const sp = this.world.sprites[pick];
+        if (sp !== undefined) sp.selWeapon = WeaponIndex.SPAS12;
+      }
+    }
+  }
+
+  /** Wildcard SPAS-12 carriers (ascending sprite index; empty when off). */
+  wildcardCarriers(): readonly number[] {
+    return [...this.spasCarriers].sort((a, b) => a - b);
+  }
+
+  /** Kill-feed/HUD label of `index`'s current weapon ('AK74' | 'SPAS12'). */
+  weaponNameOf(index: number): string {
+    return WEAPON_LABELS[this.weaponSlot[index] === SLOT_SPAS ? SLOT_SPAS : SLOT_AK];
   }
 
   /**
@@ -502,7 +611,12 @@ export class Game {
     }
     s.deadMeat = false;
     s.dummy = false;
-    s.selWeapon = WeaponIndex.AK74;
+    // Wildcard carriers respawn with the SPAS; everyone else (player included)
+    // respawns on the default rifle.
+    this.weaponSlot[index] = this.spasCarriers.has(index) ? SLOT_SPAS : SLOT_AK;
+    this.prevChangeWeapon[index] = false;
+    s.selWeapon =
+      this.weaponSlot[index] === SLOT_SPAS ? WeaponIndex.SPAS12 : WeaponIndex.AK74;
     s.jetsCount = this.tuning.jetFuelMax;
     s.jetsCountReal = this.tuning.jetFuelMax;
     s.jumpTicksLeft = 0;
@@ -527,21 +641,29 @@ export class Game {
     s.lastHitBy = 0;
     // Team persists across respawns (0 = FFA).
     s.team = this.botTeam.get(index) ?? 0;
-    this.nextFireTick[index] = 0;
     this.respawnIn[index] = 0;
-    this.ammo[index] = this.tuning.magSize;
-    this.reloadUntil[index] = 0;
-    this.sprayHeat[index] = 0;
+    // BOTH weapon slots come back full — a respawn is a fresh loadout.
+    for (const slot of [SLOT_AK, SLOT_SPAS] as const) {
+      this.nextFireTick[slot][index] = 0;
+      this.ammo[slot][index] = this.slotTuning[slot].magSize;
+      this.reloadUntil[slot][index] = 0;
+      this.sprayHeat[slot][index] = 0;
+    }
   }
 
-  /** Rounds left in `index`'s magazine (for the HUD). */
+  /** `index`'s active weapon slot (SLOT_AK | SLOT_SPAS). */
+  private slotOf(index: number): 0 | 1 {
+    return this.weaponSlot[index] === SLOT_SPAS ? SLOT_SPAS : SLOT_AK;
+  }
+
+  /** Rounds left in `index`'s CURRENT weapon's magazine (for the HUD). */
   ammoOf(index: number): number {
-    return this.ammo[index] ?? 0;
+    return this.ammo[this.slotOf(index)][index] ?? 0;
   }
 
-  /** Whether sprite `index` is mid-reload (for the HUD). */
+  /** Whether sprite `index`'s current weapon is mid-reload (for the HUD). */
   reloadingOf(index: number): boolean {
-    return this.world.mainTickCounter < (this.reloadUntil[index] ?? 0);
+    return this.world.mainTickCounter < (this.reloadUntil[this.slotOf(index)][index] ?? 0);
   }
 
   /** Local player's rounds left (for the HUD). */
@@ -644,8 +766,14 @@ export class Game {
     // sampling here gets (observation, chosen action) pairs.
     this.onBrainsTicked?.(this.world.mainTickCounter);
 
-    // Firing: anyone holding fire whose weapon is off cooldown spawns a bullet.
+    // Weapon swap (rising edge of control.changeWeapon, before firing). Bots
+    // never raise the flag, so this is player-only in practice — and a pure
+    // function of controls, so spectate/headless determinism is untouched.
     const clock = this.world.mainTickCounter;
+    this.weaponSwapUpkeep(this.playerIndex);
+    for (const bot of this.bots) this.weaponSwapUpkeep(bot.index);
+
+    // Firing: anyone holding fire whose weapon is off cooldown spawns a bullet.
     this.tryFire(this.playerIndex, clock);
     for (const bot of this.bots) this.tryFire(bot.index, clock);
 
@@ -693,42 +821,72 @@ export class Game {
   }
 
   /**
+   * Swap `index`'s weapon on the rising edge of control.changeWeapon. Each
+   * slot keeps its OWN ammo/cooldown/heat; a swap is never a free reload, and
+   * swapping away mid-reload CANCELS that reload (classic Soldat feel).
+   */
+  private weaponSwapUpkeep(index: number): void {
+    const s = this.world.sprites[index];
+    if (s === undefined || !s.active || s.deadMeat) return;
+    const held = s.control.changeWeapon;
+    const was = this.prevChangeWeapon[index] ?? false;
+    this.prevChangeWeapon[index] = held;
+    if (!held || was) return;
+    const cur = this.slotOf(index);
+    if (this.world.mainTickCounter < (this.reloadUntil[cur][index] ?? 0)) {
+      this.reloadUntil[cur][index] = 0;
+    }
+    const next = cur === SLOT_AK ? SLOT_SPAS : SLOT_AK;
+    this.weaponSlot[index] = next;
+    s.selWeapon = next === SLOT_SPAS ? WeaponIndex.SPAS12 : WeaponIndex.AK74;
+  }
+
+  /**
    * Per-tick weapon upkeep for one sprite: handle reload, spray-heat decay, and
-   * fire a bullet (with spread) when fire is held, off cooldown, and loaded.
+   * fire (with spread) when fire is held, off cooldown, and loaded. The AK
+   * spawns one bullet; the SPAS-12 spawns SPAS_PELLETS bullets, each with its
+   * own world.rng spread draw (the Pascal rule: one spawn per pellet).
    */
   private tryFire(index: number, clock: number): void {
     const s = this.world.sprites[index];
     const parts = this.world.spriteParts;
     if (s === undefined || parts === null) return;
 
-    const reloadingUntil = this.reloadUntil[index] ?? 0;
+    const slot = this.slotOf(index);
+    const gun = this.guns[slot];
+    const st = this.slotTuning[slot];
+
+    const reloadingUntil = this.reloadUntil[slot][index] ?? 0;
     const reloading = clock < reloadingUntil;
     if (reloading) {
       // Reload completes exactly at reloadUntil.
       if (clock === reloadingUntil - 1) {
-        this.ammo[index] = this.tuning.magSize;
+        this.ammo[slot][index] = st.magSize;
       }
     }
     if (s.deadMeat || !s.active) return;
 
     // Manual reload (R) when not full and not already reloading.
-    if (s.control.reload && !reloading && (this.ammo[index] ?? 0) < this.tuning.magSize) {
-      this.reloadUntil[index] = clock + this.tuning.reloadTicks;
+    if (s.control.reload && !reloading && (this.ammo[slot][index] ?? 0) < st.magSize) {
+      this.reloadUntil[slot][index] = clock + st.reloadTicks;
       this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
     }
 
     if (!s.control.fire) {
       // Not firing → spray bloom recovers.
-      this.sprayHeat[index] = Math.max(0, (this.sprayHeat[index] ?? 0) - SPREAD_HEAT_DECAY);
+      this.sprayHeat[slot][index] = Math.max(
+        0,
+        (this.sprayHeat[slot][index] ?? 0) - SPREAD_HEAT_DECAY,
+      );
       return;
     }
     if (reloading) return;
-    if (clock < (this.nextFireTick[index] ?? 0)) return;
+    if (clock < (this.nextFireTick[slot][index] ?? 0)) return;
 
     // Empty magazine → auto-reload.
-    if ((this.ammo[index] ?? 0) <= 0) {
-      this.reloadUntil[index] = clock + this.tuning.reloadTicks;
+    if ((this.ammo[slot][index] ?? 0) <= 0) {
+      this.reloadUntil[slot][index] = clock + st.reloadTicks;
       this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
     }
@@ -768,35 +926,49 @@ export class Game {
       ay = bent.y;
     }
 
-    // Spread = base + spray bloom + a movement penalty (stand still to be precise).
+    // Spread = base + spray bloom + a movement penalty (stand still to be
+    // precise). The SPAS draws a FRESH jitter per pellet — that IS the fan.
     const vx = parts.velocityX[index] ?? 0;
     const moving = Math.abs(vx) > MOVE_SPREAD_SPEED ? SPREAD_MOVE : 0;
-    const spread = this.tuning.spreadBase + (this.sprayHeat[index] ?? 0) + moving;
-    const jitter = (this.world.rng.next() * 2 - 1) * spread;
-    const ang = Math.atan2(ay, ax) + jitter;
-    const dx = Math.cos(ang);
-    const dy = Math.sin(ang);
+    const spread = st.spreadBase + (this.sprayHeat[slot][index] ?? 0) + moving;
+    const baseAng = Math.atan2(ay, ax);
+    const speed = gun.bulletSpeed;
+    const pellets = slot === SLOT_SPAS ? SPAS_PELLETS : 1;
+    let faceDx = 0;
+    let soundX = parts.posX[index] ?? 0;
+    let soundY = parts.posY[index] ?? 0;
+    for (let p = 0; p < pellets; p++) {
+      const jitter = (this.world.rng.next() * 2 - 1) * spread;
+      const ang = baseAng + jitter;
+      const dx = Math.cos(ang);
+      const dy = Math.sin(ang);
+      const px = (parts.posX[index] ?? 0) + dx * MUZZLE_OFFSET;
+      const py = (parts.posY[index] ?? 0) + dy * MUZZLE_OFFSET;
+      if (p === 0) {
+        faceDx = dx;
+        soundX = px;
+        soundY = py;
+      }
+      spawnBullet(this.world, {
+        pos: vec2(px, py),
+        velocity: vec2(dx * speed, dy * speed),
+        owner: index,
+        hitMultiply: gun.hitMultiply,
+        gun,
+      });
+    }
 
-    const speed = this.gun.bulletSpeed;
-    const px = (parts.posX[index] ?? 0) + dx * MUZZLE_OFFSET;
-    const py = (parts.posY[index] ?? 0) + dy * MUZZLE_OFFSET;
-    spawnBullet(this.world, {
-      pos: vec2(px, py),
-      velocity: vec2(dx * speed, dy * speed),
-      owner: index,
-      hitMultiply: this.gun.hitMultiply,
-      gun: this.gun,
-    });
-
-    s.direction = dx >= 0 ? 1 : -1;
-    this.ammo[index] = (this.ammo[index] ?? 0) - 1;
-    this.sprayHeat[index] = Math.min(
+    s.direction = faceDx >= 0 ? 1 : -1;
+    // One trigger pull = one round of ammo, one heat increment, one shot/sound
+    // event — pellets are not separate shots.
+    this.ammo[slot][index] = (this.ammo[slot][index] ?? 0) - 1;
+    this.sprayHeat[slot][index] = Math.min(
       SPREAD_HEAT_MAX,
-      (this.sprayHeat[index] ?? 0) + this.tuning.spreadHeatPerShot,
+      (this.sprayHeat[slot][index] ?? 0) + this.tuning.spreadHeatPerShot,
     );
-    this.nextFireTick[index] = clock + this.tuning.fireInterval;
+    this.nextFireTick[slot][index] = clock + st.fireInterval;
     this.onShot?.(index);
-    this.onSound?.('fire', px, py);
+    this.onSound?.('fire', soundX, soundY);
   }
 
   /** Start respawn timers for the freshly dead; respawn when they elapse. */

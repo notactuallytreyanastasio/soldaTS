@@ -43,6 +43,9 @@ export interface MatchConfig {
   variant?: string; // tournament variant NAME, default 'baseline'
   roundTicks?: number; // default 7200 (120 s)
   maxTicks?: number; // hard cap, default roundTicks + 600
+  /** Opt-in wildcard ('shotgun'): one SPAS-12 carrier per team, picked
+   *  deterministically from `seed` by the Game. Omitted = stock loadouts. */
+  wildcard?: string | undefined;
 }
 
 export interface MatchBotInfo {
@@ -104,6 +107,7 @@ export function runMatch(config: MatchConfig): MatchResult {
     teams: true,
     tuning: variant.tuning,
     roundTicks,
+    wildcard: config.wildcard,
     engineTweaks: {
       ...(red.tweaks ? { [red.engine]: red.tweaks } : {}),
       ...(blue.tweaks ? { [blue.engine]: blue.tweaks } : {}),
@@ -158,6 +162,11 @@ export function runMatch(config: MatchConfig): MatchResult {
         killerPos !== null
           ? Math.round(Math.hypot(killerPos.x - victimPos.x, killerPos.y - victimPos.y))
           : null,
+      // Weapon tag only when a wildcard is armed: default-run event streams
+      // keep their exact pre-wildcard shape.
+      ...(game.wildcard !== undefined && attributed
+        ? { weapon: game.weaponNameOf(killer) }
+        : {}),
     });
   };
 

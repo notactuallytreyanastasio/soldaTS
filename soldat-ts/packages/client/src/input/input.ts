@@ -15,8 +15,8 @@
 //
 //   A / D   move left / right        I J K L  aim up / left / down / right
 //   W       jump (engine "up")       Space    FIRE (hold = full-auto)
-//   S       crouch / down            Tab      reload
-//   Shift   jetpack (hold)
+//   S       crouch / down            Tab / B  switch weapon (AK-74 ⇄ SPAS-12)
+//   Shift   jetpack (hold)           R        reload
 //
 // Shift carries the longest-held action and Space the most critical one on
 // purpose: this scheme holds 4+ keys at once and cheap membrane keyboards
@@ -114,7 +114,12 @@ export const CONTROL_BINDINGS: readonly ControlBinding[] = [
       'Aim up / left / down / right — combine for diagonals; aim stays where you leave it',
   },
   { keys: ['Space'], codes: ['Space'], action: 'Fire (hold for full-auto)' },
-  { keys: ['Tab'], codes: ['Tab'], action: 'Reload' },
+  {
+    keys: ['Tab', 'B'],
+    codes: ['Tab', 'KeyB'],
+    action: 'Switch weapon (AK-74 / SPAS-12)',
+  },
+  { keys: ['R'], codes: ['KeyR'], action: 'Reload' },
   {
     keys: ['Mouse'],
     codes: [],
@@ -171,6 +176,8 @@ interface InputState {
   jetpack: boolean;
   throwNade: boolean;
   reload: boolean;
+  /** Weapon-swap key held (Tab / B); the game toggles on the rising edge. */
+  changeWeapon: boolean;
   /** IJKL aim intent (held booleans; the angle math lives in readControl). */
   aimUp: boolean;
   aimDown: boolean;
@@ -207,6 +214,7 @@ export class InputController {
     jetpack: false,
     throwNade: false,
     reload: false,
+    changeWeapon: false,
     aimUp: false,
     aimDown: false,
     aimLeft: false,
@@ -274,6 +282,7 @@ export class InputController {
       s.jetpack = false;
       s.throwNade = false;
       s.reload = false;
+      s.changeWeapon = false;
       s.aimUp = false;
       s.aimDown = false;
       s.aimLeft = false;
@@ -375,11 +384,13 @@ export class InputController {
         case 'ShiftRight':
           this.state.jetpack = down;
           break;
-        // Reload: Tab. Landing in this switch reaches the shared
-        // preventDefault below on BOTH keydown and keyup, so the browser
-        // never moves focus; Shift+Tab is swallowed too (e.code matching).
+        // Weapon swap: Tab / B (toggle AK-74 ⇄ SPAS-12). Landing in this
+        // switch reaches the shared preventDefault below on BOTH keydown and
+        // keyup, so the browser never moves focus on Tab; Shift+Tab is
+        // swallowed too (e.code matching).
         case 'Tab':
-          this.state.reload = down;
+        case 'KeyB':
+          this.state.changeWeapon = down;
           break;
         // Aim: I/K/J/L = up/down/left/right (chords give the diagonals).
         case 'KeyI':
@@ -398,12 +409,11 @@ export class InputController {
           this.state.aimRight = down;
           if (down) this.claimKeyboardAim();
           break;
-        // Legacy aliases, outside the required key set but harmless:
         // Throw grenade: F (keyboard alternative to right mouse).
         case 'KeyF':
           this.state.throwNade = down;
           break;
-        // Reload: R.
+        // Reload: R (auto-reload on empty also exists; manual reload is R).
         case 'KeyR':
           this.state.reload = down;
           break;
@@ -554,7 +564,7 @@ export class InputController {
       fire: s.fireKey || s.fireMouse,
       jetpack: s.jetpack,
       throwNade: s.throwNade,
-      changeWeapon: false,
+      changeWeapon: s.changeWeapon,
       throwWeapon: false,
       reload: s.reload,
       prone: false,

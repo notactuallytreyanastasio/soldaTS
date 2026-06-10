@@ -11,11 +11,13 @@
 // animation frame, we cache each entity's previous-tick position and lerp
 // prev→current by the Game's framePercent so motion looks smooth.
 
-import { Container, Graphics } from 'pixi.js';
+import { Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
 import {
   MAX_SPRITES,
   MAX_BULLETS,
   MAX_THINGS,
+  BulletStyle,
+  WeaponIndex,
   type World,
 } from '@soldat/sim';
 import { drawGostek } from './gostek';
@@ -81,6 +83,13 @@ export class EntityRenderer {
   private readonly gostekLayer: Container = new Container();
   private readonly gostekPool: (TexturedGostek | undefined)[] = [];
 
+  // SPAS-12 carrier overlay: the real spas12.png weapon sprite when the
+  // weapons-gfx asset loads, otherwise a vector barrel (drawn in markerGfx).
+  // An overlay layer — neither gostek path (textured or vector) is touched.
+  private spasTexture: Texture | null = null;
+  private readonly spasLayer: Container = new Container();
+  private readonly spasPool: (Sprite | undefined)[] = [];
+
   /**
    * Load the real Gostek part textures and pre-build a pool of figures. Call
    * once (async) during startup; until it resolves, sprites render with the
@@ -97,6 +106,13 @@ export class EntityRenderer {
     }
     this.spriteGfx.visible = false; // hide vector limbs once textured is live
     this.texturedReady = true;
+    // SPAS weapon sprite is best-effort: a missing asset falls back to the
+    // vector barrel, never blocks (or breaks) the textured gostek path.
+    try {
+      this.spasTexture = await Assets.load<Texture>('/gfx/weapons-gfx/spas12.png');
+    } catch {
+      this.spasTexture = null;
+    }
   }
 
   /** Team chevrons (drawn above heads) — legible at any zoom. */
@@ -109,6 +125,7 @@ export class EntityRenderer {
     this.container.addChild(this.bulletGfx);
     this.container.addChild(this.spriteGfx);
     this.container.addChild(this.gostekLayer);
+    this.container.addChild(this.spasLayer);
     this.container.addChild(this.markerGfx);
   }
 
@@ -141,6 +158,8 @@ export class EntityRenderer {
         this.spriteInterp[i] = undefined;
         const pooled = this.gostekPool[i];
         if (pooled !== undefined) pooled.view.visible = false;
+        const spasView = this.spasPool[i];
+        if (spasView !== undefined) spasView.visible = false;
         continue;
       }
       const num = sprite.num;
@@ -200,6 +219,11 @@ export class EntityRenderer {
         });
       }
 
+      // SPAS-12 carrier: a visible weapon difference at any zoom. The real
+      // spas12.png aimed along the carrier's aim line when the asset loaded;
+      // a two-tone vector barrel otherwise.
+      this.drawSpasWeapon(i, sprite.selWeapon === WeaponIndex.SPAS12 && !sprite.deadMeat, x, y, aimX, aimY);
+
       // TEAM CHEVRON above the head (real teams only): the Gostek textures
       // read as dark camo at spectator zoom, so the tinted shirt pixels are
       // not enough to tell red from blue — this marker is legible at any
@@ -211,6 +235,53 @@ export class EntityRenderer {
           .fill({ color, alpha: 0.95 });
       }
     }
+  }
+
+  /** Hand height (world units above the COM) where the weapon overlay sits. */
+  private static readonly SPAS_HAND_LIFT = 14;
+
+  /** Show/update (or hide) sprite slot `i`'s SPAS-12 weapon overlay. */
+  private drawSpasWeapon(
+    i: number,
+    carrying: boolean,
+    x: number,
+    y: number,
+    aimX: number,
+    aimY: number,
+  ): void {
+    const handY = y - EntityRenderer.SPAS_HAND_LIFT;
+    let view = this.spasPool[i];
+    if (carrying && this.spasTexture !== null) {
+      if (view === undefined) {
+        view = new Sprite(this.spasTexture);
+        view.anchor.set(0.3, 0.5);
+        this.spasPool[i] = view;
+        this.spasLayer.addChild(view);
+      }
+      view.visible = true;
+      view.position.set(x, handY);
+      const ang = Math.atan2(aimY - handY, aimX - x);
+      view.rotation = ang;
+      // Flip across the barrel axis when aiming left so the gun stays upright.
+      const flip = Math.cos(ang) < 0 ? -1 : 1;
+      view.scale.set(0.55, 0.55 * flip);
+      return;
+    }
+    if (view !== undefined) view.visible = false;
+    if (!carrying) return;
+    // Vector fallback: dark barrel + wooden pump along the aim line.
+    const dx = aimX - x;
+    const dy = aimY - handY;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    this.markerGfx
+      .moveTo(x + ux * 2, handY + uy * 2)
+      .lineTo(x + ux * 26, handY + uy * 26)
+      .stroke({ color: 0x2e2a26, width: 4 })
+      .moveTo(x + ux * 10, handY + uy * 10)
+      .lineTo(x + ux * 18, handY + uy * 18)
+      .stroke({ color: 0x8a5a2b, width: 6 });
   }
 
   // -------------------------------------------------------------------------
@@ -235,18 +306,29 @@ export class EntityRenderer {
       const [x, y] = this.interp(this.bulletInterp, i, cx, cy, world.ticks, t);
 
       // Tracer: a short line along the bullet's velocity, plus a bright dot.
+      // SHOTGUN pellets get a stubbier, hotter-colored streak so a six-pellet
+      // fan reads as one blast, not a burst of rifle rounds.
       const vx = parts.velocityX[num] ?? 0;
       const vy = parts.velocityY[num] ?? 0;
       const len = Math.hypot(vx, vy);
+      const pellet = bullet.style === BulletStyle.SHOTGUN;
       if (len > 0.0001) {
         const ux = vx / len;
         const uy = vy / len;
-        const tail = 6;
+        const tail = pellet ? 3.5 : 6;
         g.moveTo(x - ux * tail, y - uy * tail)
           .lineTo(x, y)
-          .stroke({ color: 0xfff0a0, width: 1.5 });
+          .stroke(
+            pellet
+              ? { color: 0xffa24a, width: 2.5 }
+              : { color: 0xfff0a0, width: 1.5 },
+          );
       }
-      g.circle(x, y, BULLET_RADIUS).fill({ color: 0xffffff });
+      if (pellet) {
+        g.circle(x, y, 1.4).fill({ color: 0xffd9a0 });
+      } else {
+        g.circle(x, y, BULLET_RADIUS).fill({ color: 0xffffff });
+      }
     }
   }
 

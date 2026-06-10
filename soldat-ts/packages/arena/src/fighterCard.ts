@@ -94,7 +94,7 @@ export function buildWatchUrl(
   base: string,
   a: FighterCard,
   b: FighterCard,
-  opts: { seed: number; roundSecs: number; arenaSeed: number },
+  opts: { seed: number; roundSecs: number; arenaSeed: number; wildcard?: string | undefined },
 ): string {
   const params = new URLSearchParams();
   params.set('spectate', '');
@@ -103,6 +103,9 @@ export function buildWatchUrl(
   params.set('seed', String(opts.seed));
   params.set('round', String(opts.roundSecs));
   if (opts.arenaSeed > 0) params.set('arena', String(opts.arenaSeed));
+  // Wildcard must ride along: the browser replay only matches the recorded
+  // sim when it arms the same carriers from the same seed.
+  if (opts.wildcard !== undefined) params.set('wildcard', opts.wildcard);
   if (tweaksToParam(a.tweaks) !== '') params.set('tweak-a', tweaksToParam(a.tweaks));
   if (tweaksToParam(b.tweaks) !== '') params.set('tweak-b', tweaksToParam(b.tweaks));
   params.set('coach-a', a.coach);

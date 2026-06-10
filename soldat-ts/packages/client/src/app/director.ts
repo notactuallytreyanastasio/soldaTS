@@ -161,7 +161,8 @@ export const FEED_KEEP = 8;
 /**
  * Record one death on the board. Suicides and unattributed deaths
  * (killer 0 / killer === victim) add no tally and render with an empty
- * killer name (the HUD shows `cause Victim`).
+ * killer name (the HUD shows `cause Victim`). `cause` is the weapon label
+ * shown between the names (wildcard SPAS-12 kills read `[SPAS12]`).
  */
 export function applyKill(
   board: KillBoard,
@@ -169,6 +170,7 @@ export function applyKill(
   victim: number,
   nameOf: (index: number) => string,
   localIndex: number,
+  cause = 'AK74',
 ): void {
   const valid = killer > 0 && killer !== victim;
   if (valid) {
@@ -177,7 +179,7 @@ export function applyKill(
   board.feed.unshift({
     killer: valid ? nameOf(killer) : '',
     victim: nameOf(victim),
-    cause: 'AK74',
+    cause,
     byLocalPlayer: valid && killer === localIndex,
   });
   if (board.feed.length > FEED_KEEP) board.feed.pop();

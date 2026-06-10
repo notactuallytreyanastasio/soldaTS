@@ -213,6 +213,8 @@ export function parseSpectate(
   arenaSeed: number;
   variant: string | undefined;
   roundSecs: number;
+  /** Opt-in wildcard (?wildcard=shotgun); absent = stock loadouts. */
+  wildcard: string | undefined;
 } {
   const params = new URLSearchParams(search);
   const aiEngine = params.get('ai') ?? undefined;
@@ -236,10 +238,12 @@ export function parseSpectate(
   const coachB = params.get('coach-b') ?? undefined;
   const arenaRaw = parseInt(params.get('arena') ?? '', 10);
   const arenaSeed = Number.isFinite(arenaRaw) && arenaRaw >= 0 ? arenaRaw : 0;
+  // ?wildcard=shotgun: one SPAS-12 carrier per team (Game picks via world.rng).
+  const wildcard = params.get('wildcard') ?? undefined;
   if (params.has(PLAY_QUERY_PARAM)) {
     return {
       spectate: false, botCount: 3, aiEngine, seed, teams, variant, roundSecs,
-      tweakA, tweakB, coachA, coachB, arenaSeed,
+      tweakA, tweakB, coachA, coachB, arenaSeed, wildcard,
     };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
@@ -247,7 +251,7 @@ export function parseSpectate(
     Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
   return {
     spectate: true, botCount, aiEngine, seed, teams, variant, roundSecs,
-    tweakA, tweakB, coachA, coachB, arenaSeed,
+    tweakA, tweakB, coachA, coachB, arenaSeed, wildcard,
   };
 }
 
@@ -553,6 +557,7 @@ async function main(): Promise<void> {
   const {
     spectate, botCount, aiEngine, seed, teams,
     variant: variantName, roundSecs, tweakA, tweakB, coachA, coachB, arenaSeed,
+    wildcard,
   } = parseSpectate();
   // Gameplay-tuning variant (tournament tiles each run a different one;
   // unknown/absent names are baseline = stock rules).
@@ -627,6 +632,7 @@ async function main(): Promise<void> {
     engineTweaks,
     tuning: variant.tuning,
     roundTicks: spectate ? roundSecs * 60 : 0,
+    wildcard,
   });
   // Attach the sim collision map so sprites collide with the floor (and, in
   // spectate mode, the map's bot waypoints so targetless bots patrol).
@@ -678,6 +684,9 @@ async function main(): Promise<void> {
       victim,
       nameOf,
       spectate ? director.followed : game.playerIndex,
+      // Cause = the shooter's current weapon (bots never swap, so the label
+      // is exact for them); suicides/world deaths show the victim's own gun.
+      game.weaponNameOf(killer > 0 && killer !== victim ? killer : victim),
     );
     director.notifyKill(killer, victim, game.world.mainTickCounter);
   };
@@ -1067,7 +1076,7 @@ async function main(): Promise<void> {
           (game.engineGroups().length > 1
             ? ` [${(game.engineOf(followed)[0] ?? '?').toUpperCase()}]`
             : '') +
-          ` · ${game.reloadingOf(followed) ? 'RELOADING…' : 'RIFLE'}`,
+          ` · ${game.reloadingOf(followed) ? 'RELOADING…' : game.weaponNameOf(followed)}`,
         // Mixed match: the scoreboard becomes ENGINE vs ENGINE — the live
         // answer to "which brain wins" in one shared arena.
         scores: engineScores(game, board, followed) ?? ffaScores(board.kills, followed),
@@ -1083,7 +1092,10 @@ async function main(): Promise<void> {
         jet: player.jetsCount,
         maxJet: game.tuning.jetFuelMax,
         ammo: game.playerAmmo(),
-        weaponName: game.playerReloading() ? 'RELOADING…' : 'RIFLE',
+        // Current weapon (Tab/B swaps AK74 ⇄ SPAS12) — labels match the feed.
+        weaponName: game.playerReloading()
+          ? 'RELOADING…'
+          : game.weaponNameOf(game.playerIndex),
         scores: { alpha: 0, bravo: 0, playerKills: 0, leading: false, gap: 0 },
         killFeed: [],
         fps: dt > 0 ? 1 / dt : 0,

@@ -37,6 +37,8 @@ export interface RunManifest {
   roundTicks: number;
   maxTicks: number;
   variant: { name: string; tuning: GameTuning }; // RESOLVED full tuning
+  /** Opt-in wildcard the run was armed with ('shotgun'), null when stock. */
+  wildcard: string | null;
   teams: [TeamManifest, TeamManifest];
   matches: {
     n: number;
@@ -110,6 +112,7 @@ export interface ManifestArgs {
   botCount: number;
   roundTicks: number;
   maxTicks: number;
+  wildcard?: string | undefined;
   cli?: string | null;
   now?: Date;
 }
@@ -134,6 +137,7 @@ export function buildManifest(args: ManifestArgs): RunManifest {
     roundTicks: args.roundTicks,
     maxTicks: args.maxTicks,
     variant: { name: args.variantName, tuning: { ...first.tuning } },
+    wildcard: args.wildcard ?? null,
     teams: [teamManifest(0), teamManifest(1)],
     matches: args.results.map((r, i) => ({
       n: i + 1,

@@ -12,7 +12,15 @@
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { VARIANTS, engineIds } from '@soldat/client/headless';
-import { buildRunPlans, parseSweep, parseTeams, parseTweaks, type RunPlan } from './cliArgs';
+import {
+  buildRunPlans,
+  parseSweep,
+  parseTeams,
+  parseTweaks,
+  parseWildcard,
+  WILDCARDS,
+  type RunPlan,
+} from './cliArgs';
 import { runMatch, type MatchResult } from './runner';
 import { buildManifest, makeRunId, writeRun } from './store';
 import { buildWatchUrl, validateCard, type FighterCard } from './fighterCard';
@@ -36,6 +44,8 @@ OPTIONS:
   --round SECS           round length in sim-seconds (default 120)
   --bots N               total bots, split evenly (default 6 = 3v3)
   --variant NAME         gameplay variant: ${VARIANTS.map((v) => v.name).join(' | ')}
+  --wildcard NAME        opt-in match mutator: ${WILDCARDS.join(' | ')} (one SPAS-12
+                         carrier per team, picked deterministically from the seed)
   --seed N               base seed; match k uses seed+k (default 1337)
   --out DIR              dataset base dir (default soldat-ts/datasets)
   --arena N              generated-arena seed (0 = canonical Skyreach)
@@ -65,6 +75,7 @@ function main(): void {
       round: { type: 'string' },
       bots: { type: 'string' },
       variant: { type: 'string' },
+      wildcard: { type: 'string' },
       seed: { type: 'string' },
       sweep: { type: 'string' },
       out: { type: 'string' },
@@ -119,6 +130,7 @@ function main(): void {
       botCount: intArg(values.bots, 'bots', 6),
       variant,
       roundSeconds: intArg(values.round, 'round', 120),
+      wildcard: parseWildcard(values.wildcard),
     });
   } catch (err) {
     console.error(`arena: ${err instanceof Error ? err.message : String(err)}`);
@@ -156,6 +168,7 @@ function main(): void {
         botCount: plan.botCount,
         variant: plan.variant,
         roundTicks: plan.roundTicks,
+        wildcard: plan.wildcard,
       });
       const secs = ((performance.now() - t0) / 1000).toFixed(1);
       const round = result.round;
@@ -195,6 +208,7 @@ function main(): void {
         botCount: plan.botCount,
         roundTicks: plan.roundTicks,
         maxTicks: plan.roundTicks + 600,
+        wildcard: plan.wildcard,
         cli: cliLine,
       }),
       results,
@@ -254,6 +268,7 @@ function fight(
     seed?: string | undefined;
     arena?: string | undefined;
     out?: string | undefined;
+    wildcard?: string | undefined;
   },
 ): void {
   if (cardPaths.length !== 2) {
@@ -284,12 +299,21 @@ function fight(
   const botCount = Math.max(2, parseInt(values.bots ?? '6', 10) || 6);
   const seedBase = parseInt(values.seed ?? '1337', 10) || 1337;
   const arenaSeed = Math.max(0, parseInt(values.arena ?? '0', 10) || 0);
+  let wildcard: string | undefined;
+  try {
+    wildcard = parseWildcard(values.wildcard);
+  } catch (err) {
+    console.error(`arena fight: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
   const outDir =
     values.out ?? fileURLToPath(new URL('../../../datasets', import.meta.url));
 
   console.log(
     `CLAUDE ARENA — ${a.coach} (${a.engine}) vs ${b.coach} (${b.engine}) · ` +
-      `${matches} match(es) · ${roundSecs}s rounds · arena #${arenaSeed}`,
+      `${matches} match(es) · ${roundSecs}s rounds · arena #${arenaSeed}` +
+      (wildcard !== undefined ? ` · wildcard ${wildcard}` : ''),
   );
   if (a.rationale !== undefined) console.log(`  ${a.coach}: "${a.rationale}"`);
   if (b.rationale !== undefined) console.log(`  ${b.coach}: "${b.rationale}"`);
@@ -313,6 +337,7 @@ function fight(
       arenaSeed,
       botCount,
       roundTicks: roundSecs * 60,
+      wildcard,
       teams: [
         { engine: a.engine, tweaks: a.tweaks },
         { engine: b.engine, tweaks: b.tweaks },
@@ -351,6 +376,7 @@ function fight(
     roundTicks: roundSecs * 60,
     maxTicks: roundSecs * 60 + 600,
     variantName: 'baseline',
+    wildcard,
     teams: [
       { engine: a.engine, tweaks: a.tweaks },
       { engine: b.engine, tweaks: b.tweaks },
@@ -366,7 +392,7 @@ function fight(
   console.log(`  series: ${a.coach} ${aWins} — ${bWins} ${b.coach}`);
   console.log('');
   console.log('  WATCH (replays the exact match-1 sim in the browser — pnpm play first):');
-  const watchUrl = buildWatchUrl('http://localhost:5173', a, b, { seed: seedBase, roundSecs, arenaSeed });
+  const watchUrl = buildWatchUrl('http://localhost:5173', a, b, { seed: seedBase, roundSecs, arenaSeed, wildcard });
   console.log(`  ${watchUrl}`);
   live.finish({ dataset: dir, watchUrl });
 }

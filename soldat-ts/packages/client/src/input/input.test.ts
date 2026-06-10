@@ -119,23 +119,41 @@ function makeClock(start = 1000): {
 }
 
 describe('key mapping', () => {
-  it('Tab sets reload and preventDefaults on both keydown and keyup', () => {
+  it('Tab sets changeWeapon and preventDefaults on both keydown and keyup', () => {
     const h = makeHarness();
     const clock = makeClock();
     expect(h.key('Tab', true)).toBe(true); // focus must NOT move
-    expect(clock.read(h).reload).toBe(true);
+    expect(clock.read(h).changeWeapon).toBe(true);
     expect(h.key('Tab', false)).toBe(true);
+    expect(clock.read(h).changeWeapon).toBe(false);
+  });
+
+  it('B sets changeWeapon too (the second weapon-swap binding)', () => {
+    const h = makeHarness();
+    const clock = makeClock();
+    expect(h.key('KeyB', true)).toBe(true);
+    expect(clock.read(h).changeWeapon).toBe(true);
+    expect(h.key('KeyB', false)).toBe(true);
+    expect(clock.read(h).changeWeapon).toBe(false);
+  });
+
+  it('R sets reload (Tab now swaps weapons instead)', () => {
+    const h = makeHarness();
+    const clock = makeClock();
+    expect(h.key('KeyR', true)).toBe(true);
+    expect(clock.read(h).reload).toBe(true);
+    expect(h.key('KeyR', false)).toBe(true);
     expect(clock.read(h).reload).toBe(false);
   });
 
-  it('Shift+Tab sets BOTH jetpack and reload (e.code matching)', () => {
+  it('Shift+Tab sets BOTH jetpack and changeWeapon (e.code matching)', () => {
     const h = makeHarness();
     const clock = makeClock();
     h.key('ShiftLeft', true);
     expect(h.key('Tab', true)).toBe(true);
     const c = clock.read(h);
     expect(c.jetpack).toBe(true);
-    expect(c.reload).toBe(true);
+    expect(c.changeWeapon).toBe(true);
   });
 
   it('Space fires and does NOT jump; W jumps', () => {

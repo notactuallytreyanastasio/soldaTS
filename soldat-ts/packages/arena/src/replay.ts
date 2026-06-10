@@ -59,6 +59,9 @@ export type ArenaEvent =
       killerPos: { x: number; y: number } | null;
       victimPos: { x: number; y: number };
       dist: number | null;
+      /** Killer's weapon label ('AK74' | 'SPAS12'); present only in
+       *  wildcard runs so default event streams keep their exact shape. */
+      weapon?: string;
     };
 
 /**
