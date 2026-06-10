@@ -303,39 +303,71 @@ function engineScores(
   };
 }
 
+/** Handle for the match-info card: relabel on hot-swap + follow updates. */
+interface InfoCard {
+  update(): void;
+  setFollowing(name: string, team: number, engine: string): void;
+  toggle(): void;
+}
+
+const TEAM_COLORS: Record<number, string> = { 1: '#d23c3c', 2: '#4060d2' };
+
 /**
- * BIG top-center banner naming the engine driving this window and its
- * strategy in one line. Returns an updater so the E-key hot-swap can relabel
- * the window live.
+ * The match-info card: which engines are fighting, their strategy, the
+ * variant's knob turns, and WHO the camera is following (team-colored).
+ *
+ * Two layouts so you can always watch the game AND read the info: full-size
+ * windows get the big bottom-center banner; small windows (tournament tiles
+ * are ~half-screen iframes) get a COMPACT corner card that never covers the
+ * action. B (or the i button) toggles it.
  */
-function showEngineBanner(game: Game, variant: Variant): () => void {
+function showEngineBanner(game: Game, variant: Variant): InfoCard {
+  const compact = window.innerWidth < 1000;
   const banner = document.createElement('div');
-  // Bottom-center, lifted above the HUD strip (hint bottom-left, vitals and
-  // ammo bottom-right, score text at the very bottom) so it overlaps nothing.
-  banner.style.cssText = [
-    'position:fixed',
-    'bottom:96px',
-    'left:50%',
-    'transform:translateX(-50%)',
-    'z-index:20',
-    'text-align:center',
-    'pointer-events:none',
-    'font-family:ui-monospace,Menlo,monospace',
-    'text-shadow:0 2px 8px rgba(0,0,0,0.9)',
-  ].join(';');
+  banner.style.cssText = compact
+    ? [
+        'position:fixed',
+        'bottom:30px',
+        'left:50%',
+        'transform:translateX(-50%)',
+        'z-index:20',
+        'text-align:center',
+        'pointer-events:none',
+        'font-family:ui-monospace,Menlo,monospace',
+        'background:rgba(10,12,16,0.65)',
+        'padding:4px 10px',
+        'border-radius:6px',
+        'max-width:92vw',
+      ].join(';')
+    : [
+        'position:fixed',
+        'bottom:96px',
+        'left:50%',
+        'transform:translateX(-50%)',
+        'z-index:20',
+        'text-align:center',
+        'pointer-events:none',
+        'font-family:ui-monospace,Menlo,monospace',
+        'text-shadow:0 2px 8px rgba(0,0,0,0.9)',
+      ].join(';');
   const name = document.createElement('div');
-  name.style.cssText = 'font-size:34px;font-weight:bold;letter-spacing:0.35em';
+  name.style.cssText = compact
+    ? 'font-size:15px;font-weight:bold;letter-spacing:0.15em'
+    : 'font-size:34px;font-weight:bold;letter-spacing:0.35em';
   const tagline = document.createElement('div');
-  tagline.style.cssText = 'font-size:12px;color:#cfd6e4;margin-top:2px;letter-spacing:0.08em';
-  // Variant line: which gameplay-tuning variant this window runs. Shown ALWAYS
-  // in spectate (baseline included) so tournament tiles are tellable-apart.
+  tagline.style.cssText = `font-size:${compact ? 10 : 12}px;color:#cfd6e4;margin-top:2px;letter-spacing:0.08em`;
+  // Variant line: which gameplay-tuning variant this window runs, with its
+  // knob turns spelled out. Shown ALWAYS in spectate (baseline included).
   const variantLine = document.createElement('div');
-  variantLine.style.cssText = 'font-size:11px;color:#ffd75e;margin-top:3px;letter-spacing:0.2em';
+  variantLine.style.cssText = `font-size:${compact ? 10 : 11}px;color:#ffd75e;margin-top:3px;letter-spacing:0.12em`;
   const knobs = tuningDeltas(variant.tuning, DEFAULT_TUNING);
   variantLine.textContent =
     `VARIANT: ${variant.name.toUpperCase()} — ${variant.blurb}` +
     (knobs !== '' ? ` · ${knobs}` : '');
-  banner.append(name, tagline, variantLine);
+  // Following line: who the camera is on, highlighted in their TEAM color.
+  const followLine = document.createElement('div');
+  followLine.style.cssText = `font-size:${compact ? 11 : 13}px;font-weight:bold;margin-top:3px;letter-spacing:0.12em`;
+  banner.append(name, tagline, variantLine, followLine);
   document.body.appendChild(banner);
   const update = (): void => {
     const groups = game.engineGroups();
@@ -345,16 +377,23 @@ function showEngineBanner(game: Game, variant: Variant): () => void {
     tagline.textContent = game.aiStrategy;
   };
   update();
-  return update;
+  return {
+    update,
+    setFollowing: (who, team, engine): void => {
+      const teamWord = team === 1 ? 'RED' : team === 2 ? 'BLUE' : '';
+      followLine.textContent =
+        `▶ FOLLOWING ${who}` +
+        (teamWord !== '' ? ` — ${teamWord}` : '') +
+        (engine !== '' ? ` · ${engine}` : '');
+      followLine.style.color = TEAM_COLORS[team] ?? '#e8e4d8';
+    },
+    toggle: (): void => {
+      banner.style.display = banner.style.display === 'none' ? '' : 'none';
+    },
+  };
 }
 
-/**
- * Big center-screen winner banner; hidden until round end. Returns a show(fn).
- * Center at 38% height is empty real estate once the match freezes (entities
- * render there but nothing moves — an intentional broadcast-style overlay);
- * it clears the top-center MVP panel, top-left leaderboard, top-right feed,
- * and the bottom:96px engine banner.
- */
+/** Big center-screen winner banner; hidden until round end. */
 function makeWinnerBanner(): (r: RoundResult) => void {
   const root = document.createElement('div');
   root.style.cssText = [
@@ -373,7 +412,7 @@ function makeWinnerBanner(): (r: RoundResult) => void {
   const sub = document.createElement('div');
   root.append(title, sub);
   document.body.appendChild(root);
-  return (r) => {
+  return (r): void => {
     title.textContent =
       r.winnerTeam === 1 ? 'RED WINS' : r.winnerTeam === 2 ? 'BLUE WINS' : 'DRAW';
     title.style.cssText =
@@ -390,7 +429,7 @@ function makeWinnerBanner(): (r: RoundResult) => void {
 /** Fixed bottom-left hint so a spectator knows the camera keys. */
 function showSpectateHint(): void {
   const hint = document.createElement('div');
-  hint.textContent = 'SPECTATE — ←/→ follow · A auto · E swap brain · ?play to fight · ?duel to race engines';
+  hint.textContent = 'SPECTATE — ←/→ follow · A auto · E swap brain · M sound · B info · ?play to fight';
   hint.style.cssText = [
     'position:fixed',
     'left:12px',
@@ -559,7 +598,10 @@ async function main(): Promise<void> {
   };
   window.addEventListener('pointerdown', resumeAudio, { once: true });
   window.addEventListener('keydown', resumeAudio, { once: true });
+  // Sound is MUTED by default (user preference) — M or the button unmutes.
+  let muted = true;
   game.onSound = (event, x, y): void => {
+    if (muted) return;
     const sp = game.world.spriteParts;
     // The "listener" is whoever the screen is centred on: the followed bot in
     // spectate mode, the local player otherwise.
@@ -617,8 +659,47 @@ async function main(): Promise<void> {
   if (spectate) {
     showSpectateHint();
   }
-  // Big engine banner: which brain drives this window (updates on hot-swap).
-  const updateEngineBanner = spectate ? showEngineBanner(game, variant) : (): void => {};
+  // Match-info card: engines, strategy, knob turns, and who the camera is
+  // following — compact in small windows so the game stays watchable.
+  const infoCard = spectate ? showEngineBanner(game, variant) : null;
+
+  // Tiny clickable controls (bottom-right corner): sound + info toggles.
+  // Keyboard: M mutes/unmutes, B shows/hides the info card — in EVERY mode.
+  {
+    const strip = document.createElement('div');
+    strip.style.cssText =
+      'position:fixed;bottom:8px;right:8px;z-index:40;display:flex;gap:6px;font:14px ui-monospace,monospace';
+    const mkBtn = (label: string, title: string, onClick: () => void): HTMLButtonElement => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.title = title;
+      b.style.cssText =
+        'background:rgba(10,12,16,0.7);color:#e8e4d8;border:1px solid #444;border-radius:4px;padding:3px 8px;cursor:pointer';
+      b.addEventListener('click', () => {
+        onClick();
+        b.blur(); // don't steal Space/arrow keys from the game
+      });
+      return b;
+    };
+    const muteBtn = mkBtn('🔇', 'sound (M)', () => {
+      muted = !muted;
+      muteBtn.textContent = muted ? '🔇' : '🔊';
+    });
+    strip.appendChild(muteBtn);
+    if (infoCard !== null) {
+      strip.appendChild(mkBtn('ℹ', 'match info (B)', () => infoCard.toggle()));
+    }
+    document.body.appendChild(strip);
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (key === 'm') {
+        muted = !muted;
+        muteBtn.textContent = muted ? '🔇' : '🔊';
+      } else if (key === 'b') {
+        infoCard?.toggle();
+      }
+    });
+  }
   // Displayed leaderboard (L toggles): live K/D ranking of every fighter.
   const leaderboard = spectate ? new LeaderboardPanel() : null;
   // Per-team scoreboard (goal node 157): team kill totals + the RED/BLUE MVP,
@@ -762,7 +843,7 @@ async function main(): Promise<void> {
         const next = specs[(cur + 1) % specs.length];
         if (next !== undefined) {
           game.setEngine(next);
-          updateEngineBanner();
+          infoCard?.update();
         }
       }
     });
@@ -892,6 +973,11 @@ async function main(): Promise<void> {
     // Leaderboard refresh (cheap, but no need for 120 Hz DOM writes).
     if (leaderboard !== null && game.world.mainTickCounter % 30 === 0) {
       leaderboard.update(leaderboardRows());
+      infoCard?.setFollowing(
+        nameOf(director.followed),
+        game.teamOf(director.followed),
+        game.engineOf(director.followed),
+      );
       teamPanel?.update(leaderboardRows());
     }
 
