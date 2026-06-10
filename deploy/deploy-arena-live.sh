@@ -13,11 +13,12 @@ set -euo pipefail
 #      repo's /opt/blog/docker-compose.yml) and restart it to pick up code.
 #
 # Sync policy (the server OWNS its own arena once live):
+#   - the code tree syncs with --delete, but datasets/ is fully excluded from
+#     that pass and synced SEPARATELY WITHOUT --delete (additive only):
+#     server-grown datasets don't exist locally and must never be wiped.
 #   - replay blobs (*.replay.jsonl.gz) never travel: the site re-simulates
 #     replays from the seed; manifests/summaries/events/telemetry DO travel so
 #     the board and the desk's history carry the local story.
-#   - server-grown datasets are PROTECTED from --delete (they don't exist
-#     locally; deleting them would wipe the server's corpus).
 #   - server-owned mutable state (daemon state files, logs, watcher.port)
 #     never travels — the server keeps its own season clock, crucible ledger
 #     position, and league cycle.
@@ -29,16 +30,22 @@ HOST="${1:-${ARENA_DEPLOY_HOST:-root@5.161.181.91}}"
 DEST="/opt/soldat"
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
-echo "==> Syncing soldat repo -> $HOST:$DEST ..."
+# The server has no deciduous binary; build.mjs falls back to
+# docs/graph-data.json for the war-room panel. Refresh the export so the
+# server's graph is as fresh as this deploy (best-effort).
+if command -v deciduous >/dev/null 2>&1; then
+  echo "==> Exporting decision graph (docs/graph-data.json) ..."
+  (cd "$HERE" && deciduous sync) || echo "    (deciduous sync failed — server keeps the previous export)"
+fi
+
+echo "==> Syncing soldat code tree -> $HOST:$DEST ..."
 ssh "$HOST" mkdir -p "$DEST"
 
-rsync -az --delete --info=stats1 \
-  --filter='protect datasets/***' \
+rsync -az --delete --stats \
+  --exclude 'datasets' \
   --exclude '.git' \
   --exclude 'node_modules' \
   --exclude '.pnpm-store' \
-  --exclude '*.replay.jsonl.gz' \
-  --exclude 'datasets/LIVE.json' \
   --exclude 'arena-live/site' \
   --exclude 'arena-live/public' \
   --exclude 'arena-live/*.log' \
@@ -52,7 +59,14 @@ rsync -az --delete --info=stats1 \
   --exclude 'tools/checkpoints' \
   --exclude 'packages/client/dist' \
   --exclude '.DS_Store' \
-  "$HERE/" "$HOST:$DEST/"
+  "$HERE/" "$HOST:$DEST/" | grep -E 'Number of files transferred|created|deleted|total size' || true
+
+echo "==> Syncing datasets (additive — server-grown datasets are never deleted)..."
+rsync -az --stats \
+  --exclude '*.replay.jsonl.gz' \
+  --exclude 'LIVE.json' \
+  --exclude '.DS_Store' \
+  "$HERE/datasets/" "$HOST:$DEST/datasets/" | grep -E 'Number of files transferred|created|total size' || true
 
 echo "==> Seeding story ledgers (first deploy only — server appends its own after)..."
 rsync -az --ignore-existing \
