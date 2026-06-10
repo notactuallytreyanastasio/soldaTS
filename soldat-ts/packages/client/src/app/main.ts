@@ -308,6 +308,7 @@ interface InfoCard {
   update(): void;
   setFollowing(name: string, team: number, engine: string): void;
   toggle(): void;
+  setMinimal(minimal: boolean): void;
 }
 
 const TEAM_COLORS: Record<number, string> = { 1: '#d23c3c', 2: '#4060d2' };
@@ -390,6 +391,13 @@ function showEngineBanner(game: Game, variant: Variant): InfoCard {
     toggle: (): void => {
       banner.style.display = banner.style.display === 'none' ? '' : 'none';
     },
+    setMinimal: (minimal: boolean): void => {
+      // Clean view: keep ONLY the engine names — drop strategy/variant/follow.
+      banner.style.display = '';
+      tagline.style.display = minimal ? 'none' : '';
+      variantLine.style.display = minimal ? 'none' : '';
+      followLine.style.display = minimal ? 'none' : '';
+    },
   };
 }
 
@@ -427,7 +435,7 @@ function makeWinnerBanner(): (r: RoundResult) => void {
 }
 
 /** Fixed bottom-left hint so a spectator knows the camera keys. */
-function showSpectateHint(): void {
+function showSpectateHint(): HTMLDivElement {
   const hint = document.createElement('div');
   hint.textContent = 'SPECTATE — ←/→ follow · A auto · E swap brain · M sound · B info · ?play to fight';
   hint.style.cssText = [
@@ -441,6 +449,7 @@ function showSpectateHint(): void {
     'z-index:10',
   ].join(';');
   document.body.appendChild(hint);
+  return hint;
 }
 
 // ---------------------------------------------------------------------------
@@ -541,6 +550,8 @@ async function main(): Promise<void> {
   // Attach the sim collision map so sprites collide with the floor (and, in
   // spectate mode, the map's bot waypoints so targetless bots patrol).
   game.loadMap(map);
+  // Spectate-hint element handle (clean view hides it; assigned below).
+  let hintEl: HTMLDivElement | null = null;
 
   // --- Spectate director + scoreboard ------------------------------------
   // The director picks which bot the action camera follows; the kill board
@@ -657,11 +668,36 @@ async function main(): Promise<void> {
     showControlsScreen();
   }
   if (spectate) {
-    showSpectateHint();
+    hintEl = showSpectateHint();
   }
   // Match-info card: engines, strategy, knob turns, and who the camera is
   // following — compact in small windows so the game stays watchable.
   const infoCard = spectate ? showEngineBanner(game, variant) : null;
+
+  // CLEAN VIEW (H, or a tournament-page broadcast): hide every overlay except
+  // the engine names so the shooting is fully visible.
+  let cleanMode = false;
+  const setClean = (on: boolean): void => {
+    cleanMode = on;
+    if (leaderboard !== null) leaderboard.visible = !on;
+    if (teamPanel !== null) teamPanel.visible = !on;
+    if (hintEl !== null) hintEl.style.display = on ? 'none' : '';
+    hud.visible = !on; // pixi HUD: score, kill feed, vitals, FPS
+    infoCard?.setMinimal(on);
+  };
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key.toLowerCase() === 'h') setClean(!cleanMode);
+  });
+  window.addEventListener('message', (e: MessageEvent) => {
+    const data: unknown = e.data;
+    if (
+      typeof data === 'object' &&
+      data !== null &&
+      (data as { soldatClean?: string }).soldatClean === 'toggle'
+    ) {
+      setClean(!cleanMode);
+    }
+  });
 
   // Tiny clickable controls (bottom-right corner): sound + info toggles.
   // Keyboard: M mutes/unmutes, B shows/hides the info card — in EVERY mode.

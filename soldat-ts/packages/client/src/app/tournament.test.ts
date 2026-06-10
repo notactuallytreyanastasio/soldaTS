@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import {
   aggregateStandings,
   evolveRoster,
+  pairingsFor,
   parseTournament,
   resolveVariant,
   roundReport,
@@ -131,8 +132,9 @@ describe('evolveRoster (model more after the winners)', () => {
 describe('parseTournament', () => {
   it('parses the flag and the roster override', () => {
     expect(parseTournament('?foo')).toBeNull();
+    // No explicit ?ai= → null roster: the page round-robins ALL engines.
     expect(parseTournament('?tournament')).toEqual({
-      roster: 'classic,pilot',
+      roster: null,
       roundSecs: 600,
       gen: 0,
     });
@@ -249,5 +251,22 @@ describe('round generations (?gen) and knob-turn display', () => {
     ).toBe('fire 6→4 · reload 95→70');
     // An override equal to stock is not a "turn".
     expect(tuningDeltas({ magSize: 30 }, DEFAULT_TUNING)).toBe('');
+  });
+});
+
+
+describe('pairingsFor (round-robin over all engines)', () => {
+  it('covers every unordered pair, then cycles to fill the games', () => {
+    expect(pairingsFor(['classic', 'pilot', 'reaper'], 4)).toEqual([
+      'classic,pilot',
+      'classic,reaper',
+      'pilot,reaper',
+      'classic,pilot',
+    ]);
+  });
+
+  it('mirrors a single engine and handles two', () => {
+    expect(pairingsFor(['pilot'], 2)).toEqual(['pilot,pilot', 'pilot,pilot']);
+    expect(pairingsFor(['a', 'b'], 3)).toEqual(['a,b', 'a,b', 'a,b']);
   });
 });

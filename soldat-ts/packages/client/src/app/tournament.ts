@@ -19,6 +19,7 @@ import {
 } from '../ui/leaderboard';
 import type { MatchDump } from './telemetry';
 import { DEFAULT_TUNING, type GameTuning } from './game';
+import { engineIds } from '../ai';
 
 export const TOURNAMENT_GAMES = 4;
 const POLL_MS = 2000;
@@ -88,8 +89,8 @@ export function tuningDeltas(
 }
 
 export interface TournamentOptions {
-  /** Per-game roster (comma list of engine ids). */
-  roster: string;
+  /** Per-game roster (comma list), or null = auto round-robin pairings. */
+  roster: string | null;
   /** Round length passed to every game (seconds of SIM time; default 600). */
   roundSecs: number;
   /** Round generation (seeds derive from it; N key increments). */
@@ -102,7 +103,10 @@ export function parseTournament(
 ): TournamentOptions | null {
   const params = new URLSearchParams(search);
   if (!params.has('tournament')) return null;
-  const roster = params.get('ai') ?? 'classic,pilot';
+  // No explicit ?ai= → null: the page builds round-robin PAIRINGS over every
+  // registered engine, so a new brain joins the tournament automatically
+  // (user question: "why isn't reaper enabled for some of the games").
+  const roster = params.get('ai');
   // ?round=SECS overrides the 10-minute default (fast headless verification).
   const roundRaw = parseInt(params.get('round') ?? '', 10);
   const roundSecs = Number.isFinite(roundRaw) && roundRaw > 0 ? roundRaw : 600;
@@ -112,6 +116,24 @@ export function parseTournament(
   const genRaw = parseInt(params.get('gen') ?? '', 10);
   const gen = Number.isFinite(genRaw) && genRaw >= 0 ? genRaw : 0;
   return { roster, roundSecs, gen };
+}
+
+/**
+ * Round-robin pairings over `ids` to fill `games` slots: every unordered
+ * pair once, then cycle. One engine → mirror matches. Pure (tested).
+ */
+export function pairingsFor(ids: readonly string[], games: number): string[] {
+  const pairs: string[] = [];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      pairs.push(`${ids[i]},${ids[j]}`);
+    }
+  }
+  if (pairs.length === 0) {
+    const only = ids[0] ?? 'classic';
+    pairs.push(`${only},${only}`);
+  }
+  return Array.from({ length: games }, (_, g) => pairs[g % pairs.length]!);
 }
 
 export interface EngineTotals {
@@ -277,6 +299,12 @@ export function showTournament(opts: TournamentOptions): void {
   grid.style.cssText =
     'flex:3;display:flex;flex-wrap:wrap;gap:2px;align-content:stretch;min-width:0';
   const frames: HTMLIFrameElement[] = [];
+  // Per-game rosters: explicit ?ai= applies to every game; otherwise
+  // round-robin pairings over ALL registered engines (reaper plays).
+  const rosters =
+    opts.roster !== null
+      ? Array.from({ length: TOURNAMENT_GAMES }, () => opts.roster!)
+      : pairingsFor(engineIds(), TOURNAMENT_GAMES);
   for (let g = 0; g < TOURNAMENT_GAMES; g++) {
     const frame = document.createElement('iframe');
     // Distinct seeds: the sim is deterministic, identical seeds would play
@@ -284,7 +312,7 @@ export function showTournament(opts: TournamentOptions): void {
     // gameplay variant (g1=baseline, g2=high-octane, g3=thin-air,
     // g4=marksman) and a timed round of opts.roundSecs sim-seconds.
     frame.src =
-      `${window.location.pathname}?spectate&ai=${encodeURIComponent(opts.roster)}` +
+      `${window.location.pathname}?spectate&ai=${encodeURIComponent(rosters[g]!)}` +
       `&teams&seed=${opts.gen * TOURNAMENT_GAMES + g + 2}` +
       `&variant=${encodeURIComponent(VARIANTS[g % VARIANTS.length]!.name)}` +
       `&round=${opts.roundSecs}`;
@@ -306,7 +334,7 @@ export function showTournament(opts: TournamentOptions): void {
   ].join(';');
   side.innerHTML =
     '<div style="font-weight:bold;letter-spacing:0.25em;font-size:14px">TOURNAMENT</div>' +
-    '<div style="color:#9aa3b2;margin:4px 0 10px">4 games · 4 knob variants · red vs blue · 10-min rounds<br>N = next round (same whole teams, fresh seeds)</div>' +
+    '<div style="color:#9aa3b2;margin:4px 0 10px">4 games · 4 knob variants · red vs blue · 10-min rounds<br>N = next round (fresh seeds) · H = clean view</div>' +
     '<div id="t-round" style="margin-top:10px"></div>' +
     '<div id="t-engines"></div>' +
     '<div id="t-games" style="margin-top:10px"></div>' +
@@ -386,7 +414,7 @@ export function showTournament(opts: TournamentOptions): void {
         // The knob turns, spelled out — every game declares its exact tweaks.
         const knobs = tuningDeltas(v.tuning, DEFAULT_TUNING);
         return (
-          `<div style="line-height:1.6">g${g + 1} · ${v.name} · ${status}</div>` +
+          `<div style="line-height:1.6">g${g + 1} · ${rosters[g]!.replace(',', ' v ')} · ${v.name} · ${status}</div>` +
           (knobs !== ''
             ? `<div style="color:#9aa3b2;font-size:11px;margin:-2px 0 4px 14px">${knobs}</div>`
             : '')
@@ -415,11 +443,20 @@ export function showTournament(opts: TournamentOptions): void {
   setInterval(pull, POLL_MS);
 
   const nextRoundUrl = (): string =>
-    `${window.location.pathname}?tournament&ai=${encodeURIComponent(opts.roster)}` +
+    `${window.location.pathname}?tournament` +
+    (opts.roster !== null ? `&ai=${encodeURIComponent(opts.roster)}` : '') +
     `&round=${opts.roundSecs}&gen=${opts.gen + 1}`;
 
   window.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key.toLowerCase() === 'n') window.location.href = nextRoundUrl();
+    const key = e.key.toLowerCase();
+    if (key === 'n') window.location.href = nextRoundUrl();
+    // H — broadcast clean-view toggle into every tile: hide everything but
+    // the engine names so the shooting is watchable.
+    if (key === 'h') {
+      for (const f of frames) {
+        f.contentWindow?.postMessage({ soldatClean: 'toggle' }, '*');
+      }
+    }
   });
 
   // Headless drivers (tools/run-tournament.mjs) read this.
@@ -432,7 +469,7 @@ export function showTournament(opts: TournamentOptions): void {
         ...(round.done
           ? [`🏆 ROUND WINNER: ${round.champion} (${round.wins[round.champion] ?? 0} wins)`]
           : []),
-        `TOURNAMENT — roster ${opts.roster} × ${TOURNAMENT_GAMES} games`,
+        `TOURNAMENT — ${opts.roster ?? 'round-robin (all engines)'} × ${TOURNAMENT_GAMES} games`,
         ...Object.entries(standings.engines)
           .sort((a, b) => b[1].dom - a[1].dom)
           .map(
