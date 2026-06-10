@@ -1,5 +1,13 @@
 [
   {
+    "hash": "7c4839336f160fd3ef6ea1b4d42c6941fc91f058",
+    "short_hash": "7c48393",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:48:46-04:00",
+    "message": "feat: wolf doctrine takes the belt — AKELA 2-1 VERONICA (arena 89)\n\nThe sixth doctrine attacks the axis no brain had touched: TEAMWORK.\nEvery duel-optimized engine plays three independent 1v1s; the wolf pack\nplays one 3v1. All wolves deterministically agree on a single prey\n(lowest health among enemies visible to ANY packmate — shared eyes, no\ncommunication channel, agreement by convention on a shared retarget\nclock), take crossfire bearings (left/right/above by position and\nindex), and regroup when isolated.\n\nLessons paid for in sparring: a wolf parked on its bearing is target\npractice (juke in the slot); a wolf that ignores its attacker while\nwalking to the slot donates free damage (the gun goes opportunistic\nwhen the prey is out of reach); wounded prey beyond PREY_RADIUS must\nnot drag the pack past healthy guns.\n\nOfficial: 36-34, 43-39, 35-38 on arena #89.\nDataset: 20260610-054754-AKELA-wolf-vs-VERONICA-matador\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
     "hash": "b27efd2725d4587a5bf77653b661caf6d2bb4fce",
     "short_hash": "b27efd2",
     "author": "Robert Grayson",
