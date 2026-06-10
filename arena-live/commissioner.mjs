@@ -20,6 +20,11 @@
 //
 // A freshly crowned #1 gets one cycle of peace before facing the crucible.
 //
+// SEASONS (season-state.json): fixed SEASON_HOURS windows. While the LADDER
+// belt is VACANT the cycle stages a TITLE BOUT (top two carded board configs)
+// instead of a crucible; when the window expires the winner is declared and
+// appended to fights/SEASONS.md. LADDER.md is never edited by the daemon.
+//
 //   nohup node commissioner.mjs > commissioner.log 2>&1 & disown
 //   pkill -f "node commissioner.mjs"   # to stop
 
@@ -151,12 +156,174 @@ function runFight(challengerFile, championFile, arenaSeed) {
   });
 }
 
+// --- seasons --------------------------------------------------------------------
+
+/** Pull the season number from the LADDER heading ("# The Arena Ladder — Season 2"). */
+function ladderSeasonNumber() {
+  try {
+    const m = fs.readFileSync(LADDER_MD, 'utf8').match(/Season\s+(\d+)/i);
+    if (m) return parseInt(m[1], 10);
+  } catch {}
+  return 2;
+}
+
+function saveSeason(s) {
+  try { fs.writeFileSync(SEASON_FILE, JSON.stringify(s, null, 1)); }
+  catch (e) { log(`WARN cannot write season state: ${e.message}`); }
+}
+
+/** Load season-state.json, initializing a fresh SEASON_HOURS window on first run. */
+function loadSeason() {
+  const s = readJson(SEASON_FILE);
+  if (s && s.season && s.startedAt && s.endsAt) return s;
+  const now = Date.now();
+  const fresh = {
+    season: ladderSeasonNumber(),
+    startedAt: new Date(now).toISOString(),
+    endsAt: new Date(now + SEASON_HOURS * 3600_000).toISOString(),
+  };
+  saveSeason(fresh);
+  log(`SEASON ${fresh.season} opens: ${fresh.startedAt} -> ${fresh.endsAt} (${SEASON_HOURS}h window)`);
+  return fresh;
+}
+
+/** Parse the "Current champion" section of fights/LADDER.md.
+ *  vacant = section mentions VACANT; text = raw section body. */
+function ladderChampion() {
+  try {
+    const md = fs.readFileSync(LADDER_MD, 'utf8');
+    // (?![\s\S]) = true end-of-string — a multiline $ would match the empty
+    // line right after the heading and capture nothing.
+    const m = md.match(/^#{2,3}[^\n]*Current champion[^\n]*\n([\s\S]*?)(?=\n#{2,3}\s|(?![\s\S]))/im);
+    const text = m ? m[1] : '';
+    return { found: !!m, vacant: /\bVACANT\b/.test(text), text };
+  } catch { return { found: false, vacant: false, text: '' }; }
+}
+
+/** Season winner: the board row named in the LADDER champion section, or board
+ *  #1 when the belt is VACANT (or the holder can't be matched to the board). */
+function seasonWinner(board, cards, champ) {
+  let row = board[0];
+  if (!champ.vacant && champ.text) {
+    const hit = board.find((r) => champ.text.toUpperCase().includes(String(r.coach).toUpperCase()));
+    if (hit) row = hit;
+  }
+  const card = championCard(cards, row);
+  return { coach: String(row.coach), engine: String(row.engine),
+    file: card ? `fights/${card.file}` : '(no card on file)', score: row.score };
+}
+
+/** APPEND a season record to fights/SEASONS.md (header created if missing).
+ *  Existing content is never rewritten or truncated. */
+function closeSeason(season, board, data, champ) {
+  const cards = loadCards();
+  const winner = seasonWinner(board, cards, champ);
+  const startT = new Date(season.startedAt).getTime();
+  let totalFights = 0, totalKills = 0;
+  for (const f of data?.fights ?? []) {
+    const t = new Date(f.createdAt ?? 0).getTime();
+    if (!isFinite(t) || t < startT) continue;
+    totalFights += 1;
+    totalKills += (Number(f.standings?.red?.kills) || 0) + (Number(f.standings?.blue?.kills) || 0);
+  }
+  const top5 = board.slice(0, 5).map((r, i) =>
+    `| ${i + 1} | ${r.coach} | ${r.engine} | ${r.score ?? '?'} | ${r.w ?? '?'}-${r.l ?? '?'} |`).join('\n');
+  const record = `
+## Season ${season.season} — ${season.startedAt} -> ${season.endsAt}
+
+- **Winner:** ${winner.coach} / ${winner.engine} (\`${winner.file}\`)${champ.vacant ? ' — belt VACANT at the bell; board #1 takes it' : ' — held the LADDER belt at the bell'}
+- **Season totals:** ${totalFights} fights, ${totalKills} kills
+- **Final board (top 5):**
+
+| # | Coach | Engine | Score | W-L |
+|---|-------|--------|-------|-----|
+${top5}
+`;
+  try {
+    if (!fs.existsSync(SEASONS_MD)) {
+      fs.writeFileSync(SEASONS_MD,
+        '# Arena Seasons — the record book\n\n' +
+        'Season-end records appended automatically by the commissioner\n' +
+        '(`arena-live/commissioner.mjs`). Append-only: never rewritten.\n');
+    }
+    fs.appendFileSync(SEASONS_MD, record);
+    log(`SEASON ${season.season} CLOSED — winner ${winner.coach}/${winner.engine}; record appended to fights/SEASONS.md`);
+  } catch (e) {
+    log(`WARN cannot write fights/SEASONS.md: ${e.message}`);
+  }
+}
+
+// --- the title bout (vacant belt) -------------------------------------------------
+
+/** While the LADDER belt is VACANT: the top two board configs that have card
+ *  files in fights/ meet best-of-3 on a fresh seed. The result is logged and
+ *  appended to crucibles.jsonl (kind: 'title-bout') as EVIDENCE — the coaches
+ *  own LADDER.md and decide the belt from the dataset; we never edit it. */
+async function stageTitleBout(state, board, season) {
+  const cards = loadCards();
+  const picks = [];
+  for (const row of board) {
+    const card = championCard(cards, row);
+    if (!card) continue;                                  // skip configs without cards
+    if (picks.some((p) => p.card.file === card.file)) continue;
+    picks.push({ row, card });
+    if (picks.length === 2) break;
+  }
+  if (picks.length < 2) {
+    log('TITLE BOUT: fewer than two board configs have cards in fights/ — cannot stage');
+    return;
+  }
+  const [one, two] = picks; // one = board #1 (defends as blue), two = #2 (challenges as red)
+  const arenaSeed = Math.floor(Date.now() / 1000) % 997;
+  log('==================== TITLE BOUT ====================');
+  log(`THE BELT IS VACANT — for the season-${season.season} title:`);
+  log(`  ${two.card.coach}/${two.card.engine} (${two.card.file}, board #${two.row.rank ?? '?'})`);
+  log(`  vs ${one.card.coach}/${one.card.engine} (${one.card.file}, board #${one.row.rank ?? '?'})`);
+  log(`  best of 3, arena #${arenaSeed}`);
+
+  const before = listDatasets();
+  const { code, out } = await runFight(two.card.file, one.card.file, arenaSeed);
+  for (const line of out.trim().split('\n')) log(`  | ${line}`);
+  if (code !== 0) {
+    log(`WARN title bout exited with code ${code} — no result recorded`);
+    return;
+  }
+  const dataset = [...listDatasets()].filter((d) => !before.has(d)).sort().pop() ?? null;
+  let series = null;
+  if (dataset) {
+    const st = readJson(path.join(DATASETS, dataset, 'summary.json'))?.standings;
+    if (st?.red && st?.blue) {
+      series = { challenger: st.red.wins, champion: st.blue.wins, draws: st.draws ?? 0,
+        winner: st.red.wins > st.blue.wins ? two.card.coach
+          : st.blue.wins > st.red.wins ? one.card.coach : 'split' };
+    }
+  }
+  const record = {
+    ts: new Date().toISOString(), kind: 'title-bout', season: season.season,
+    champion: { coach: one.card.coach, engine: one.card.engine, file: one.card.file },
+    challenger: { coach: two.card.coach, engine: two.card.engine, file: two.card.file },
+    series, dataset, arena: arenaSeed,
+  };
+  try { fs.appendFileSync(CRUCIBLES_FILE, JSON.stringify(record) + '\n'); }
+  catch (e) { log(`WARN cannot append crucibles.jsonl: ${e.message}`); }
+  log(`TITLE BOUT RESULT: ${two.card.coach} ${series ? `${series.challenger}-${series.champion}` : '?-?'} ` +
+      `${one.card.coach} — ${series?.winner ?? 'unknown'} has the claim. Dataset ${dataset ?? 'NOT FOUND'} is the evidence;`);
+  log('the coaches decide the belt — LADDER.md untouched by the commissioner.');
+  log('====================================================');
+  state.lastTitleBoutAt = record.ts;
+  state.titleBouts = (state.titleBouts ?? 0) + 1;
+}
+
 // --- one cycle ------------------------------------------------------------------
 
 async function cycle() {
   const state = loadState();
   state.cycles = (state.cycles ?? 0) + 1;
   state.lastCheckAt = new Date().toISOString();
+
+  let season = loadSeason();
+  const minsLeft = Math.round((new Date(season.endsAt).getTime() - Date.now()) / 60000);
+  log(`season ${season.season}: ends ${season.endsAt} (${minsLeft} min left)`);
 
   const data = readJson(DATA_JSON);
   const board = data?.board ?? [];
@@ -165,9 +332,33 @@ async function cycle() {
     saveState(state);
     return;
   }
+  const champSection = ladderChampion();
+  if (!champSection.found) log('WARN no "Current champion" section found in fights/LADDER.md');
+
+  // SEASON END: declare the winner, append the record book, roll the window.
+  if (Date.now() > new Date(season.endsAt).getTime()) {
+    closeSeason(season, board, data, champSection);
+    const now = Date.now();
+    season = {
+      season: season.season + 1,
+      startedAt: new Date(now).toISOString(),
+      endsAt: new Date(now + SEASON_HOURS * 3600_000).toISOString(),
+    };
+    saveSeason(season);
+    log(`SEASON ${season.season} begins — fresh ${SEASON_HOURS}h window ends ${season.endsAt}`);
+  }
+
   const top = board[0];
   const topKey = `${String(top.coach).toUpperCase()}|${top.engine}`;
   log(`board #1: ${topKey} (score ${top.score ?? '?'}, ${top.w}-${top.l} career)`);
+
+  // VACANT BELT: no fresh-blood crucible — stage the title bout instead.
+  if (champSection.vacant) {
+    state.reigning = topKey;
+    await stageTitleBout(state, board, season);
+    saveState(state);
+    return;
+  }
 
   // Crucible due when the throne survived a full cycle (or none has ever run).
   const due = !state.lastCrucibleAt || state.reigning === topKey;

@@ -33,6 +33,8 @@ backup
 
 build
 build.*
+# build.* (old Pascal build dirs) must not swallow the arena dashboard builder:
+!arena-live/build.mjs
 release
 
 # stb.dll stuff
@@ -48,10 +50,6 @@ Release
 
 # Deciduous database (local)
 .deciduous/
-
-# arena-live site builder is SOURCE, not a build artifact (build.* above
-# is for the old Pascal/C++ build dirs)
-!soldat-ts/arena-live/build.mjs
 
 node_modules
 
