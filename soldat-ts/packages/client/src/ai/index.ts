@@ -12,6 +12,8 @@ import { createWolfEngine } from './wolf';
 import { createPloverEngine } from './plover';
 import { createHydraEngine } from './hydra';
 import { createShrikeEngine } from './shrike';
+import { createCuadrillaEngine } from './cuadrilla';
+import { createOrcaEngine } from './orca';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -22,6 +24,8 @@ registerEngine('wolf', createWolfEngine);
 registerEngine('plover', createPloverEngine);
 registerEngine('hydra', createHydraEngine);
 registerEngine('shrike', createShrikeEngine);
+registerEngine('cuadrilla', createCuadrillaEngine);
+registerEngine('orca', createOrcaEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -33,3 +37,5 @@ export { WOLF_DEFAULTS, type WolfConfig } from './wolf';
 export { PLOVER_DEFAULTS, type PloverConfig } from './plover';
 export { HYDRA_DEFAULTS, type HydraConfig } from './hydra';
 export { SHRIKE_DEFAULTS, type ShrikeConfig } from './shrike';
+export { CUADRILLA_DEFAULTS, type CuadrillaConfig } from './cuadrilla';
+export { ORCA_DEFAULTS, type OrcaConfig } from './orca';

@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "BELMONTE",
+  "engine": "cuadrilla",
+  "tweaks": { "EMA_ALPHA": 1 },
+  "rationale": "Ninth doctrine. The bullfighter's crew: one bull picked by mag state (disarmed beats wounded — in a 3v3 someone is always reloading), crossfire bearings while its mag is hot, the WHOLE crew passes to point-blank the moment it reloads (150hp inside a 95-tick window outruns the champion's 55hp rotation threshold), the wounded torero holds the long reserve to starve argmin-health focus functions, and BULL_RADIUS refuses to chase the withdrawn anchor — fight the fronts 3v2. EMA_ALPHA swept 0.15/0.4/0.7/1 vs the field: instantaneous lead wins every matchup (jukes are dodged by crossfire geometry, not by aim smoothing). Spar record at this config: 9-0 LERNA (arena 101), 8-1 AKELA (arenas 17 AND 5), 8-1 BLACKFISH (arena 61)."
+}

@@ -7,6 +7,21 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
+**BELMONTE** — `fights/belmonte.json` (cuadrilla, EMA_ALPHA 1). Tenth
+doctrine: the bullfighter's crew — a matador never works alone. One bull
+picked by MAG STATE (a disarmed enemy beats a merely wounded one; in a
+3v3 someone is always reloading), crossfire bearings while its mag is hot,
+and the WHOLE crew passes to point-blank the moment it reloads: 150hp
+inside a 95-tick window dies faster than any health-threshold rotation can
+rescue it. The wounded torero withdraws to the long reserve (the hydra's
+own starvation defense, mirrored back) and BULL_RADIUS refuses to chase
+withdrawn anchors — fight the fronts 3v2. EMA_ALPHA swept 0.15/0.4/0.7/1
+across the field: instantaneous lead won every matchup. Spar record en
+route to the belt: 9–0 LERNA, 8–1 AKELA (two arenas), 7–1 VERONICA, 8–1
+BLACKFISH, 9–0 FALCONER.
+
+## Previous champions
+
 **FALCONER** — `fights/falconer-shrike.json` (shrike v3, factory defaults).
 Ninth doctrine, the first weapon-aware brain, rebuilt on a controlled A/B
 that dissolved the "shotgun paradox": no SPAS on the field → pure kestrel
@@ -14,8 +29,6 @@ dueling (no shared focus for the hydra's rotation to starve); when the
 wildcard arms a carrier it becomes the BREACHER (silent high approach,
 gravity dive, shells only inside the fan's kill envelope) while teammates
 keep dueling. Took the belt 3–0 under live-fire chance-wildcard rules.
-
-## Previous champions
 
 **LERNA** — `fights/lerna.json` (hydra, factory defaults). Eighth doctrine:
 cut one head, the others bite. The wolf's focus arithmetic is published, so
@@ -52,6 +65,7 @@ one 3v1.
 | 2026-06-10 | FALCONER (plover, broken-wing gambit) | AKELA (wolf, factory defaults) | **AKELA 3–0** (48–38, 46–39, 39–35) | #41 | `20260610-060914-FALCONER-plover-vs-AKELA-wolf` |
 | 2026-06-10 | LERNA (hydra, factory defaults) | AKELA (wolf, factory defaults) | **LERNA 2–1** (40–34, 34–34 dom, 34–35) | #53 | `20260610-062053-LERNA-hydra-vs-AKELA-wolf` |
 | 2026-06-10 | FALCONER (shrike v3, hardware-gated roles) | LERNA (hydra, factory defaults) | **FALCONER 3–0** (28–22 ×3) | #73 | `20260610-142049-FALCONER-shrike-vs-LERNA-hydra` |
+| 2026-06-10 | BELMONTE (cuadrilla, EMA_ALPHA 1) | FALCONER (shrike v3, factory defaults) | **BELMONTE 2–0** (34–27, 33–26, 36–36 draw) | #137 | `20260610-142850-BELMONTE-cuadrilla-vs-FALCONER-shrike` |
 
 ## Coaching-session archive
 
