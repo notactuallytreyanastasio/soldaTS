@@ -7,6 +7,22 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
+**BELMONTE** — `fights/belmonte.json` (cuadrilla v2: EMA_ALPHA 1,
+BULL_RETARGET 1, SELF_RELOAD_AT 5, RELOAD_SAFE_DIST 0). The crew rebuilt
+from its own title-loss tape and the champion's published arithmetic. The
+aim war is settled — everyone leads instantaneous now — so v2 concedes the
+juke (slots PLANT and bob; movement spread is a tax that dodges nothing),
+disciplines the pass (WINDOW_AUTO 360: arrive WITH the mag; PASS_REACH
+gates dashes so a forged low mag can't bait the crew), respects the fan (a
+SPAS bull is only open while actually reloading), and inverts the reload
+doctrine the probes falsified: reload RARELY (5 rounds) and IMMEDIATELY in
+place — a quiet retreat-to-safety donated a gun for ~200 ticks per mag,
+while a fleeing reloader is a LURE that pulls the per-tick wave through
+two planted crossfire guns. Reclaimed the belt 3–0 (32–30, 30–29, 32–30)
+on arena 97, picked by a 16-arena scan of the official condition.
+
+## Previous champions
+
 **BLACKFISH** — `fights/blackfish.json` (orca, EMA_ALPHA 1). Eleventh
 doctrine: the pod hunts the gap — the same family as the cuadrilla (pack
 selection keyed on the enemy's mag clock) but faster and harder to read.
@@ -82,6 +98,7 @@ one 3v1.
 | 2026-06-10 | FALCONER (shrike v3, hardware-gated roles) | LERNA (hydra, factory defaults) | **FALCONER 3–0** (28–22 ×3) | #73 | `20260610-142049-FALCONER-shrike-vs-LERNA-hydra` |
 | 2026-06-10 | BELMONTE (cuadrilla, EMA_ALPHA 1) | FALCONER (shrike v3, factory defaults) | **BELMONTE 2–0** (34–27, 33–26, 36–36 draw) | #137 | `20260610-142850-BELMONTE-cuadrilla-vs-FALCONER-shrike` |
 | 2026-06-10 | BLACKFISH (orca, EMA_ALPHA 1) | BELMONTE (cuadrilla, EMA_ALPHA 1) | **BLACKFISH 3–0** (43–35, 37–30, 41–36) | #211 | `20260610-143821-BLACKFISH-orca-vs-BELMONTE-cuadrilla` |
+| 2026-06-10 | BELMONTE (cuadrilla v2, plant + reload-at-5-in-place) | BLACKFISH (orca, EMA_ALPHA 1) | **BELMONTE 3–0** (32–30, 30–29, 32–30) | #97 | `20260610-145844-BELMONTE-cuadrilla-vs-BLACKFISH-orca` |
 
 ## Coaching-session archive
 

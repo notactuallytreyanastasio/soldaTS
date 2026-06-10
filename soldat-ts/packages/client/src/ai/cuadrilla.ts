@@ -79,9 +79,12 @@ export type CuadrillaConfig = {
   AUTO_RANGE: number;
   KNIFE_DIST: number;
   GIVE_GROUND: number;
+  FAN_GIVE: number;
   FIRE_MAX_DIST: number;
   X_SLACK: number;
   COHESION_DIST: number;
+  PASS_REACH: number;
+  RELOAD_SAFE_DIST: number;
   ROTATE_BELOW: number;
   ANCHOR_MIN: number;
   ANCHOR_MAX: number;
@@ -94,6 +97,9 @@ export type CuadrillaConfig = {
   DROP_G: number;
   JUKE_MIN_TICKS: number;
   JUKE_VAR_TICKS: number;
+  BOB_UP_TICKS: number;
+  BOB_DOWN_MIN: number;
+  BOB_DOWN_VAR: number;
   DODGE_HORIZON: number;
   DANGER_RADIUS: number;
   DODGE_COMMIT: number;
@@ -116,13 +122,24 @@ export const CUADRILLA_DEFAULTS: Readonly<CuadrillaConfig> = {
   BEARING_OFF: 380, // px — hot-mag bearing slot offset (outside full-auto bands)
   STALK_DIST: 250, // px — stalk slot offset: the pass launches from close, not the band
   PUNISH_RANGE: 120, // px — dash to this distance during an open window
-  WINDOW_AUTO: 620, // px — during a window, full-auto from here in (they can't answer)
+  WINDOW_AUTO: 360, // px — during a window, full-auto from here in. v2: the orca
+  // title tape proved spraying the whole dash feeds bloom and lands empty —
+  // arrive WITH the mag (was 620).
   AUTO_RANGE: 230, // px — full-auto only inside this otherwise (bloom discipline)
   KNIFE_DIST: 170, // px — inside: fire every open tick regardless of phase
   GIVE_GROUND: 240, // px — hot-mag bull closer than this: back out
+  FAN_GIVE: 330, // px — an ARMED SPAS bull gets this much ground instead (a fan's
+  // kill envelope is wider than any AK brawl band; its reload is the window)
   FIRE_MAX_DIST: 620, // px — beyond this, hold fire entirely
   X_SLACK: 40, // px — horizontal deadband around the slot
   COHESION_DIST: 380, // px — nearest crewmate farther: regroup first (hot mag only)
+  PASS_REACH: 560, // px — windows farther than this from the crew centroid don't
+  // launch the pass (a long dash under planted taps donates the approach,
+  // and a forged low mag parked at range must not drag the crew)
+  RELOAD_SAFE_DIST: 620, // px from the ENEMY centroid — proactive reloads happen
+  // only beyond this (outside any published wave reach); inside it the torero
+  // retreats QUIETLY first, holding fire so the mag never crosses a window
+  // trigger while still in reach
   ROTATE_BELOW: 55, // health (of 150) — lowest member withdraws once under this
   ANCHOR_MIN: 600, // px from ENEMY centroid — outside published prey radii/fire maxes
   ANCHOR_MAX: 760, // px — farther: drift back toward the fight
@@ -133,8 +150,14 @@ export const CUADRILLA_DEFAULTS: Readonly<CuadrillaConfig> = {
   TAP_OPEN: 1, // one shot per period = full volume at zero bloom
   EMA_ALPHA: 0.4, // per-tick velocity smoothing (1 = instantaneous lead)
   DROP_G: 0.135, // px/tick² — TRUE bullet gravity (GRAV 0.06 × 2.25)
-  JUKE_MIN_TICKS: 14, // in-slot strafe-juke clock (a parked gun is target practice)
+  JUKE_MIN_TICKS: 0, // >0: strafe-juke in slot on this rng clock. v2 default 0 =
+  // PLANT and bob — against instantaneous lead the juke dodges nothing and
+  // pays movement spread on every tap (the title loss, mirrored from orca's
+  // own 6-1-2 finding vs planted shrike guns)
   JUKE_VAR_TICKS: 22,
+  BOB_UP_TICKS: 12, // jet-pulse length of the planted hover bob (untaxed axis)
+  BOB_DOWN_MIN: 18, // fall phase length (rng-rolled per cycle)
+  BOB_DOWN_VAR: 14,
   DODGE_HORIZON: 26, // ticks — only bullets arriving within this are threats
   DANGER_RADIUS: 56, // px — closest-approach distance that triggers a dodge
   DODGE_COMMIT: 6, // ticks — hold a dodge so it doesn't dither
@@ -159,9 +182,12 @@ class CuadrillaBrain implements BotBrain {
   private emaVX = 0;
   private emaVY = 0;
   private emaTarget = 0;
-  /** In-slot strafe-juke clock. */
+  /** In-slot strafe-juke clock (used only when JUKE_MIN_TICKS > 0). */
   private jukeDir: 1 | -1 = 1;
   private jukeFlipAt = 0;
+  /** Planted hover-bob phase clocks (the default in-slot motion). */
+  private bobJetUntil = 0;
+  private bobFallUntil = 0;
   /** Committed bullet dodge. */
   private dodgeX: 1 | 0 | -1 = 0;
   private dodgeJet: 1 | 0 | -1 = 0;
@@ -600,37 +626,65 @@ class CuadrillaBrain implements BotBrain {
     }
 
     // --- Pillar 2: the bull's mag clock phases the whole crew ---------------
-    const windowOpen = ctx.reloadingOf(bullIdx) || ctx.ammoOf(bullIdx) <= cfg.LOW_MAG_OPEN;
-    const stalking = !windowOpen && ctx.ammoOf(bullIdx) <= cfg.STALK_MAG;
+    // A SPAS bull is only "open" while ACTUALLY reloading — four shells in a
+    // fan is not a window, it is a kill envelope (the champion's rule, adopted).
+    const bullSpas = ctx.weaponOf?.(bullIdx) === 'SPAS12';
+    const windowOpen =
+      ctx.reloadingOf(bullIdx) ||
+      (!bullSpas && ctx.ammoOf(bullIdx) <= cfg.LOW_MAG_OPEN);
+    const stalking = !windowOpen && !bullSpas && ctx.ammoOf(bullIdx) <= cfg.STALK_MAG;
 
-    // --- Own mag on the off-beat ---------------------------------------------
+    // Pass gate: a window beyond PASS_REACH of the fighting crew's centroid
+    // does not move the crew — a long dash under planted taps donates the
+    // approach, and a forged low mag parked at range must not bait the pass.
+    let fcx = px;
+    let fcy = py;
+    if (fronts.length > 0) {
+      fcx = 0;
+      fcy = 0;
+      for (const w of fronts) {
+        fcx += parts.posX[w] ?? 0;
+        fcy += parts.posY[w] ?? 0;
+      }
+      fcx /= fronts.length;
+      fcy /= fronts.length;
+    }
+    const bullInReach = Math.hypot(tx - fcx, ty - fcy) <= cfg.PASS_REACH;
+    const passOpen = windowOpen && bullInReach;
+
+    // --- Own mag on the off-beat, OUT OF REACH -------------------------------
+    // v2: any wave-doctrine enemy keys on our ammo/reload state per tick.
+    // Reloads (and the low-mag approach to them) happen only beyond
+    // RELOAD_SAFE_DIST of the enemy centroid: inside it the torero retreats
+    // QUIETLY — holding fire so the mag never crosses a window trigger while
+    // still in reach — reloads outside, and returns with thirty rounds.
     const ammo = ctx.ammoOf(botIndex);
     const reloading = ctx.reloadingOf(botIndex);
+    const ecen = this.enemyCentroid(botIndex, ctx);
+    const ecenDist = ecen === null ? Infinity : Math.hypot(px - ecen.x, py - ecen.y);
+    const wantReload =
+      ammo <= cfg.SELF_RELOAD_AT && !passOpen && !stalking;
     if (!reloading && ammo === 0) c.reload = true;
-    // Proactive reload only in the calm — their mag hot, no stalk underway,
-    // and us out of reach: never volunteer a dry mag into an opening window.
-    if (
-      !reloading &&
-      ammo > 0 &&
-      ammo <= cfg.SELF_RELOAD_AT &&
-      !windowOpen &&
-      !stalking &&
-      dist > cfg.BEARING_OFF - cfg.X_SLACK
-    ) {
+    if (!reloading && ammo > 0 && wantReload && ecenDist > cfg.RELOAD_SAFE_DIST) {
       c.reload = true;
     }
-    if (reloading) {
-      // Caught mid-reload: open range, take what height is cheap, stay dark.
-      if (dx > 0) c.left = true;
-      else c.right = true;
+    if (reloading || (wantReload && ammo > 0)) {
+      // Retreating to reload (or mid-reload): open range from the enemy
+      // centroid, take what height is cheap, stay dark outside knife range.
+      const ax = ecen === null ? tx : ecen.x;
+      if (px >= ax) c.right = true;
+      else c.left = true;
       if (s.jetsCount > cfg.FUEL_RESERVE && clock >= this.noClimbUntil) {
         c.jetpack = true;
+      }
+      if (!reloading && dist <= cfg.KNIFE_DIST) {
+        this.aimAndFire(botIndex, bullIdx, ctx, cfg.KNIFE_DIST, true);
       }
       return;
     }
 
     // --- Movement -------------------------------------------------------------
-    if (windowOpen) {
+    if (passOpen) {
       // THE PASS: the bull's head is down. The WHOLE CREW dashes to
       // point-blank — every tick inside the window is free damage, and three
       // mags at knife range outrun any rotation threshold.
@@ -678,7 +732,12 @@ class CuadrillaBrain implements BotBrain {
         }
       }
 
-      if (dist < cfg.GIVE_GROUND) {
+      // An armed SPAS bull gets more ground than an AK — the fan's kill
+      // envelope is wider than any brawl band; its reload is the window.
+      const ground =
+        bullSpas && !windowOpen ? Math.max(cfg.GIVE_GROUND, cfg.FAN_GIVE) : cfg.GIVE_GROUND;
+      let inSlot = false;
+      if (dist < ground) {
         // The bull walked onto us with a hot mag: back out, keep shooting.
         if (dx > 0) c.left = true;
         else c.right = true;
@@ -687,18 +746,25 @@ class CuadrillaBrain implements BotBrain {
       } else if (px > slotX + cfg.X_SLACK) {
         c.left = true;
       } else {
-        // IN the slot: strafe-juke on an rng clock — a parked gun is target
-        // practice for every lead-aim in the arena.
-        if (clock >= this.jukeFlipAt) {
-          this.jukeDir = world.rng.nextInt(2) === 0 ? 1 : -1;
-          this.jukeFlipAt =
-            clock + cfg.JUKE_MIN_TICKS + world.rng.nextInt(cfg.JUKE_VAR_TICKS);
+        // IN the slot. v2 default: PLANT — zero movement spread; horizontal
+        // motion is the strafe-juke only when JUKE_MIN_TICKS > 0 (against a
+        // smoothed lead the juke poisons aim; against an instantaneous one
+        // it only pays the tax).
+        inSlot = true;
+        if (cfg.JUKE_MIN_TICKS > 0) {
+          if (clock >= this.jukeFlipAt) {
+            this.jukeDir = world.rng.nextInt(2) === 0 ? 1 : -1;
+            this.jukeFlipAt =
+              clock + cfg.JUKE_MIN_TICKS + world.rng.nextInt(cfg.JUKE_VAR_TICKS);
+          }
+          if (this.jukeDir > 0) c.right = true;
+          else c.left = true;
         }
-        if (this.jukeDir > 0) c.right = true;
-        else c.left = true;
       }
 
-      // Height parity, not height greed.
+      // Height parity, not height greed — and when planted at parity, bob:
+      // jet pulses in the untaxed vertical axis (drop under-compensators
+      // shoot low; a moving baseline costs them more than it costs us).
       if (
         heightEdge < -cfg.LEVEL_BAND &&
         s.jetsCount > cfg.FUEL_RESERVE &&
@@ -707,6 +773,18 @@ class CuadrillaBrain implements BotBrain {
         c.jetpack = true; // erase the deficit — never duel from the pit
       } else if (heightEdge > cfg.HEIGHT_CAP) {
         c.down = true; // overextended above: let gravity spend instead of fuel
+      } else if (
+        inSlot &&
+        cfg.JUKE_MIN_TICKS <= 0 &&
+        s.jetsCount > cfg.FUEL_RESERVE &&
+        clock >= this.noClimbUntil
+      ) {
+        if (clock >= this.bobFallUntil) {
+          this.bobJetUntil = clock + cfg.BOB_UP_TICKS;
+          this.bobFallUntil =
+            this.bobJetUntil + cfg.BOB_DOWN_MIN + world.rng.nextInt(cfg.BOB_DOWN_VAR);
+        }
+        c.jetpack = clock < this.bobJetUntil;
       }
     }
 
