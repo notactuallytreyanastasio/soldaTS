@@ -1045,6 +1045,14 @@ export function build() {
     warn(`desk data failed: ${e.message}`);
   }
 
+  // How many fights (newest-first, with per-kill timelines) data.json carries.
+  // Locally: all of them (the full file crossed 300 MB — fine on localhost).
+  // The LIVE deploy sets ARENA_DATA_FIGHTS (e.g. 40, matching the publish
+  // snapshot) because the floor polls data.json every 5s over the public
+  // internet and caddy gzips it per request. Board/decay/desk/analytics are
+  // all computed from the FULL corpus above — only the shipped feed is cut.
+  const maxFights = Number(process.env.ARENA_DATA_FIGHTS) || 0;
+
   const data = {
     generatedAt: new Date().toISOString(),
     // In-progress fight feed (schema soldat-arena-live/1), written atomically
@@ -1053,7 +1061,7 @@ export function build() {
     ladderMarkdown,
     cards,
     doctrines,
-    fights,
+    fights: maxFights > 0 ? fights.slice(0, maxFights) : fights,
     board,
     rankHistory,
     analytics,
@@ -1124,8 +1132,10 @@ export function build() {
       desk,
       warnings: data.warnings,
       // fights without timelines/bots: just enough for the upset scanner,
-      // rivalry latest-meeting lookups, and click-to-watch links.
-      fights: fights.map((f) => ({
+      // rivalry latest-meeting lookups, and click-to-watch links. On the
+      // LIVE deploy (ARENA_DATA_FIGHTS set) cap the slim feed too — it is
+      // polled every 5s; 10x the floor cap keeps a few hours of story.
+      fights: (maxFights > 0 ? fights.slice(0, maxFights * 10) : fights).map((f) => ({
         dirName: f.dirName,
         createdAt: f.createdAt,
         arenaSeed: f.arenaSeed,
