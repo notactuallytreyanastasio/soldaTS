@@ -13,6 +13,7 @@
 // PORT: client/MapGraphics.pas (LoadMapTexture + vertex buffer / texture apply)
 
 import { Assets, Container, Mesh, MeshGeometry, Texture } from 'pixi.js';
+import { assetUrl } from '../app/assetUrl';
 import type { MapMesh } from './mapMesh';
 
 /**
@@ -24,8 +25,8 @@ export interface PmsMapLike {
   textures: readonly string[];
 }
 
-/** Base URL where extracted map textures are served (Vite site root). */
-const TEXTURE_BASE = '/textures/';
+/** Base URL where extracted map textures are served (BASE_URL-aware). */
+const TEXTURE_BASE = assetUrl('/textures/');
 
 /** Extensions to probe, in priority order. Assets are .png even if the map names .bmp/.jpg. */
 const TEXTURE_EXTENSIONS = ['png', 'bmp', 'jpg'] as const;

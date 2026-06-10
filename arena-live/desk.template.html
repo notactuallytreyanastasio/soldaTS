@@ -189,6 +189,31 @@
   .passbar { height: 8px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; background: var(--panel3); margin-top: 5px; }
   .passbar > div { height: 100%; background: var(--up); }
 
+  /* ---- the pyramid (tournament hierarchy) ----------------------------------- */
+  .pyr { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 4px 0 10px; }
+  .pyr-tier { font: 9px var(--mono); letter-spacing: 2.6px; color: var(--dim); text-transform: uppercase; text-align: center; margin-bottom: 4px; }
+  .pyr-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .pyr-cell {
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+    padding: 7px 13px; cursor: pointer; min-width: 150px; text-align: center; position: relative;
+  }
+  .pyr-cell:hover { border-color: var(--gold); background: var(--hover); }
+  .pyr-cell .pc-who { font-family: var(--serif); font-weight: 800; font-size: 15px; color: var(--ink); }
+  .pyr-cell .pc-sub { font: 10px var(--mono); color: var(--dim); margin-top: 1px; }
+  .pyr-cell .pc-score { font: 700 11px var(--mono); color: var(--gold); }
+  .pyr-crown { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); background: var(--panel2); min-width: 250px; padding: 10px 20px; }
+  .pyr-crown .pc-who { font-size: 22px; letter-spacing: 1px; }
+  .pyr-cell.bout-win { border-color: var(--up); }
+  .pyr-cell.bout-loss { opacity: 0.85; }
+  .pyr-cell .pc-badge {
+    position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    font: 700 8.5px var(--mono); letter-spacing: 1.5px; border-radius: 8px;
+    padding: 1px 8px; background: var(--gold); color: var(--bg); white-space: nowrap;
+  }
+  .pyr-cell.pyr-learned { outline: 1px dashed var(--blue); outline-offset: 2px; }
+  .pyr-link { width: 1px; height: 14px; background: var(--line); }
+  .pyr-base { font: 10px var(--mono); color: var(--dim); letter-spacing: 1px; text-align: center; border-top: 1px dashed var(--line); padding-top: 7px; margin-top: 4px; width: 100%; }
+
   /* ---- gun meter ---------------------------------------------------------------- */
   .gunstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
   .gcell { border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; background: var(--panel); position: relative; }
@@ -233,6 +258,7 @@
     <div id="ch-climb"></div>
     <div class="chartnote" id="climbNote"></div>
   </section>
+  <section class="sec"><div class="sec-head"><h2>The Pyramid</h2><span class="deck">the tournament hierarchy, live — the belt on top, the gates below it, the field ranked by decayed score; every cell opens a replay</span></div><div id="pyramid"></div></section>
   <div class="row2">
     <section class="sec"><div class="sec-head"><h2>Rivalries</h2><span class="deck">who owns whom, and where nobody blinks — click a card to watch their latest meeting</span></div><div class="rivgrid" id="rivalries"></div></section>
     <aside class="sec"><div class="sec-head"><h2>Tonight's Card</h2></div><div id="tonight"></div></aside>
@@ -682,6 +708,83 @@ function drawClimb(d) {
   }
 }
 
+// ============================ the pyramid =======================================
+// Tournament hierarchy, rebuilt on every wire refresh: the belt (champion or
+// the vacancy + strongest claim) on top, the latest title bouts at the gates,
+// then the board's contenders in decay-score tiers. Learned engines get a
+// dashed blue outline — watch them migrate up the pyramid.
+function pyramidHtml(d) {
+  const board = d.board || [];
+  if (!board.length) return '<div class="chartnote">no board yet — the pyramid builds itself from fight results</div>';
+  const bs = beltStatus(d);
+
+  // the crown
+  let crownWho, crownSub, crownWatch = '';
+  if (bs.champ) {
+    crownWho = `👑 ${esc(bs.champ)}`;
+    crownSub = bs.lastBout ? `last defense ${esc(ago(bs.lastBout.ts))}` : 'reigning champion';
+    crownWatch = bs.lastBout ? watchOf(d, bs.lastBout.dataset) : '';
+  } else if (bs.claim) {
+    crownWho = 'VACANT';
+    crownSub = `${esc(bs.claim.challenger.coach)}'s ${esc(claimScore(bs.claim))} claim is the strongest paper · ${esc(ago(bs.claim.ts))}`;
+    crownWatch = watchOf(d, bs.claim.dataset);
+  } else {
+    crownWho = 'VACANT';
+    crownSub = 'no claim on file — the belt waits';
+  }
+
+  // at the gates: the latest title bouts, newest first
+  const bouts = (d.crucibles || [])
+    .filter((c) => c.kind === 'title-bout' && c.series && c.series.winner)
+    .slice(-4).reverse();
+  const boutCells = bouts.map((c) => {
+    const won = c.series.winner === c.challenger.coach;
+    const split = !won && c.series.winner !== c.champion.coach;
+    const verdict = split ? 'SPLIT' : won ? 'TOOK THE SERIES' : 'DENIED';
+    const vcls = split ? 'flat' : won ? 'up' : 'down';
+    return `<div class="pyr-cell${won ? ' bout-win' : split ? '' : ' bout-loss'}" data-watch="${attr(watchOf(d, c.dataset))}">
+      <div class="pc-who">${esc(c.challenger.coach)} <span class="pc-sub">${esc(c.challenger.engine)}</span></div>
+      <div class="pc-sub">vs ${esc(c.champion.coach)} · <b class="${vcls}">${esc(claimScore(c))} ${verdict}</b> · ${esc(ago(c.ts))}</div>
+    </div>`;
+  }).join('');
+
+  // contender tiers straight off the decay board
+  const cellOf = (r) => {
+    const learned = r.engine === 'neural' || r.engine === 'disciple';
+    const sk = r.streak && r.streak.n > 1
+      ? ` · ${r.streak.n}${r.streak.res === 'w' ? 'W' : r.streak.res === 'l' ? 'L' : 'D'} run` : '';
+    return `<div class="pyr-cell${learned ? ' pyr-learned' : ''}" data-watch="${attr(r.lastUrl)}" title="open latest replay">
+      ${r.rank === 1 ? '<span class="pc-badge">TOP OF THE BOARD</span>' : ''}
+      <div class="pc-who">${esc(r.coach)}${learned ? ' 🧠' : ''} <span class="pc-sub">${esc(r.engine)}</span></div>
+      <div class="pc-sub"><span class="pc-score">${Number(r.score ?? 0).toFixed(2)}</span> · #${r.rank} · ${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''}${sk}</div>
+    </div>`;
+  };
+  const tiers = [
+    ['THE THRONE ROOM', 0, 1],
+    ['CONTENDERS', 1, 3],
+    ['THE HUNT', 3, 6],
+    ['THE PACK', 6, 10],
+  ];
+  const tierRows = tiers.map(([name, a, b]) => {
+    const cells = board.slice(a, b).map(cellOf).join('');
+    return cells ? `<div class="pyr-link"></div><div><div class="pyr-tier">${name}</div><div class="pyr-row">${cells}</div></div>` : '';
+  }).join('');
+
+  const rest = Math.max(0, board.length - 10);
+  const lg = d.desk && d.desk.league;
+  const base = `<div class="pyr-base">${rest ? `… ${rest} more configs grinding below the pyramid` : 'the whole field fits on the pyramid tonight'}` +
+    (lg && lg.pairings ? ` · the grinder feeds it: pairing ${lg.cycleInPass}/${lg.pairings} of the current pass` : '') + `</div>`;
+
+  return `<div class="pyr">
+    <div><div class="pyr-tier">THE BELT</div><div class="pyr-row">
+      <div class="pyr-cell pyr-crown"${crownWatch ? ` data-watch="${attr(crownWatch)}"` : ''}>
+        <div class="pc-who">${crownWho}</div><div class="pc-sub">${crownSub}</div></div></div></div>
+    ${bouts.length ? `<div class="pyr-link"></div><div><div class="pyr-tier">AT THE GATES — last ${bouts.length} title bouts</div><div class="pyr-row">${boutCells}</div></div>` : ''}
+    ${tierRows}
+    ${base}
+  </div>`;
+}
+
 // ============================ rivalries =========================================
 function latestMeeting(d, a, b) {
   for (const f of d.fights || []) {
@@ -861,6 +964,7 @@ function render(d) {
   } else wb.style.display = 'none';
   document.getElementById('banner').innerHTML = bannerHtml(d);
   document.getElementById('lead').innerHTML = leadHtml(d);
+  document.getElementById('pyramid').innerHTML = pyramidHtml(d);
   document.getElementById('rivalries').innerHTML = rivalriesHtml(d);
   document.getElementById('tonight').innerHTML = tonightHtml(d);
   document.getElementById('gunmeter').innerHTML = gunMeterHtml(d);

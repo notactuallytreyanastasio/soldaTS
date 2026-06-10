@@ -16,6 +16,7 @@
 
 import type { SoundName } from './sounds';
 import { SOUND_MANIFEST, LOOPING_SOUNDS } from './sounds';
+import { assetUrl } from '../app/assetUrl';
 
 // PORT: shared/Constants.pas:62-64.
 export const SOUND_MAXDIST = 750;
@@ -132,7 +133,7 @@ function defaultContextFactory(): AudioContextLike | null {
 export type AudioFetcher = (url: string) => Promise<ArrayBuffer>;
 
 async function defaultFetcher(url: string): Promise<ArrayBuffer> {
-  const res = await fetch(url);
+  const res = await fetch(assetUrl(url));
   if (!res.ok) {
     throw new Error(`failed to fetch sound '${url}': ${res.status}`);
   }

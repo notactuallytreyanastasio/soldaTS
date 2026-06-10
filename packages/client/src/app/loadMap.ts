@@ -7,6 +7,7 @@
 // Soldat install.
 
 import { loadPms, type PmsMap } from '@soldat/assets';
+import { assetUrl } from './assetUrl';
 
 /** Default map served from the local /maps/ directory when none is requested. */
 export const DEFAULT_MAP_URL = '/maps/ctf_Ash.pms';
@@ -20,7 +21,7 @@ export const MAP_QUERY_PARAM = 'map';
  * back to a synthetic map).
  */
 export async function fetchAndLoadMap(url: string): Promise<PmsMap> {
-  const response = await fetch(url);
+  const response = await fetch(assetUrl(url));
   if (!response.ok) {
     throw new Error(`failed to fetch map '${url}': ${response.status} ${response.statusText}`);
   }

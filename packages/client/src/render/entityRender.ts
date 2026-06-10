@@ -12,6 +12,7 @@
 // prev→current by the Game's framePercent so motion looks smooth.
 
 import { Assets, Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { assetUrl } from '../app/assetUrl';
 import {
   MAX_SPRITES,
   MAX_BULLETS,
@@ -110,7 +111,7 @@ export class EntityRenderer {
     // SPAS weapon sprite is best-effort: a missing asset falls back to the
     // vector barrel, never blocks (or breaks) the textured gostek path.
     try {
-      this.spasTexture = await Assets.load<Texture>('/gfx/weapons-gfx/spas12.png');
+      this.spasTexture = await Assets.load<Texture>(assetUrl('/gfx/weapons-gfx/spas12.png'));
     } catch {
       this.spasTexture = null;
     }

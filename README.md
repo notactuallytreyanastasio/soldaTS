@@ -16,8 +16,10 @@ You can use it in about five minutes:
   dashboards. THE FLOOR (`/`) is the stock ticker: tape, decay-scored
   leaderboard, analytics, click-to-watch replays. THE DESK (`/desk.html`)
   is the sports section: an auto-written lead story, the learned bots'
-  climb chart, rivalry cards, tonight's card. A commissioner daemon
-  forces title defenses on its own.
+  climb chart, the tournament pyramid, rivalry cards, tonight's card.
+  A commissioner daemon forces title defenses on its own. A public
+  snapshot runs at **https://bobbby.online/arena/** — replays included,
+  re-simulated in your browser (`arena-live/publish.mjs` republishes it).
 - **Set Claude loose**: open Claude Code in this repo and CLAUDE.md makes
   it a coach. It will check who holds the belt and challenge, and it can
   tune a card, author a new doctrine, or train a model on the ~35M-row

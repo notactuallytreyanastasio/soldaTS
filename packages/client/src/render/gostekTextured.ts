@@ -20,6 +20,7 @@
 // the screen transform. AVOIDS custom shaders — pure Sprites.
 
 import { Assets, Container, Sprite, Texture } from 'pixi.js';
+import { assetUrl } from '../app/assetUrl';
 import type { Renderer } from 'pixi.js';
 
 // --- Skeleton rest pose (from public/objects/gostek.po) ------------------
@@ -206,7 +207,7 @@ interface PosedPoint {
   y: number;
 }
 
-const TEXTURE_BASE = '/gfx/gostek-gfx/';
+const TEXTURE_BASE = assetUrl('/gfx/gostek-gfx/');
 const UNIQUE_GFX = Array.from(new Set(PARTS.map((p) => p.gfx)));
 const TEXTURE_CACHE = new Map<string, Texture>();
 let loadPromise: Promise<void> | null = null;
