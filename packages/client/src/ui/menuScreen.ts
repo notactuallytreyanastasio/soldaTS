@@ -147,7 +147,7 @@ export function showMenuScreen(): void {
     const row = document.createElement('button');
     row.style.cssText = ROW_STYLE;
     row.addEventListener('mouseenter', () => (row.style.borderColor = '#ffd75e'));
-    row.addEventListener('mouseleave', () => (row.style.borderColor = '#2a2f3a'));
+
     const name = document.createElement('span');
     const alias = LEARNED_MODELS[id];
     name.textContent =
@@ -176,8 +176,17 @@ export function showMenuScreen(): void {
     blurb.textContent = engine.strategy;
     blurb.style.cssText =
       'color:#9aa3b2;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
-    row.title = engine.strategy; // full doctrine on hover (rows ellipsize)
     row.appendChild(blurb);
+    // Mouseover shows the WHOLE doctrine: the ellipsized one-liner unwraps
+    // inline (instant, unlike the native title tooltip's hover delay).
+    row.addEventListener('mouseenter', () => {
+      row.style.borderColor = '#5a647c';
+      blurb.style.whiteSpace = 'normal';
+    });
+    row.addEventListener('mouseleave', () => {
+      row.style.borderColor = '#2a2f3a';
+      blurb.style.whiteSpace = 'nowrap';
+    });
     row.addEventListener('click', () => startGame(id, wildcardSelect.value));
     column.appendChild(row);
   }
