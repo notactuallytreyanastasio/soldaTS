@@ -199,6 +199,12 @@ function tweaksToParam(tweaks) {
   return Object.entries(tweaks ?? {}).map(([k, v]) => `${k}=${v}`).join(',');
 }
 
+// Where watch URLs point. Local dev: the vite server on :5173. Live deploy
+// (the VPS docker service) sets ARENA_WATCH_BASE=/arena/play so every click
+// opens the statically deployed client next to the proxied dashboards —
+// window.open() resolves an absolute-path URL against the current origin.
+const WATCH_BASE = (process.env.ARENA_WATCH_BASE ?? 'http://localhost:5173').replace(/\/+$/, '');
+
 /** Same shape as packages/arena/src/fighterCard.ts buildWatchUrl. */
 function buildWatchUrl(a, b, { seed, roundSecs, arenaSeed, wildcard }) {
   const params = new URLSearchParams();
@@ -213,7 +219,7 @@ function buildWatchUrl(a, b, { seed, roundSecs, arenaSeed, wildcard }) {
   if (tweaksToParam(b.tweaks) !== '') params.set('tweak-b', tweaksToParam(b.tweaks));
   params.set('coach-a', a.coach);
   params.set('coach-b', b.coach);
-  return `http://localhost:5173/?${params.toString()}`;
+  return `${WATCH_BASE}/?${params.toString()}`;
 }
 
 function loadKills(dir, eventsFile) {
@@ -1065,10 +1071,21 @@ export function build() {
   const tmp = path.join(SITE_DIR, '.data.json.tmp');
   fs.writeFileSync(tmp, JSON.stringify(data, null, 1));
   fs.renameSync(tmp, path.join(SITE_DIR, 'data.json'));
-  fs.writeFileSync(path.join(SITE_DIR, 'index.html'), readText(path.join(HERE, 'index.template.html')) ?? FALLBACK_HTML);
+  // When the watch base is overridden (live VPS deploy) the replays open right
+  // next to the page — fix the footer copy that otherwise tells visitors to
+  // run `pnpm play` on :5173.
+  const liveFooter = (html) => {
+    if (!process.env.ARENA_WATCH_BASE || html == null) return html;
+    return html
+      .split('click anything to open the replay (needs <code>pnpm play</code> on :5173)')
+      .join('click anything to open the replay — it re-simulates right here in your browser')
+      .split('replays need <span class="num">pnpm play</span> on :5173')
+      .join('replays re-simulate right in your browser');
+  };
+  fs.writeFileSync(path.join(SITE_DIR, 'index.html'), liveFooter(readText(path.join(HERE, 'index.template.html'))) ?? FALLBACK_HTML);
   // Second dashboard: THE DESK (story-first sports front page).
   try {
-    fs.writeFileSync(path.join(SITE_DIR, 'desk.html'), readText(path.join(HERE, 'desk.template.html')) ?? FALLBACK_DESK);
+    fs.writeFileSync(path.join(SITE_DIR, 'desk.html'), liveFooter(readText(path.join(HERE, 'desk.template.html'))) ?? FALLBACK_DESK);
   } catch (e) {
     warn(`desk.html emit failed: ${e.message}`);
   }

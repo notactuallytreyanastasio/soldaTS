@@ -36,7 +36,7 @@ const WATCH_PATHS = [
 
 const POLL_MS = 5000;
 const FORCE_REBUILD_MS = 60_000;
-const BASE_PORT = 8901;
+const BASE_PORT = Number(process.env.PORT) || 8901; // PORT env wins (docker)
 
 function log(...args) {
   console.log(new Date().toISOString(), ...args);
