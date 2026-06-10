@@ -1,15 +1,19 @@
 // Match-telemetry pure-derivation tests (percentile, death clustering,
-// deriveStats). The MatchRecorder shell is exercised end-to-end by the
-// spectate browser harness; the math is pinned here.
+// deriveStats) plus the additive round/variant dump fields. The MatchRecorder
+// shell is otherwise exercised end-to-end by the spectate browser harness;
+// the math is pinned here.
 
 import { describe, it, expect } from 'vitest';
 import {
+  MatchRecorder,
+  SCHEMA,
   percentile,
   clusterDeaths,
   deriveStats,
   type KillEvent,
   type Sample,
 } from './telemetry';
+import { Game } from './game';
 
 describe('percentile', () => {
   it('interpolates linearly', () => {
@@ -109,5 +113,33 @@ describe('deriveStats', () => {
     expect(d.killsPerMin).toBe(0);
     expect(d.killDist).toBeNull();
     expect(d.deathClusters).toEqual([]);
+  });
+});
+
+describe('MatchRecorder round + variant fields (additive, schema unchanged)', () => {
+  it('records the variant name in meta (baseline by default)', () => {
+    const game = new Game({ spectate: true, botCount: 2 });
+    const tagged = new MatchRecorder(game, 'Skyreach', 2, true, 'marksman');
+    expect(tagged.dump().meta.variant).toBe('marksman');
+    const plain = new MatchRecorder(game, 'Skyreach', 2, true);
+    expect(plain.dump().meta.variant).toBe('baseline');
+  });
+
+  it('dump().round mirrors the game verdict: null while running, set after', () => {
+    // Mixed engines → teams on; a tiny roundTicks ends the round quickly.
+    const game = new Game({
+      spectate: true,
+      botCount: 2,
+      aiEngine: 'classic,pilot',
+      roundTicks: 10,
+    });
+    const recorder = new MatchRecorder(game, 'Skyreach', 2, true, 'baseline');
+    expect(recorder.dump().round).toBeNull();
+    for (let i = 0; i < 30; i++) game.tick(1 / 60);
+    const dump = recorder.dump();
+    expect(dump.round).not.toBeNull();
+    expect(dump.round!.overAtTick).toBe(10);
+    expect(dump.schema).toBe(SCHEMA);
+    expect(dump.schema).toBe('soldat-match-telemetry/1');
   });
 });

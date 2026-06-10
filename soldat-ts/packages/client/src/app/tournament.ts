@@ -18,23 +18,100 @@ import {
   type FighterRow,
 } from '../ui/leaderboard';
 import type { MatchDump } from './telemetry';
+import { DEFAULT_TUNING, type GameTuning } from './game';
 
 export const TOURNAMENT_GAMES = 4;
 const POLL_MS = 2000;
 
+// --- Gameplay variants (goal node 157) ---------------------------------------
+// Each of the 4 tournament games runs a DISTINCT named variant — real tuning
+// differences (partial overrides of game.ts DEFAULT_TUNING), not just RNG
+// seeds — so a round samples the engines across four different metas.
+
+export interface Variant {
+  readonly name: string;
+  /** One-line personality shown under the engine banner + in the sidebar. */
+  readonly blurb: string;
+  readonly tuning: Readonly<Partial<GameTuning>>;
+}
+
+export const VARIANTS: readonly Variant[] = [
+  { name: 'baseline', blurb: 'stock rules', tuning: {} },
+  {
+    name: 'high-octane',
+    blurb: 'faster fire, snappier reloads, quick respawns',
+    tuning: { fireInterval: 4, reloadTicks: 70, respawnTicks: 90, jetRegenPerTick: 5 },
+  },
+  {
+    name: 'thin-air',
+    blurb: 'small tank, no air regen — gravity matters',
+    tuning: { jetFuelMax: 320, jetAirRegenPerTick: 0, jetRegenPerTick: 5 },
+  },
+  {
+    name: 'marksman',
+    blurb: 'laser accuracy, 12-round mags, long reloads',
+    tuning: { spreadBase: 0.005, spreadHeatPerShot: 0.004, magSize: 12, reloadTicks: 150, fireInterval: 9 },
+  },
+];
+
+/** Resolve a variant by name; unknown/undefined → baseline (VARIANTS[0]). */
+export function resolveVariant(name: string | undefined): Variant {
+  return VARIANTS.find((v) => v.name === name) ?? VARIANTS[0]!;
+}
+
+/** Short labels for the knob-turn UI (user: "the turns should be shown"). */
+const KNOB_LABELS: Record<keyof GameTuning, string> = {
+  fireInterval: 'fire',
+  magSize: 'mag',
+  reloadTicks: 'reload',
+  spreadBase: 'spread',
+  spreadHeatPerShot: 'bloom',
+  jetFuelMax: 'fuel',
+  jetRegenPerTick: 'regen',
+  jetAirRegenPerTick: 'airRegen',
+  respawnTicks: 'respawn',
+};
+
+/**
+ * Human-readable knob turns vs stock: 'fire 6→4 · reload 95→70'. Empty
+ * string for baseline (no turns). Pure; shown under the engine banner and in
+ * the tournament sidebar so every game declares its exact rule tweaks.
+ */
+export function tuningDeltas(
+  tuning: Readonly<Partial<GameTuning>>,
+  defaults: Readonly<GameTuning>,
+): string {
+  return (Object.keys(KNOB_LABELS) as (keyof GameTuning)[])
+    .filter((k) => tuning[k] !== undefined && tuning[k] !== defaults[k])
+    .map((k) => `${KNOB_LABELS[k]} ${defaults[k]}→${tuning[k]}`)
+    .join(' · ');
+}
+
 export interface TournamentOptions {
   /** Per-game roster (comma list of engine ids). */
   roster: string;
+  /** Round length passed to every game (seconds of SIM time; default 600). */
+  roundSecs: number;
+  /** Round generation (seeds derive from it; N key increments). */
+  gen: number;
 }
 
-/** Parse ?tournament[&ai=roster]. */
+/** Parse ?tournament[&ai=roster][&round=secs]. */
 export function parseTournament(
   search: string = typeof window !== 'undefined' ? window.location.search : '',
 ): TournamentOptions | null {
   const params = new URLSearchParams(search);
   if (!params.has('tournament')) return null;
   const roster = params.get('ai') ?? 'classic,pilot';
-  return { roster };
+  // ?round=SECS overrides the 10-minute default (fast headless verification).
+  const roundRaw = parseInt(params.get('round') ?? '', 10);
+  const roundSecs = Number.isFinite(roundRaw) && roundRaw > 0 ? roundRaw : 600;
+  // ?gen=N: the round generation. Seeds derive from it so "next round" is a
+  // FRESH set of matches (the sim is deterministic) with the SAME whole
+  // teams — rosters never collapse toward the winner (user correction).
+  const genRaw = parseInt(params.get('gen') ?? '', 10);
+  const gen = Number.isFinite(genRaw) && genRaw >= 0 ? genRaw : 0;
+  return { roster, roundSecs, gen };
 }
 
 export interface EngineTotals {
@@ -128,6 +205,60 @@ export function evolveRoster(
   return roster.join(',');
 }
 
+// --- Round verdict ACROSS games (goal node 157) -------------------------------
+// Each game decides its own 10-minute round winner (game.ts decideRoundWinner,
+// surfaced via dump().round). The tournament's round winner is the AI engine
+// with the most GAME wins; ties break on aggregate dominance.
+
+export interface RoundReport {
+  /** True once every game's dump carries a non-null round. */
+  done: boolean;
+  /** Count of ended games (out of the slots polled). */
+  gamesOver: number;
+  /** Engine id → number of game wins (draws award nobody). */
+  wins: Record<string, number>;
+  /** Round champion across games: most game wins, tiebreak aggregate dominance
+   *  (engines[id].dom from aggregateStandings), then lexicographic. '' until done. */
+  champion: string;
+  /** Per game (index-aligned with dumps): null until that game ends. */
+  perGame: ({ winnerTeam: number; winnerEngine: string; redKills: number; blueKills: number } | null)[];
+}
+
+/** Aggregate per-game round verdicts into the cross-game round report (pure). */
+export function roundReport(
+  dumps: readonly (MatchDump | null)[],
+  engines: Record<string, EngineTotals>,
+): RoundReport {
+  const perGame = dumps.map((d) => {
+    const r = d?.round ?? null;
+    if (r === null) return null;
+    return {
+      winnerTeam: r.winnerTeam,
+      winnerEngine: r.winnerEngine,
+      redKills: r.redKills,
+      blueKills: r.blueKills,
+    };
+  });
+  const wins: Record<string, number> = {};
+  for (const g of perGame) {
+    if (g === null || g.winnerTeam === 0) continue; // draws award nobody
+    wins[g.winnerEngine] = (wins[g.winnerEngine] ?? 0) + 1;
+  }
+  const gamesOver = perGame.filter((g) => g !== null).length;
+  const done = gamesOver === dumps.length && dumps.length > 0;
+  let champion = '';
+  if (done) {
+    champion =
+      Object.keys(wins).sort(
+        (a, b) =>
+          (wins[b] ?? 0) - (wins[a] ?? 0) ||
+          (engines[b]?.dom ?? 0) - (engines[a]?.dom ?? 0) ||
+          a.localeCompare(b),
+      )[0] ?? '';
+  }
+  return { done, gamesOver, wins, champion, perGame };
+}
+
 // ---------------------------------------------------------------------------
 // The page
 // ---------------------------------------------------------------------------
@@ -149,10 +280,14 @@ export function showTournament(opts: TournamentOptions): void {
   for (let g = 0; g < TOURNAMENT_GAMES; g++) {
     const frame = document.createElement('iframe');
     // Distinct seeds: the sim is deterministic, identical seeds would play
-    // the exact same match four times.
+    // the exact same match four times. Each tile ALSO runs a distinct named
+    // gameplay variant (g1=baseline, g2=high-octane, g3=thin-air,
+    // g4=marksman) and a timed round of opts.roundSecs sim-seconds.
     frame.src =
       `${window.location.pathname}?spectate&ai=${encodeURIComponent(opts.roster)}` +
-      `&teams&seed=${g + 2}`;
+      `&teams&seed=${opts.gen * TOURNAMENT_GAMES + g + 2}` +
+      `&variant=${encodeURIComponent(VARIANTS[g % VARIANTS.length]!.name)}` +
+      `&round=${opts.roundSecs}`;
     frame.style.cssText =
       'flex:1 1 calc(50% - 1px);min-height:calc(50% - 1px);border:0;min-width:0';
     frames.push(frame);
@@ -171,12 +306,24 @@ export function showTournament(opts: TournamentOptions): void {
   ].join(';');
   side.innerHTML =
     '<div style="font-weight:bold;letter-spacing:0.25em;font-size:14px">TOURNAMENT</div>' +
-    '<div style="color:#9aa3b2;margin:4px 0 10px">4 games · mixed AIs · red vs blue<br>N = next round (evolve toward the winners)</div>' +
-    '<div id="t-engines"></div><div id="t-board" style="margin-top:10px"></div>';
+    '<div style="color:#9aa3b2;margin:4px 0 10px">4 games · 4 knob variants · red vs blue · 10-min rounds<br>N = next round (same whole teams, fresh seeds)</div>' +
+    '<div id="t-round" style="margin-top:10px"></div>' +
+    '<div id="t-engines"></div>' +
+    '<div id="t-games" style="margin-top:10px"></div>' +
+    '<div id="t-board" style="margin-top:10px"></div>';
   layout.append(grid, side);
   document.body.appendChild(layout);
 
   let standings: Standings = { fighters: [], engines: {}, dominant: '' };
+  let round: RoundReport = {
+    done: false,
+    gamesOver: 0,
+    wins: {},
+    champion: '',
+    perGame: [null, null, null, null],
+  };
+  /** Latest per-game dumps (for the per-game clock while a game runs). */
+  let lastDumps: (MatchDump | null)[] = [];
 
   const pull = (): void => {
     const dumps = frames.map((f) => {
@@ -187,14 +334,64 @@ export function showTournament(opts: TournamentOptions): void {
         return null;
       }
     });
+    lastDumps = dumps;
     standings = aggregateStandings(dumps);
+    round = roundReport(dumps, standings.engines);
     render();
+  };
+
+  /** mm:ss of a game's sim clock ('—' before its first dump arrives). */
+  const gameClock = (g: number): string => {
+    const ticks = lastDumps[g]?.durationTicks;
+    if (ticks === undefined) return '—';
+    const secs = Math.floor(ticks / 60); // 60 Hz sim → sim-seconds
+    return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+  };
+
+  const teamWord = (winnerTeam: number): string => {
+    const color = winnerTeam === 1 ? '#d23c3c' : '#4060d2';
+    const word = winnerTeam === 1 ? 'RED' : winnerTeam === 2 ? 'BLUE' : 'DRAW';
+    return winnerTeam === 0 ? word : `<span style="color:${color}">${word}</span>`;
   };
 
   const render = (): void => {
     const eng = side.querySelector('#t-engines');
     const board = side.querySelector('#t-board');
-    if (eng === null || board === null) return;
+    const roundEl = side.querySelector('#t-round');
+    const games = side.querySelector('#t-games');
+    if (eng === null || board === null || roundEl === null || games === null) return;
+    // The round banner: progress while games run, the champion once all 4
+    // have frozen (most game wins; ties broke on aggregate dominance).
+    if (!round.done) {
+      roundEl.innerHTML = `<div style="color:#9aa3b2;letter-spacing:0.2em">ROUND — ${round.gamesOver}/4 games finished</div>`;
+    } else {
+      const winsLine = Object.entries(round.wins)
+        .sort((a, b) => b[1] - a[1])
+        .map(([id, w]) => `${id} ${w} win${w === 1 ? '' : 's'}`)
+        .join(' · ');
+      roundEl.innerHTML =
+        `<div style="font-size:18px;font-weight:bold;letter-spacing:0.15em;color:#ffd75e">🏆 ROUND WINNER: ${round.champion.toUpperCase()}</div>` +
+        `<div style="color:#9aa3b2">${winsLine}</div>`;
+    }
+    games.innerHTML =
+      '<div style="color:#9aa3b2;letter-spacing:0.2em">GAMES</div>' +
+      Array.from({ length: TOURNAMENT_GAMES }, (_, g) => {
+        const v = VARIANTS[g % VARIANTS.length]!;
+        const r = round.perGame[g] ?? null;
+        const status =
+          r === null
+            ? gameClock(g)
+            : `${r.redKills}–${r.blueKills} · ${teamWord(r.winnerTeam)}` +
+              (r.winnerEngine !== '' ? ` (${r.winnerEngine})` : '');
+        // The knob turns, spelled out — every game declares its exact tweaks.
+        const knobs = tuningDeltas(v.tuning, DEFAULT_TUNING);
+        return (
+          `<div style="line-height:1.6">g${g + 1} · ${v.name} · ${status}</div>` +
+          (knobs !== ''
+            ? `<div style="color:#9aa3b2;font-size:11px;margin:-2px 0 4px 14px">${knobs}</div>`
+            : '')
+        );
+      }).join('');
     eng.innerHTML =
       '<div style="color:#9aa3b2;letter-spacing:0.2em">ENGINES</div>' +
       Object.entries(standings.engines)
@@ -217,21 +414,24 @@ export function showTournament(opts: TournamentOptions): void {
 
   setInterval(pull, POLL_MS);
 
-  const nextRosterUrl = (): string => {
-    const roster = evolveRoster(standings.engines);
-    return `${window.location.pathname}?tournament&ai=${encodeURIComponent(roster)}`;
-  };
+  const nextRoundUrl = (): string =>
+    `${window.location.pathname}?tournament&ai=${encodeURIComponent(opts.roster)}` +
+    `&round=${opts.roundSecs}&gen=${opts.gen + 1}`;
 
   window.addEventListener('keydown', (e: KeyboardEvent) => {
-    if (e.key.toLowerCase() === 'n') window.location.href = nextRosterUrl();
+    if (e.key.toLowerCase() === 'n') window.location.href = nextRoundUrl();
   });
 
   // Headless drivers (tools/run-tournament.mjs) read this.
   (window as unknown as { __tournament: unknown }).__tournament = {
     standings: (): Standings => standings,
-    nextRosterUrl,
+    round: (): RoundReport => round,
+    nextRoundUrl,
     report: (): string => {
       const lines = [
+        ...(round.done
+          ? [`🏆 ROUND WINNER: ${round.champion} (${round.wins[round.champion] ?? 0} wins)`]
+          : []),
         `TOURNAMENT — roster ${opts.roster} × ${TOURNAMENT_GAMES} games`,
         ...Object.entries(standings.engines)
           .sort((a, b) => b[1].dom - a[1].dom)
@@ -239,6 +439,17 @@ export function showTournament(opts: TournamentOptions): void {
             ([id, t]) =>
               `${id === standings.dominant ? '👑 ' : '   '}${id}: ${t.kills}K/${t.deaths}D dom=${t.dom.toFixed(1)}`,
           ),
+        ...Array.from({ length: TOURNAMENT_GAMES }, (_, g) => {
+          const variant = VARIANTS[g % VARIANTS.length]!.name;
+          const r = round.perGame[g] ?? null;
+          if (r === null) return ` g${g + 1} ${variant}: running`;
+          const team = r.winnerTeam === 1 ? 'RED' : r.winnerTeam === 2 ? 'BLUE' : 'DRAW';
+          return (
+            ` g${g + 1} ${variant}: ${team}` +
+            (r.winnerEngine !== '' ? ` (${r.winnerEngine})` : '') +
+            ` ${r.redKills}–${r.blueKills}`
+          );
+        }),
         'TOP FIGHTERS:',
         ...standings.fighters
           .slice(0, 10)
@@ -246,7 +457,7 @@ export function showTournament(opts: TournamentOptions): void {
             (r, i) =>
               ` ${i + 1}. ${r.name} [${r.engine} g${r.game}] ${r.kills}/${r.deaths}`,
           ),
-        `NEXT ROUND (evolved): ${nextRosterUrl()}`,
+        `NEXT ROUND (same teams, fresh seeds): ${nextRoundUrl()}`,
       ];
       return lines.join('\n');
     },

@@ -170,3 +170,38 @@ describe('team dynamics (red vs blue, goal node 154)', () => {
     }
   });
 });
+
+
+describe('whole teams (user correction on node 157)', () => {
+  it('a lopsided roster still yields even, single-engine teams', () => {
+    // Evolved-style 5:1 roster: red must still be ALL classic, blue ALL
+    // pilot, split 3v3 — never 1v5 "everyone is on pilot".
+    const game = new Game({
+      seed: 9,
+      spawns: ARENA_SPAWNS,
+      botCount: 6,
+      spectate: true,
+      aiEngine: 'classic,pilot,pilot,pilot,pilot,pilot',
+    });
+    const byTeam = new Map<number, string[]>();
+    for (const i of game.botIndices()) {
+      const t = game.teamOf(i);
+      byTeam.set(t, [...(byTeam.get(t) ?? []), game.engineOf(i)]);
+    }
+    expect(byTeam.get(1)).toEqual(['classic', 'classic', 'classic']);
+    expect(byTeam.get(2)).toEqual(['pilot', 'pilot', 'pilot']);
+  });
+
+  it('FFA (no teams) keeps the roster proportions', () => {
+    const game = new Game({
+      seed: 9,
+      spawns: ARENA_SPAWNS,
+      botCount: 6,
+      spectate: true,
+      aiEngine: 'classic,pilot,pilot,pilot,pilot,pilot',
+      teams: false,
+    });
+    const pilots = game.botIndices().filter((i) => game.engineOf(i) === 'pilot');
+    expect(pilots).toHaveLength(5);
+  });
+});

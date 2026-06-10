@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { Game } from './game';
 import { buildArena, ARENA_SPAWNS } from './arena';
+import { parseSpectate } from './main';
 
 const TICK_DT = 1 / 60;
 /** Ticks a dead sprite waits before respawning (game.ts RESPAWN_TICKS). */
@@ -98,6 +99,27 @@ describe('Game spectate mode', () => {
     for (const i of botIndices) {
       expect(maxIdleStreak.get(i) ?? 0).toBeLessThan(600);
     }
+  });
+});
+
+describe('parseSpectate (variant + round params)', () => {
+  it('parses ?variant by name, undefined when absent', () => {
+    expect(parseSpectate('?spectate&variant=thin-air').variant).toBe('thin-air');
+    expect(parseSpectate('?spectate').variant).toBeUndefined();
+  });
+
+  it('parses ?round=SECS with a 600 s default and garbage tolerance', () => {
+    expect(parseSpectate('?spectate&round=20').roundSecs).toBe(20);
+    expect(parseSpectate('?spectate').roundSecs).toBe(600);
+    expect(parseSpectate('?spectate&round=0').roundSecs).toBe(600);
+    expect(parseSpectate('?spectate&round=garbage').roundSecs).toBe(600);
+  });
+
+  it('returns both fields in play mode too (main() arms the timer only in spectate)', () => {
+    const p = parseSpectate('?play&variant=x&round=9');
+    expect(p.spectate).toBe(false);
+    expect(p.variant).toBe('x');
+    expect(p.roundSecs).toBe(9);
   });
 });
 

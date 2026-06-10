@@ -11,7 +11,7 @@
 // dump into a readable report. Keep the schema stable — bump SCHEMA when the
 // shape changes, never mutate it silently.
 
-import type { Game } from './game';
+import type { Game, RoundResult } from './game';
 import { subjectName } from './director';
 
 export const SCHEMA = 'soldat-match-telemetry/1';
@@ -59,11 +59,15 @@ export interface MatchDump {
     engine: string;
     /** Per-bot engine assignment (mixed matches split the roster). */
     botEngines: Record<number, string>;
+    /** Gameplay variant name ('baseline' when untweaked). */
+    variant: string;
     tickHz: 60;
     sampleEveryTicks: number;
     names: Record<number, string>;
   };
   durationTicks: number;
+  /** Round result once the timed round ended; null while running/endless. */
+  round: RoundResult | null;
   shotsBy: Record<number, number>;
   hitsBy: Record<number, number>; // damaging bullets landed (attributed)
   damageBy: Record<number, number>; // total damage dealt
@@ -237,7 +241,7 @@ export class MatchRecorder {
    * the recorder composes with the HUD kill board instead of stealing the
    * single Game.onKill slot.
    */
-  constructor(game: Game, map: string, botCount: number, spectate: boolean) {
+  constructor(game: Game, map: string, botCount: number, spectate: boolean, variant = 'baseline') {
     this.game = game;
     this.startTick = game.world.mainTickCounter;
     const names: Record<number, string> = {};
@@ -249,6 +253,7 @@ export class MatchRecorder {
       spectate,
       engine: game.aiEngineId,
       botEngines: {},
+      variant,
       tickHz: 60,
       sampleEveryTicks: SAMPLE_EVERY_TICKS,
       names,
@@ -334,6 +339,9 @@ export class MatchRecorder {
           this.game.botIndices().map((i) => [i, this.game.engineOf(i)]),
         ),
       },
+      // Read live at dump time (like the engine fields): the round verdict
+      // appears the moment the timed round ends and the game freezes.
+      round: this.game.roundResult,
       ...raw,
       derived: deriveStats(raw, this.meta.names),
     };

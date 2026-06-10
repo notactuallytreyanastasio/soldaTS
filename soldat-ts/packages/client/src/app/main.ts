@@ -32,7 +32,7 @@ import { Crosshair } from '../render/fx';
 import { buildTexturedMap } from '../render/mapTextured';
 import { AudioEngine } from '../audio/audio';
 import { SoundManager } from '../audio/soundManager';
-import { Game, JET_FUEL_MAX } from './game';
+import { Game, DEFAULT_TUNING, type RoundResult } from './game';
 import { buildArena, ARENA_SPAWNS } from './arena';
 import { fetchAndLoadMap, pickMapUrl } from './loadMap';
 import {
@@ -46,8 +46,8 @@ import {
 } from './director';
 import { MatchRecorder } from './telemetry';
 import { engineIds } from '../ai';
-import { parseTournament, showTournament } from './tournament';
-import { LeaderboardPanel, type FighterRow } from '../ui/leaderboard';
+import { parseTournament, showTournament, resolveVariant, tuningDeltas, type Variant } from './tournament';
+import { LeaderboardPanel, TeamScorePanel, type FighterRow } from '../ui/leaderboard';
 
 // ---------------------------------------------------------------------------
 // Synthetic map
@@ -192,6 +192,8 @@ export function parseSpectate(
   aiEngine: string | undefined;
   seed: number;
   teams: boolean | undefined;
+  variant: string | undefined;
+  roundSecs: number;
 } {
   const params = new URLSearchParams(search);
   const aiEngine = params.get('ai') ?? undefined;
@@ -201,13 +203,20 @@ export function parseSpectate(
   const seed = Number.isFinite(seedRaw) ? seedRaw : 1;
   // ?teams forces red-vs-blue on; Game defaults teams ON for mixed engines.
   const teams = params.has('teams') ? true : undefined;
+  // ?variant=<name>: named gameplay-tuning variant (tournament.ts VARIANTS;
+  // unknown names resolve to baseline at the call site).
+  const variant = params.get('variant') ?? undefined;
+  // ?round=SECS: timed-round length in SIM seconds (default 10 minutes).
+  // Parsed in both modes but only ARMED in spectate (play stays endless).
+  const roundRaw = parseInt(params.get('round') ?? '', 10);
+  const roundSecs = Number.isFinite(roundRaw) && roundRaw > 0 ? roundRaw : 600;
   if (params.has(PLAY_QUERY_PARAM)) {
-    return { spectate: false, botCount: 3, aiEngine, seed, teams };
+    return { spectate: false, botCount: 3, aiEngine, seed, teams, variant, roundSecs };
   }
   const n = parseInt(params.get(SPECTATE_QUERY_PARAM) ?? '', 10);
   const botCount =
     Number.isFinite(n) && n >= 2 ? Math.min(n, SPECTATE_MAX_BOTS) : SPECTATE_DEFAULT_BOTS;
-  return { spectate: true, botCount, aiEngine, seed, teams };
+  return { spectate: true, botCount, aiEngine, seed, teams, variant, roundSecs };
 }
 
 /**
@@ -299,7 +308,7 @@ function engineScores(
  * strategy in one line. Returns an updater so the E-key hot-swap can relabel
  * the window live.
  */
-function showEngineBanner(game: Game): () => void {
+function showEngineBanner(game: Game, variant: Variant): () => void {
   const banner = document.createElement('div');
   // Bottom-center, lifted above the HUD strip (hint bottom-left, vitals and
   // ammo bottom-right, score text at the very bottom) so it overlaps nothing.
@@ -318,7 +327,15 @@ function showEngineBanner(game: Game): () => void {
   name.style.cssText = 'font-size:34px;font-weight:bold;letter-spacing:0.35em';
   const tagline = document.createElement('div');
   tagline.style.cssText = 'font-size:12px;color:#cfd6e4;margin-top:2px;letter-spacing:0.08em';
-  banner.append(name, tagline);
+  // Variant line: which gameplay-tuning variant this window runs. Shown ALWAYS
+  // in spectate (baseline included) so tournament tiles are tellable-apart.
+  const variantLine = document.createElement('div');
+  variantLine.style.cssText = 'font-size:11px;color:#ffd75e;margin-top:3px;letter-spacing:0.2em';
+  const knobs = tuningDeltas(variant.tuning, DEFAULT_TUNING);
+  variantLine.textContent =
+    `VARIANT: ${variant.name.toUpperCase()} — ${variant.blurb}` +
+    (knobs !== '' ? ` · ${knobs}` : '');
+  banner.append(name, tagline, variantLine);
   document.body.appendChild(banner);
   const update = (): void => {
     const groups = game.engineGroups();
@@ -329,6 +346,45 @@ function showEngineBanner(game: Game): () => void {
   };
   update();
   return update;
+}
+
+/**
+ * Big center-screen winner banner; hidden until round end. Returns a show(fn).
+ * Center at 38% height is empty real estate once the match freezes (entities
+ * render there but nothing moves — an intentional broadcast-style overlay);
+ * it clears the top-center MVP panel, top-left leaderboard, top-right feed,
+ * and the bottom:96px engine banner.
+ */
+function makeWinnerBanner(): (r: RoundResult) => void {
+  const root = document.createElement('div');
+  root.style.cssText = [
+    'position:fixed',
+    'top:38%',
+    'left:50%',
+    'transform:translate(-50%,-50%)',
+    'z-index:30',
+    'text-align:center',
+    'pointer-events:none',
+    'display:none',
+    'font-family:ui-monospace,Menlo,monospace',
+    'text-shadow:0 2px 12px rgba(0,0,0,0.95)',
+  ].join(';');
+  const title = document.createElement('div');
+  const sub = document.createElement('div');
+  root.append(title, sub);
+  document.body.appendChild(root);
+  return (r) => {
+    title.textContent =
+      r.winnerTeam === 1 ? 'RED WINS' : r.winnerTeam === 2 ? 'BLUE WINS' : 'DRAW';
+    title.style.cssText =
+      'font-size:56px;font-weight:bold;letter-spacing:0.3em;color:' +
+      (r.winnerTeam === 1 ? '#d23c3c' : r.winnerTeam === 2 ? '#4060d2' : '#e8e4d8');
+    sub.textContent =
+      (r.winnerEngine !== '' ? `${r.winnerEngine.toUpperCase()} · ` : '') +
+      `${r.redKills}–${r.blueKills} · ROUND OVER`;
+    sub.style.cssText = 'font-size:16px;color:#cfd6e4;margin-top:6px;letter-spacing:0.15em';
+    root.style.display = '';
+  };
 }
 
 /** Fixed bottom-left hint so a spectator knows the camera keys. */
@@ -382,7 +438,10 @@ async function main(): Promise<void> {
   // built-in Skyreach aerial arena — the jetpack-dogfight level the bot match
   // is tuned for — unless ?map= explicitly asks for a stock map. Play mode
   // keeps the stock-map default.
-  const { spectate, botCount, aiEngine, seed, teams } = parseSpectate();
+  const { spectate, botCount, aiEngine, seed, teams, variant: variantName, roundSecs } = parseSpectate();
+  // Gameplay-tuning variant (tournament tiles each run a different one;
+  // unknown/absent names are baseline = stock rules).
+  const variant = resolveVariant(variantName);
   const explicitMap = new URLSearchParams(window.location.search).has('map');
   let map: PmsMap;
   let spawns: readonly { x: number; y: number }[];
@@ -428,7 +487,18 @@ async function main(): Promise<void> {
 
   // --- Game: sim world + local player + bots ---------------------------
   // A fixed seed keeps the run deterministic across reloads (handy in dev).
-  const game = new Game({ seed, spawns, botCount, spectate, aiEngine, teams });
+  // Round timer: SIM ticks (60 Hz), never wall clock — and only ever armed in
+  // spectate mode, so plain ?play stays endless and byte-for-byte unchanged.
+  const game = new Game({
+    seed,
+    spawns,
+    botCount,
+    spectate,
+    aiEngine,
+    teams,
+    tuning: variant.tuning,
+    roundTicks: spectate ? roundSecs * 60 : 0,
+  });
   // Attach the sim collision map so sprites collide with the floor (and, in
   // spectate mode, the map's bot waypoints so targetless bots patrol).
   game.loadMap(map);
@@ -447,7 +517,7 @@ async function main(): Promise<void> {
   // death clusters). Pull via window.__match.dump() (CDP-friendly), save with
   // the T key, analyze with soldat-ts/tools/analyze-match.mjs.
   const recorder = spectate
-    ? new MatchRecorder(game, map.mapName, botCount, spectate)
+    ? new MatchRecorder(game, map.mapName, botCount, spectate, variant.name)
     : null;
   if (recorder !== null) {
     (window as unknown as { __match: { dump(): unknown } }).__match = {
@@ -548,9 +618,15 @@ async function main(): Promise<void> {
     showSpectateHint();
   }
   // Big engine banner: which brain drives this window (updates on hot-swap).
-  const updateEngineBanner = spectate ? showEngineBanner(game) : (): void => {};
+  const updateEngineBanner = spectate ? showEngineBanner(game, variant) : (): void => {};
   // Displayed leaderboard (L toggles): live K/D ranking of every fighter.
   const leaderboard = spectate ? new LeaderboardPanel() : null;
+  // Per-team scoreboard (goal node 157): team kill totals + the RED/BLUE MVP,
+  // top-center — every team match (so every tournament tile) carries its own.
+  const teamPanel = spectate && game.teamsEnabled ? new TeamScorePanel() : null;
+  // Round-end overlay: shown ONCE when the timed round freezes the game.
+  const showWinner = spectate ? makeWinnerBanner() : null;
+  let roundShown = false;
   const leaderboardRows = (): FighterRow[] =>
     game.botIndices().map((i) => ({
       index: i,
@@ -747,6 +823,17 @@ async function main(): Promise<void> {
     game.tick(dt);
     recorder?.maybeSample();
 
+    // Round end (one-shot): Game.tick() now no-ops (frozen sim), but THIS loop
+    // keeps running so the director/HUD/leaderboard render the final state.
+    // Paint the winner banner and force a final scoreboard refresh (the %30
+    // refresh below stops firing once the sim clock stops).
+    if (!roundShown && game.roundResult !== null) {
+      roundShown = true;
+      showWinner?.(game.roundResult);
+      teamPanel?.update(leaderboardRows());
+      if (leaderboard !== null) leaderboard.update(leaderboardRows());
+    }
+
     // 4. Render entities, interpolated between ticks by the leftover fraction.
     entityRenderer.render(game.world, game.framePercent);
 
@@ -769,7 +856,8 @@ async function main(): Promise<void> {
         health: fs?.health ?? 0,
         maxHealth: START_HEALTH,
         jet: fs?.jetsCount ?? 0,
-        maxJet: JET_FUEL_MAX,
+        // The match's ACTUAL tank size — variants shrink it (e.g. thin-air).
+        maxJet: game.tuning.jetFuelMax,
         ammo: game.ammoOf(followed),
         // The weapon line doubles as the "now watching" label (mixed matches
         // tag the followed bot with its engine).
@@ -792,7 +880,7 @@ async function main(): Promise<void> {
         // Live fuel (jetsCount is what applyJetpack burns and regen refills;
         // jetsCountReal is an unused Pascal mirror that never decrements).
         jet: player.jetsCount,
-        maxJet: JET_FUEL_MAX,
+        maxJet: game.tuning.jetFuelMax,
         ammo: game.playerAmmo(),
         weaponName: game.playerReloading() ? 'RELOADING…' : 'RIFLE',
         scores: { alpha: 0, bravo: 0, playerKills: 0, leading: false, gap: 0 },
@@ -804,6 +892,7 @@ async function main(): Promise<void> {
     // Leaderboard refresh (cheap, but no need for 120 Hz DOM writes).
     if (leaderboard !== null && game.world.mainTickCounter % 30 === 0) {
       leaderboard.update(leaderboardRows());
+      teamPanel?.update(leaderboardRows());
     }
 
     if (app !== undefined) {
@@ -813,4 +902,8 @@ async function main(): Promise<void> {
   requestAnimationFrame(frame);
 }
 
-void main();
+// Booting needs a browser; under unit tests (vitest, node environment) this
+// module is imported only for its pure exports (parseSpectate/parseDuel).
+if (typeof document !== 'undefined') {
+  void main();
+}

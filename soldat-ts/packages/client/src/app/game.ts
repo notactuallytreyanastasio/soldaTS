@@ -36,37 +36,62 @@ const TICK_HZ = 60;
 const TICK_DT = 1 / TICK_HZ;
 const MAX_TICKS_PER_FRAME = 8;
 
-/** Ticks a dead sprite waits before respawning (~3 s). */
-const RESPAWN_TICKS = 180;
 /** Muzzle stand-off so a fresh bullet doesn't instantly collide with the shooter. */
 const MUZZLE_OFFSET = 14;
+
+// --- Per-match tuning (goal node 157) ----------------------------------------
+// The gun + jet + respawn numbers are PER-INSTANCE now: tournament games run
+// named gameplay variants (tournament.ts VARIANTS) by overriding a subset of
+// these. DEFAULT_TUNING is the stock game — a Game built without `tuning` is
+// byte-for-byte the old constants.
+export interface GameTuning {
+  fireInterval: number; // ticks between shots
+  magSize: number; // rounds per magazine
+  reloadTicks: number; // reload duration
+  spreadBase: number; // rad, standing-tap spread
+  spreadHeatPerShot: number; // bloom added per sustained shot
+  jetFuelMax: number; // ticks of burn
+  jetRegenPerTick: number; // ground refuel rate
+  jetAirRegenPerTick: number; // coasting trickle refuel
+  respawnTicks: number; // dead-to-respawn delay
+}
 
 // --- The ONE gun -----------------------------------------------------------
 // Everyone shares a single automatic rifle. The whole game balances around it:
 // spray control (accuracy blooms as you hold fire), quick reactions (fast but
 // not instant TTK + dodgeable projectiles), and terrain protection (bullets are
-// blocked by geometry; reloading forces you behind cover). Tune here.
-const FIRE_INTERVAL = 6; // ticks between shots (~10/s auto)
-const MAG_SIZE = 30; // rounds per magazine
-const RELOAD_TICKS = 95; // ~1.6 s reload — be behind cover
-const SPREAD_BASE = 0.015; // rad — a standing tap is near-pinpoint
-const SPREAD_HEAT_PER_SHOT = 0.012; // bloom added per sustained shot
-const SPREAD_HEAT_MAX = 0.16; // max bloom from spraying
-const SPREAD_HEAT_DECAY = 0.05; // bloom recovered per tick when not firing
-const SPREAD_MOVE = 0.06; // extra spread while moving fast (stand still to be accurate)
-const MOVE_SPREAD_SPEED = 3; // |vx| above which the move penalty applies
-
+// blocked by geometry; reloading forces you behind cover).
+//
 // --- Rocket boots ------------------------------------------------------------
 // This is a VERY vertical game (decision node 94): flying around is the point.
 // A big tank plus on-ground regen means jets gate ENGAGEMENTS (you can't hover
 // forever in a duel) without gating MOVEMENT (you're never stranded walking).
 // The thrust direction itself is tuned in @soldat/sim (JET_THRUST/JET_AIR_DRIFT).
-export const JET_FUEL_MAX = 700; // ticks of burn (~11.7 s of continuous thrust)
-const JET_REGEN_PER_TICK = 3; // refuel rate on the ground (empty→full ~3.9 s)
-// Coasting in the air trickles fuel back at 1/tick — exactly the burn rate, so
-// a 50% thrust duty cycle hovers forever but climbing still spends the tank.
-// This is what makes sustained aerial dogfights possible (goal node 124).
-const JET_AIR_REGEN_PER_TICK = 1;
+export const DEFAULT_TUNING: Readonly<GameTuning> = {
+  fireInterval: 6, // ticks between shots (~10/s auto)
+  magSize: 30, // rounds per magazine
+  reloadTicks: 95, // ~1.6 s reload — be behind cover
+  spreadBase: 0.015, // rad — a standing tap is near-pinpoint
+  spreadHeatPerShot: 0.012, // bloom added per sustained shot
+  jetFuelMax: 700, // ticks of burn (~11.7 s of continuous thrust)
+  jetRegenPerTick: 3, // refuel rate on the ground (empty→full ~3.9 s)
+  // Coasting in the air trickles fuel back at 1/tick — exactly the burn rate,
+  // so a 50% thrust duty cycle hovers forever but climbing still spends the
+  // tank. This is what makes sustained aerial dogfights possible (goal 124).
+  jetAirRegenPerTick: 1,
+  respawnTicks: 180, // dead-to-respawn delay (~3 s)
+};
+
+/** Kept for compatibility (legacy importers). Equals DEFAULT_TUNING.jetFuelMax. */
+export const JET_FUEL_MAX = DEFAULT_TUNING.jetFuelMax;
+
+// Spread shape that is NOT part of the per-match tuning surface (the variants
+// tweak base accuracy and bloom-per-shot; the cap/decay/move-penalty define
+// what spray-control FEELS like and stay global).
+const SPREAD_HEAT_MAX = 0.16; // max bloom from spraying
+const SPREAD_HEAT_DECAY = 0.05; // bloom recovered per tick when not firing
+const SPREAD_MOVE = 0.06; // extra spread while moving fast (stand still to be accurate)
+const MOVE_SPREAD_SPEED = 3; // |vx| above which the move penalty applies
 
 // --- Aim assist (player only — bots would become aimbots) -------------------
 // LIGHT magnetism (goal node 102): keyboard aim is coarse, so shots already
@@ -144,6 +169,61 @@ export interface GameOptions {
    * and OFF otherwise (FFA). Uniform matches with teams alternate bots.
    */
   teams?: boolean | undefined;
+  /** Partial overrides of DEFAULT_TUNING — per-match gameplay variant. */
+  tuning?: Partial<GameTuning> | undefined;
+  /** Round length in sim ticks; 0/undefined = endless. Only enforced when teamsEnabled. */
+  roundTicks?: number | undefined;
+}
+
+// --- Timed rounds (goal node 157) -------------------------------------------
+// A team match ends after `roundTicks` SIM ticks (10 minutes = 36000 at 60 Hz
+// — counted on world.mainTickCounter, never wall clock). The winner is the
+// team with more kills; a tie falls back to total dominance; a double tie is
+// a draw. Once decided the Game FREEZES (tick() no-ops) so every consumer —
+// renderer, HUD, leaderboard, telemetry dump — keeps serving the final state.
+
+export interface RoundResult {
+  overAtTick: number;
+  /** 1 red, 2 blue, 0 draw. */
+  winnerTeam: number;
+  /** Engine driving the winning team ('' on draw). */
+  winnerEngine: string;
+  redKills: number;
+  blueKills: number;
+  redDom: number; // sum over red of kills - 0.5*deaths
+  blueDom: number;
+}
+
+/** Decide the round: kill totals, tie → total dominance, tie → draw (team 0). */
+export function decideRoundWinner(
+  rows: readonly { team: number; kills: number; deaths: number }[],
+  overAtTick: number,
+): Omit<RoundResult, 'winnerEngine'> {
+  let redKills = 0;
+  let blueKills = 0;
+  let redDom = 0;
+  let blueDom = 0;
+  for (const r of rows) {
+    const dom = r.kills - 0.5 * r.deaths;
+    if (r.team === 1) {
+      redKills += r.kills;
+      redDom += dom;
+    } else if (r.team === 2) {
+      blueKills += r.kills;
+      blueDom += dom;
+    }
+  }
+  const winnerTeam =
+    redKills > blueKills
+      ? 1
+      : blueKills > redKills
+        ? 2
+        : redDom > blueDom
+          ? 1
+          : blueDom > redDom
+            ? 2
+            : 0;
+  return { overAtTick, winnerTeam, redKills, blueKills, redDom, blueDom };
 }
 
 /** A renderable view of a bullet (matches fx.BulletView). */
@@ -211,8 +291,21 @@ export class Game {
   private readonly botTeam = new Map<number, number>();
   /** Whether this match runs red-vs-blue teams. */
   readonly teamsEnabled: boolean;
+  /** Effective gameplay numbers: DEFAULT_TUNING + the match's variant overrides. */
+  readonly tuning: GameTuning;
+  /** Round length in sim ticks (0 = endless; only enforced with teams on). */
+  private readonly roundTicks: number;
+  /** Per-sprite attributed kill / death tallies (round-winner bookkeeping). */
+  private readonly killsBy = new Map<number, number>();
+  private readonly deathsBy = new Map<number, number>();
+  /** Set once when the timed round ends; tick() freezes from then on. */
+  private _roundResult: RoundResult | null = null;
 
   constructor(opts: GameOptions = {}) {
+    // Tuning FIRST: engineCtx below captures magSize from it.
+    this.tuning = { ...DEFAULT_TUNING, ...(opts.tuning ?? {}) };
+    this.roundTicks = opts.roundTicks ?? 0;
+
     this.world = createWorld();
     initSimWorld(this.world, opts.seed !== undefined ? { seed: opts.seed } : undefined);
 
@@ -236,7 +329,7 @@ export class Game {
       spectate: this.spectate,
       ammoOf: (i: number): number => this.ammoOf(i),
       reloadingOf: (i: number): boolean => this.reloadingOf(i),
-      magSize: MAG_SIZE,
+      magSize: this.tuning.magSize,
     };
 
     // Player. In spectate mode slot 1 is never spawned: an inactive sprite is
@@ -254,12 +347,28 @@ export class Game {
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
       const index = this.playerIndex + 1 + b;
-      const engine = this.engines[b % this.engines.length]!;
+      const engine = this.engineForSlot(b);
       this.botEngine.set(index, engine.id);
       if (this.teamsEnabled) this.botTeam.set(index, this.teamFor(b, engine.id));
       this.spawnSprite(index, this.spawnFor(index));
       this.bots.push({ index, brain: engine.createBrain() });
     }
+  }
+
+  /**
+   * Engine for bot slot `b`. In TEAM matches each team is ENTIRELY one mode
+   * (user correction on node 157): slots alternate between the first two
+   * engine GROUPS — an even red/blue split no matter how lopsided the roster
+   * list is (an evolved 5:1 roster would otherwise produce 1v5 teams that
+   * read as "everyone is on pilot"). FFA keeps the roster's own proportions.
+   */
+  private engineForSlot(b: number): BotEngine {
+    const groups = this.engineGroups();
+    if (this.teamsEnabled && groups.length >= 2) {
+      const id = groups[b % 2]!;
+      return this.engines.find((e) => e.id === id) ?? this.engines[0]!;
+    }
+    return this.engines[b % this.engines.length]!;
   }
 
   /**
@@ -318,7 +427,7 @@ export class Game {
   setEngine(spec: string): void {
     this.engines = Game.resolveEngines(spec);
     this.bots.forEach((bot, b) => {
-      const engine = this.engines[b % this.engines.length]!;
+      const engine = this.engineForSlot(b);
       this.botEngine.set(bot.index, engine.id);
       if (this.teamsEnabled) {
         const team = this.teamFor(b, engine.id);
@@ -368,8 +477,8 @@ export class Game {
     s.deadMeat = false;
     s.dummy = false;
     s.selWeapon = WeaponIndex.AK74;
-    s.jetsCount = JET_FUEL_MAX;
-    s.jetsCountReal = JET_FUEL_MAX;
+    s.jetsCount = this.tuning.jetFuelMax;
+    s.jetsCountReal = this.tuning.jetFuelMax;
     s.jumpTicksLeft = 0;
     s.control = {
       left: false,
@@ -394,7 +503,7 @@ export class Game {
     s.team = this.botTeam.get(index) ?? 0;
     this.nextFireTick[index] = 0;
     this.respawnIn[index] = 0;
-    this.ammo[index] = MAG_SIZE;
+    this.ammo[index] = this.tuning.magSize;
     this.reloadUntil[index] = 0;
     this.sprayHeat[index] = 0;
   }
@@ -425,7 +534,22 @@ export class Game {
   }
 
   magSize(): number {
-    return MAG_SIZE;
+    return this.tuning.magSize;
+  }
+
+  /** Attributed kills by sprite `index` (round-winner bookkeeping). */
+  killsOf(index: number): number {
+    return this.killsBy.get(index) ?? 0;
+  }
+
+  /** Deaths of sprite `index` (round-winner bookkeeping). */
+  deathsOf(index: number): number {
+    return this.deathsBy.get(index) ?? 0;
+  }
+
+  /** The round verdict once the timed round has ended (null while running). */
+  get roundResult(): RoundResult | null {
+    return this._roundResult;
   }
 
   loadMap(source: PolyMapSource & { waypoints?: PmsWaypoint[] }): void {
@@ -459,6 +583,15 @@ export class Game {
   }
 
   tick(dtSeconds: number): void {
+    // Round over → the match is FROZEN. Gated here (not in the rAF loop) so
+    // the director camera, HUD, leaderboard, winner banner, and telemetry
+    // dump() all keep rendering/serving the final state — and so the freeze
+    // is unit-testable headlessly with no DOM.
+    if (this._roundResult !== null) {
+      this.accumulator = 0;
+      this.framePercent = 0;
+      return;
+    }
     const dt = dtSeconds > 0 && dtSeconds < 1 ? dtSeconds : TICK_DT;
     this.accumulator += dt;
 
@@ -493,14 +626,40 @@ export class Game {
     // while coasting in the air (player and bots alike).
     for (const s of this.world.sprites) {
       if (s.deadMeat || !s.active) continue;
-      if (!s.control.jetpack && s.jetsCount < JET_FUEL_MAX) {
-        const regen = s.onGround ? JET_REGEN_PER_TICK : JET_AIR_REGEN_PER_TICK;
-        s.jetsCount = Math.min(s.jetsCount + regen, JET_FUEL_MAX);
+      if (!s.control.jetpack && s.jetsCount < this.tuning.jetFuelMax) {
+        const regen = s.onGround
+          ? this.tuning.jetRegenPerTick
+          : this.tuning.jetAirRegenPerTick;
+        s.jetsCount = Math.min(s.jetsCount + regen, this.tuning.jetFuelMax);
       }
     }
 
     // Death / respawn upkeep.
     this.respawnUpkeep();
+
+    // Timed round (goal node 157): once the sim clock crosses roundTicks the
+    // verdict is computed ONCE from the per-bot tallies and the game freezes
+    // (tick() gates on _roundResult). Teams-off / roundTicks 0 = endless.
+    if (
+      this._roundResult === null &&
+      this.teamsEnabled &&
+      this.roundTicks > 0 &&
+      this.world.mainTickCounter >= this.roundTicks
+    ) {
+      const rows = this.bots.map((b) => ({
+        team: this.teamOf(b.index),
+        kills: this.killsOf(b.index),
+        deaths: this.deathsOf(b.index),
+      }));
+      const base = decideRoundWinner(rows, this.world.mainTickCounter);
+      // Teams follow engine groups (teamFor), so any member of the winning
+      // team names the engine that won the round.
+      const winnerBot = this.bots.find((b) => this.teamOf(b.index) === base.winnerTeam);
+      this._roundResult = {
+        ...base,
+        winnerEngine: base.winnerTeam === 0 ? '' : this.engineOf(winnerBot?.index ?? -1),
+      };
+    }
   }
 
   /**
@@ -517,14 +676,14 @@ export class Game {
     if (reloading) {
       // Reload completes exactly at reloadUntil.
       if (clock === reloadingUntil - 1) {
-        this.ammo[index] = MAG_SIZE;
+        this.ammo[index] = this.tuning.magSize;
       }
     }
     if (s.deadMeat || !s.active) return;
 
     // Manual reload (R) when not full and not already reloading.
-    if (s.control.reload && !reloading && (this.ammo[index] ?? 0) < MAG_SIZE) {
-      this.reloadUntil[index] = clock + RELOAD_TICKS;
+    if (s.control.reload && !reloading && (this.ammo[index] ?? 0) < this.tuning.magSize) {
+      this.reloadUntil[index] = clock + this.tuning.reloadTicks;
       this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
     }
@@ -539,7 +698,7 @@ export class Game {
 
     // Empty magazine → auto-reload.
     if ((this.ammo[index] ?? 0) <= 0) {
-      this.reloadUntil[index] = clock + RELOAD_TICKS;
+      this.reloadUntil[index] = clock + this.tuning.reloadTicks;
       this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
     }
@@ -582,7 +741,7 @@ export class Game {
     // Spread = base + spray bloom + a movement penalty (stand still to be precise).
     const vx = parts.velocityX[index] ?? 0;
     const moving = Math.abs(vx) > MOVE_SPREAD_SPEED ? SPREAD_MOVE : 0;
-    const spread = SPREAD_BASE + (this.sprayHeat[index] ?? 0) + moving;
+    const spread = this.tuning.spreadBase + (this.sprayHeat[index] ?? 0) + moving;
     const jitter = (this.world.rng.next() * 2 - 1) * spread;
     const ang = Math.atan2(ay, ax) + jitter;
     const dx = Math.cos(ang);
@@ -601,8 +760,11 @@ export class Game {
 
     s.direction = dx >= 0 ? 1 : -1;
     this.ammo[index] = (this.ammo[index] ?? 0) - 1;
-    this.sprayHeat[index] = Math.min(SPREAD_HEAT_MAX, (this.sprayHeat[index] ?? 0) + SPREAD_HEAT_PER_SHOT);
-    this.nextFireTick[index] = clock + FIRE_INTERVAL;
+    this.sprayHeat[index] = Math.min(
+      SPREAD_HEAT_MAX,
+      (this.sprayHeat[index] ?? 0) + this.tuning.spreadHeatPerShot,
+    );
+    this.nextFireTick[index] = clock + this.tuning.fireInterval;
     this.onShot?.(index);
     this.onSound?.('fire', px, py);
   }
@@ -620,12 +782,17 @@ export class Game {
       if (s === undefined) continue;
       if (s.deadMeat || s.health <= 0) {
         if ((this.respawnIn[index] ?? 0) === 0) {
-          this.respawnIn[index] = RESPAWN_TICKS;
+          this.respawnIn[index] = this.tuning.respawnTicks;
           const dp = this.world.spriteParts;
           this.onSound?.('death', dp?.posX[index] ?? 0, dp?.posY[index] ?? 0);
           s.deadMeat = true;
-          // The one-shot death edge (gated by respawnIn === 0): report the
-          // kill with the last-hit attribution the sim recorded.
+          // The one-shot death edge (gated by respawnIn === 0): tally for the
+          // round verdict, then report the kill with the last-hit attribution
+          // the sim recorded (suicides/unattributed deaths credit nobody).
+          this.deathsBy.set(index, (this.deathsBy.get(index) ?? 0) + 1);
+          if (s.lastHitBy > 0 && s.lastHitBy !== index) {
+            this.killsBy.set(s.lastHitBy, (this.killsBy.get(s.lastHitBy) ?? 0) + 1);
+          }
           this.onKill?.(s.lastHitBy, index);
           // freeze control while dead
           s.control = { ...s.control, left: false, right: false, up: false, fire: false, jetpack: false };
