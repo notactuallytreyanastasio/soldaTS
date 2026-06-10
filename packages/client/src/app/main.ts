@@ -215,7 +215,7 @@ export function parseSpectate(
   arenaSeed: number;
   variant: string | undefined;
   roundSecs: number;
-  /** Opt-in wildcard (?wildcard=shotgun); absent = stock loadouts. */
+  /** Opt-in wildcard (?wildcard=shotgun|rifle); absent = stock loadouts. */
   wildcard: string | undefined;
 } {
   const params = new URLSearchParams(search);
@@ -240,8 +240,8 @@ export function parseSpectate(
   const coachB = params.get('coach-b') ?? undefined;
   const arenaRaw = parseInt(params.get('arena') ?? '', 10);
   const arenaSeed = Number.isFinite(arenaRaw) && arenaRaw >= 0 ? arenaRaw : 0;
-  // ?wildcard=shotgun|none|chance. Fresh PLAY sessions default to the seeded
-  // chance roll (every game gets a shot at shotgun play); SPECTATE links
+  // ?wildcard=shotgun|rifle|none|chance. Fresh PLAY sessions default to the
+  // seeded chance roll (every game gets a shot at wildcard play); SPECTATE links
   // without the param stay STOCK — every watch URL recorded before the
   // chance era carries no param and must keep replaying byte-identically.
   const wildcardRaw = params.get('wildcard') ?? undefined;
@@ -1137,7 +1137,7 @@ async function main(): Promise<void> {
         jet: player.jetsCount,
         maxJet: game.tuning.jetFuelMax,
         ammo: game.playerAmmo(),
-        // Current weapon (Tab/B swaps AK74 ⇄ SPAS12) — labels match the feed.
+        // Current weapon (Tab/B cycles AK74 → SPAS12 → BARRETT) — labels match the feed.
         weaponName: game.playerReloading()
           ? 'RELOADING…'
           : game.weaponNameOf(game.playerIndex),

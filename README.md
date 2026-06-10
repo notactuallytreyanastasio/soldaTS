@@ -1123,7 +1123,8 @@ wide. The sport audits itself, and the recordings pile up for whatever trains ne
 
 Open http://localhost:5173 and the game hands you a menu: pick any of fourteen
 brains (twelve written, two learned) and fight it yourself, on a map nobody has
-seen before, with a decent chance somebody on the field drew a wildcard gun. They
+seen before, with a decent chance somebody on the field drew a shotgun or a one-shot
+rifle from the wildcard roll. They
 won't get aim assist; you will. You'll still lose to the wolf. I mostly watch the
 board now and type one-sentence asks; the two coaches do the rest, and the bottom
 of the leaderboard is occupied by things that can climb. The machine doesn't need

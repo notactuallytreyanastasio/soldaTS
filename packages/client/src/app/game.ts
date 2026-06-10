@@ -67,6 +67,10 @@ export interface GameTuning {
 // key. With the wildcard off and the player never swapping, slot 1 is inert:
 // no rng draw, no sim effect, byte-identical default matches.
 //
+// Slot 2 is the Barrett M82A1 (same contract): the one-hit-kill, slow-cycling,
+// map-distance sniper rifle — reachable via the 'rifle' wildcard or the
+// player's swap key, and exactly as inert as the SPAS when unused.
+//
 // --- Rocket boots ------------------------------------------------------------
 // This is a VERY vertical game (decision node 94): flying around is the point.
 // A big tank plus on-ground regen means jets gate ENGAGEMENTS (you can't hover
@@ -95,11 +99,33 @@ export const JET_FUEL_MAX = DEFAULT_TUNING.jetFuelMax;
 export const SLOT_AK = 0;
 /** Slot 1: the SPAS-12 (wildcard carriers / player swap). */
 export const SLOT_SPAS = 1;
+/** Slot 2: the Barrett M82A1 (wildcard carriers / player swap). */
+export const SLOT_BARRETT = 2;
 /** Pellets per SPAS-12 trigger pull. PORT: the Pascal fire path spawns one
  *  bullet per pellet — 6 pellets per shell. */
 export const SPAS_PELLETS = 6;
 /** Kill-feed / HUD weapon labels per slot (kept terse: `Killer [SPAS12] Victim`). */
-export const WEAPON_LABELS: readonly [string, string] = ['AK74', 'SPAS12'];
+export const WEAPON_LABELS: readonly [string, string, string] = ['AK74', 'SPAS12', 'BARRETT'];
+/** All slots, in swap-cycle order (Tab/B walks this ring). */
+const SLOTS = [SLOT_AK, SLOT_SPAS, SLOT_BARRETT] as const;
+type Slot = (typeof SLOTS)[number];
+/** Contract WeaponIndex per slot (sprite.selWeapon mirrors the active slot). */
+const SLOT_WEAPON_INDEX: readonly [number, number, number] = [
+  WeaponIndex.AK74,
+  WeaponIndex.SPAS12,
+  WeaponIndex.BARRETT,
+];
+
+// Barrett gameplay overrides (the SPEC: one-hit-kill, SLOW, map-distance).
+// The pure contract-ratio scaling that derives the SPAS would give the Barrett
+// a mag of round(10*30/35) = 9 and a reload of round(70*95/165) = 40 ticks
+// (0.67 s) — neither is the "tiny mag, punishing reload" the spec demands, so
+// these two stats are explicit gameplay overrides (still scaled by the match
+// variant's AK ratio so tuned variants move the Barrett in step):
+/** Barrett magazine at stock tuning (contract ammo 10 → 3: the spec's small mag). */
+const BARRETT_MAG_STOCK = 3;
+/** Barrett reload at stock tuning: 210 ticks = 3.5 s — the spec's ~3-4 s feel. */
+const BARRETT_RELOAD_STOCK = 210;
 
 /** Per-slot effective numbers derived from GameTuning + the weapon contract. */
 interface SlotTuning {
@@ -110,7 +136,7 @@ interface SlotTuning {
 }
 
 /**
- * Derive both weapon slots' numbers from the match tuning.
+ * Derive all weapon slots' numbers from the match tuning.
  *
  * Slot 0 (AK) uses the tuning fields VERBATIM — a default match is
  * byte-for-byte the single-gun game.
@@ -124,10 +150,31 @@ interface SlotTuning {
  * The contract's bulletSpread is a velocity perturbation (±0.8 on speed 14);
  * as the angular half-fan this game's spread model needs, that is
  * atan(bulletSpread / bulletSpeed) ≈ 0.057 rad per pellet.
+ *
+ * Slot 2 (Barrett M82A1) uses the same ratio approach for its CADENCE —
+ * fireInterval 225 → 225*6/10 = 135 ticks (2.25 s between shots, the
+ * contract's punishing cycle) — but two explicit gameplay overrides where the
+ * ratio would betray the spec (see BARRETT_MAG_STOCK / BARRETT_RELOAD_STOCK):
+ * a 3-round magazine and a 210-tick (3.5 s) reload, each still scaled by the
+ * variant's own AK ratio. bulletSpread 0 → spreadBase 0: a laser.
+ *
+ * ONE-HIT-KILL MATH (why the contract hitMultiply 4.45 is kept as-is):
+ *   damage = |bulletVelocity| * hitMultiply * modifierChest   (damage.ts)
+ *          = 55 * 4.45 * 1.0 = 244.75  vs  STARTHEALTH 150 → dead (63% margin).
+ *   Minimum hitMultiply for a torso OHK at muzzle speed: 150/55 ≈ 2.73 — the
+ *   contract's 4.45 clears it, and stays lethal down to |v| ≈ 33.8 px/tick.
+ *   Distance is handled in the sim, not here: Barrett rounds are EXEMPT from
+ *   the 500/900 px hitMultiply halving (DEGRADATION_EXEMPT_NUMS, bullet.ts),
+ *   so 4.45 holds at any range and the OHK survives a cross-map shot.
  */
-function deriveSlotTuning(tuning: GameTuning, ak: Gun, spas: Gun): [SlotTuning, SlotTuning] {
-  const scale = (spasStat: number, akStat: number, tunedAk: number): number =>
-    Math.max(1, Math.round((spasStat * tunedAk) / akStat));
+function deriveSlotTuning(
+  tuning: GameTuning,
+  ak: Gun,
+  spas: Gun,
+  barrett: Gun,
+): [SlotTuning, SlotTuning, SlotTuning] {
+  const scale = (stat: number, akStat: number, tunedAk: number): number =>
+    Math.max(1, Math.round((stat * tunedAk) / akStat));
   return [
     {
       fireInterval: tuning.fireInterval,
@@ -140,6 +187,13 @@ function deriveSlotTuning(tuning: GameTuning, ak: Gun, spas: Gun): [SlotTuning, 
       magSize: scale(spas.ammo, ak.ammo, tuning.magSize),
       reloadTicks: scale(spas.reloadTime, ak.reloadTime, tuning.reloadTicks),
       spreadBase: Math.atan(spas.bulletSpread / spas.bulletSpeed),
+    },
+    {
+      fireInterval: scale(barrett.fireInterval, ak.fireInterval, tuning.fireInterval),
+      // Gameplay overrides anchored at stock (NOT contract ratios — see doc).
+      magSize: scale(BARRETT_MAG_STOCK, DEFAULT_TUNING.magSize, tuning.magSize),
+      reloadTicks: scale(BARRETT_RELOAD_STOCK, DEFAULT_TUNING.reloadTicks, tuning.reloadTicks),
+      spreadBase: Math.atan(barrett.bulletSpread / barrett.bulletSpeed), // 0 — a laser
     },
   ];
 }
@@ -236,9 +290,10 @@ export interface GameOptions {
    *  instantiated (mixed matches: each side's tweaks tracked separately). */
   engineTweaks?: Record<string, Record<string, number>> | undefined;
   /**
-   * Opt-in wildcard ('shotgun'): exactly one bot per team (one bot total in
-   * FFA) carries the SPAS-12, picked deterministically from the match seed
-   * via world.rng. Absent/undefined = stock loadouts, zero rng consumed.
+   * Opt-in wildcard ('shotgun' | 'rifle'): exactly one bot per team (one bot
+   * total in FFA) carries the wildcard weapon — SPAS-12 for 'shotgun', Barrett
+   * for 'rifle' — picked deterministically from the match seed via world.rng.
+   * Absent/undefined = stock loadouts, zero rng consumed.
    */
   wildcard?: string | undefined;
 }
@@ -343,28 +398,32 @@ export class Game {
   private readonly bots: BotEntry[] = [];
   /** Bot navigation graph; rebuilt from real map waypoints in spectate mode. */
   private graph: WaypointGraph;
-  /** The two guns from the shared weapon contract: [AK74, SPAS12]. */
-  private readonly guns: readonly [Gun, Gun];
+  /** The guns from the shared weapon contract: [AK74, SPAS12, BARRETT]. */
+  private readonly guns: readonly [Gun, Gun, Gun];
   /** Per-slot effective fire/mag/reload/spread numbers (see deriveSlotTuning). */
-  private readonly slotTuning: readonly [SlotTuning, SlotTuning];
+  private readonly slotTuning: readonly [SlotTuning, SlotTuning, SlotTuning];
   /** Per-sprite active weapon slot (SLOT_AK everywhere by default). */
   private readonly weaponSlot: number[] = [];
   /** Per-sprite previous changeWeapon flag — swap on the rising edge only. */
   private readonly prevChangeWeapon: boolean[] = [];
-  /** Sprite indices armed with the SPAS-12 by the wildcard (survives respawn). */
-  private readonly spasCarriers = new Set<number>();
-  /** The active wildcard ('shotgun') or undefined (stock loadouts). */
+  /** Wildcard carriers: sprite index → armed slot (survives respawn). */
+  private readonly carrierSlot = new Map<number, Slot>();
+  /** The active wildcard ('shotgun' | 'rifle') or undefined (stock loadouts). */
   readonly wildcard: string | undefined;
   /** Per-slot per-sprite next-fire tick (world.mainTickCounter clock). */
-  private readonly nextFireTick: [number[], number[]] = [[], []];
+  private readonly nextFireTick: [number[], number[], number[]] = [[], [], []];
   /** Per-sprite respawn countdown (ticks); 0 = alive. */
   private readonly respawnIn: number[] = [];
   /** Per-slot per-sprite rounds left in the magazine. */
-  private readonly ammo: [number[], number[]] = [[], []];
+  private readonly ammo: [number[], number[], number[]] = [[], [], []];
   /** Per-slot per-sprite tick the current reload completes (0 = not reloading). */
-  private readonly reloadUntil: [number[], number[]] = [[], []];
+  private readonly reloadUntil: [number[], number[], number[]] = [[], [], []];
   /** Per-slot per-sprite spray bloom (radians) — grows firing, decays at rest. */
-  private readonly sprayHeat: [number[], number[]] = [[], []];
+  private readonly sprayHeat: [number[], number[], number[]] = [[], [], []];
+  /** Per-sprite Barrett charge progress (ticks of fire held while ready);
+   *  the shot fires once this reaches the contract startUpTime (19). Releasing
+   *  fire mid-charge cancels (reset to 0); swap and respawn also reset. */
+  private readonly barrettCharge: number[] = [];
   /** Context handed to every bot brain (graph resolves live via getter). */
   private readonly engineCtx: BotEngineContext;
   /**
@@ -406,8 +465,17 @@ export class Game {
     // aim and fire at the nearest enemy; navigation is a no-op (they hold
     // ground — engines layer their own fallbacks, see ../ai/).
     this.graph = buildWaypoints({ waypoints: [] });
-    this.guns = [getGun(WeaponIndex.AK74, false), getGun(WeaponIndex.SPAS12, false)];
-    this.slotTuning = deriveSlotTuning(this.tuning, this.guns[SLOT_AK], this.guns[SLOT_SPAS]);
+    this.guns = [
+      getGun(WeaponIndex.AK74, false),
+      getGun(WeaponIndex.SPAS12, false),
+      getGun(WeaponIndex.BARRETT, false),
+    ];
+    this.slotTuning = deriveSlotTuning(
+      this.tuning,
+      this.guns[SLOT_AK],
+      this.guns[SLOT_SPAS],
+      this.guns[SLOT_BARRETT],
+    );
     this.wildcard = opts.wildcard;
 
     // The brain context: a narrow window onto the world plus the client-owned
@@ -449,11 +517,20 @@ export class Game {
       this.bots.push({ index, brain: engine.createBrain() });
     }
 
-    // Shotgun wildcard: ONE carrier per team (one total in FFA), picked from
-    // the match seed through world.rng — the only randomness source — so the
-    // same seed always arms the same bot. Skipped entirely (no rng draw) when
-    // the wildcard is off: default matches stay byte-identical.
-    if (this.wildcard === 'shotgun' && this.bots.length > 0) {
+    // Weapon wildcard ('shotgun' → SPAS-12, 'rifle' → Barrett): ONE carrier
+    // per team (one total in FFA), picked from the match seed through
+    // world.rng — the only randomness source — so the same seed always arms
+    // the same bot. The rng draw ORDER is identical for both wildcards (one
+    // nextInt per pool), so a given seed arms the same carrier indices
+    // whichever weapon rides the wildcard. Skipped entirely (no rng draw)
+    // when the wildcard is off: default matches stay byte-identical.
+    const armedSlot: Slot | undefined =
+      this.wildcard === 'shotgun'
+        ? SLOT_SPAS
+        : this.wildcard === 'rifle'
+          ? SLOT_BARRETT
+          : undefined;
+    if (armedSlot !== undefined && this.bots.length > 0) {
       const pools: number[][] = this.teamsEnabled
         ? [1, 2].map((team) =>
             this.bots.filter((b) => this.teamOf(b.index) === team).map((b) => b.index),
@@ -463,22 +540,22 @@ export class Game {
         if (pool.length === 0) continue;
         const pick = pool[this.world.rng.nextInt(pool.length)];
         if (pick === undefined) continue;
-        this.spasCarriers.add(pick);
-        this.weaponSlot[pick] = SLOT_SPAS;
+        this.carrierSlot.set(pick, armedSlot);
+        this.weaponSlot[pick] = armedSlot;
         const sp = this.world.sprites[pick];
-        if (sp !== undefined) sp.selWeapon = WeaponIndex.SPAS12;
+        if (sp !== undefined) sp.selWeapon = SLOT_WEAPON_INDEX[armedSlot];
       }
     }
   }
 
-  /** Wildcard SPAS-12 carriers (ascending sprite index; empty when off). */
+  /** Wildcard weapon carriers (ascending sprite index; empty when off). */
   wildcardCarriers(): readonly number[] {
-    return [...this.spasCarriers].sort((a, b) => a - b);
+    return [...this.carrierSlot.keys()].sort((a, b) => a - b);
   }
 
-  /** Kill-feed/HUD label of `index`'s current weapon ('AK74' | 'SPAS12'). */
+  /** Kill-feed/HUD label of `index`'s weapon ('AK74' | 'SPAS12' | 'BARRETT'). */
   weaponNameOf(index: number): string {
-    return WEAPON_LABELS[this.weaponSlot[index] === SLOT_SPAS ? SLOT_SPAS : SLOT_AK];
+    return WEAPON_LABELS[this.slotOf(index)];
   }
 
   /**
@@ -612,12 +689,12 @@ export class Game {
     }
     s.deadMeat = false;
     s.dummy = false;
-    // Wildcard carriers respawn with the SPAS; everyone else (player included)
-    // respawns on the default rifle.
-    this.weaponSlot[index] = this.spasCarriers.has(index) ? SLOT_SPAS : SLOT_AK;
+    // Wildcard carriers respawn with their armed weapon; everyone else
+    // (player included) respawns on the default rifle.
+    const slot = this.carrierSlot.get(index) ?? SLOT_AK;
+    this.weaponSlot[index] = slot;
     this.prevChangeWeapon[index] = false;
-    s.selWeapon =
-      this.weaponSlot[index] === SLOT_SPAS ? WeaponIndex.SPAS12 : WeaponIndex.AK74;
+    s.selWeapon = SLOT_WEAPON_INDEX[slot];
     s.jetsCount = this.tuning.jetFuelMax;
     s.jetsCountReal = this.tuning.jetFuelMax;
     s.jumpTicksLeft = 0;
@@ -643,18 +720,20 @@ export class Game {
     // Team persists across respawns (0 = FFA).
     s.team = this.botTeam.get(index) ?? 0;
     this.respawnIn[index] = 0;
-    // BOTH weapon slots come back full — a respawn is a fresh loadout.
-    for (const slot of [SLOT_AK, SLOT_SPAS] as const) {
-      this.nextFireTick[slot][index] = 0;
-      this.ammo[slot][index] = this.slotTuning[slot].magSize;
-      this.reloadUntil[slot][index] = 0;
-      this.sprayHeat[slot][index] = 0;
+    // ALL weapon slots come back full — a respawn is a fresh loadout.
+    for (const sl of SLOTS) {
+      this.nextFireTick[sl][index] = 0;
+      this.ammo[sl][index] = this.slotTuning[sl].magSize;
+      this.reloadUntil[sl][index] = 0;
+      this.sprayHeat[sl][index] = 0;
     }
+    this.barrettCharge[index] = 0;
   }
 
-  /** `index`'s active weapon slot (SLOT_AK | SLOT_SPAS). */
-  private slotOf(index: number): 0 | 1 {
-    return this.weaponSlot[index] === SLOT_SPAS ? SLOT_SPAS : SLOT_AK;
+  /** `index`'s active weapon slot (SLOT_AK | SLOT_SPAS | SLOT_BARRETT). */
+  private slotOf(index: number): Slot {
+    const slot = this.weaponSlot[index];
+    return slot === SLOT_SPAS || slot === SLOT_BARRETT ? slot : SLOT_AK;
   }
 
   /** Rounds left in `index`'s CURRENT weapon's magazine (for the HUD). */
@@ -822,9 +901,13 @@ export class Game {
   }
 
   /**
-   * Swap `index`'s weapon on the rising edge of control.changeWeapon. Each
+   * Swap `index`'s weapon on the rising edge of control.changeWeapon, cycling
+   * AK74 → SPAS12 → BARRETT → AK74 (shotgun-era precedent: the player may
+   * always cycle to every slot regardless of the match's wildcard — bots
+   * never raise the flag, so only carriers ever fire the off-slots). Each
    * slot keeps its OWN ammo/cooldown/heat; a swap is never a free reload, and
-   * swapping away mid-reload CANCELS that reload (classic Soldat feel).
+   * swapping away mid-reload CANCELS that reload (classic Soldat feel) — and
+   * cancels any Barrett charge in progress.
    */
   private weaponSwapUpkeep(index: number): void {
     const s = this.world.sprites[index];
@@ -837,16 +920,20 @@ export class Game {
     if (this.world.mainTickCounter < (this.reloadUntil[cur][index] ?? 0)) {
       this.reloadUntil[cur][index] = 0;
     }
-    const next = cur === SLOT_AK ? SLOT_SPAS : SLOT_AK;
+    this.barrettCharge[index] = 0;
+    const next = SLOTS[(cur + 1) % SLOTS.length]!;
     this.weaponSlot[index] = next;
-    s.selWeapon = next === SLOT_SPAS ? WeaponIndex.SPAS12 : WeaponIndex.AK74;
+    s.selWeapon = SLOT_WEAPON_INDEX[next];
   }
 
   /**
    * Per-tick weapon upkeep for one sprite: handle reload, spray-heat decay, and
    * fire (with spread) when fire is held, off cooldown, and loaded. The AK
    * spawns one bullet; the SPAS-12 spawns SPAS_PELLETS bullets, each with its
-   * own world.rng spread draw (the Pascal rule: one spawn per pellet).
+   * own world.rng spread draw (the Pascal rule: one spawn per pellet). The
+   * Barrett adds the contract's startUpTime charge: a ready trigger pull must
+   * be HELD for startUpTime (19) ticks before the round leaves the barrel —
+   * releasing fire mid-charge cancels and a fresh pull starts from zero.
    */
   private tryFire(index: number, clock: number): void {
     const s = this.world.sprites[index];
@@ -875,7 +962,8 @@ export class Game {
     }
 
     if (!s.control.fire) {
-      // Not firing → spray bloom recovers.
+      // Not firing → spray bloom recovers, and a mid-charge Barrett CANCELS.
+      this.barrettCharge[index] = 0;
       this.sprayHeat[slot][index] = Math.max(
         0,
         (this.sprayHeat[slot][index] ?? 0) - SPREAD_HEAT_DECAY,
@@ -890,6 +978,20 @@ export class Game {
       this.reloadUntil[slot][index] = clock + st.reloadTicks;
       this.onSound?.('reloadStart', parts.posX[index] ?? 0, parts.posY[index] ?? 0);
       return;
+    }
+
+    // Barrett charge-up (contract startUpTime 19): the trigger must be HELD
+    // for startUpTime ticks while the gun is otherwise ready (loaded, off
+    // cooldown, not reloading) before the shot fires. The counter only runs
+    // here — past every gate above — so cooldown/reload don't pre-charge the
+    // NEXT shot, and the !fire branch resets it (release = cancel).
+    if (slot === SLOT_BARRETT) {
+      const charge = this.barrettCharge[index] ?? 0;
+      if (charge < gun.startUpTime) {
+        this.barrettCharge[index] = charge + 1;
+        return;
+      }
+      this.barrettCharge[index] = 0;
     }
 
     // Aim direction (unit), from the relative aim vector.

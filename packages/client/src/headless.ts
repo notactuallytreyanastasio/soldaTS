@@ -16,6 +16,7 @@ export {
 export {
   WILDCARD_CHANCE_PCT,
   rollWildcard,
+  pickWildcardWeapon,
   resolveWildcard,
 } from './app/wildcardChance';
 export {

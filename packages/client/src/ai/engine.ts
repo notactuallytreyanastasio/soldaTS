@@ -24,8 +24,9 @@ export interface BotEngineContext {
   ammoOf(index: number): number;
   reloadingOf(index: number): boolean;
   readonly magSize: number;
-  /** Weapon label of any sprite ('AK74' | 'SPAS12'); absent on hosts that
-   *  predate the shotgun wildcard — treat missing as everyone-on-AK74. */
+  /** Weapon label of any sprite ('AK74' | 'SPAS12' | 'BARRETT'); absent on
+   *  hosts that predate the shotgun wildcard — treat missing as
+   *  everyone-on-AK74. */
   weaponOf?(index: number): string;
 }
 

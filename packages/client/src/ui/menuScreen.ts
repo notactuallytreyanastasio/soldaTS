@@ -129,7 +129,8 @@ export function showMenuScreen(): void {
     'background:#141821;color:#e8e4d8;border:1px solid #2a2f3a;border-radius:4px;padding:3px 6px;font-family:inherit;font-size:12px';
   for (const [value, label] of [
     ['chance', 'chance (seeded roll — the default)'],
-    ['shotgun', 'shotgun (everyone on SPAS12)'],
+    ['shotgun', 'shotgun (one SPAS12 carrier per team)'],
+    ['rifle', 'rifle (one Barrett carrier per team)'],
     ['none', 'none (stock AK74 loadouts)'],
   ] as const) {
     const opt = document.createElement('option');

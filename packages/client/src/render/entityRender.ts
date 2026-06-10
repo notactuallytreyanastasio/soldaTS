@@ -18,6 +18,7 @@ import {
   MAX_THINGS,
   BulletStyle,
   WeaponIndex,
+  WeaponNum,
   type World,
 } from '@soldat/sim';
 import { drawGostek } from './gostek';
@@ -223,6 +224,11 @@ export class EntityRenderer {
       // spas12.png aimed along the carrier's aim line when the asset loaded;
       // a two-tone vector barrel otherwise.
       this.drawSpasWeapon(i, sprite.selWeapon === WeaponIndex.SPAS12 && !sprite.deadMeat, x, y, aimX, aimY);
+      // Barrett carrier: a LONG slim vector barrel + scope nub (no asset
+      // dependency) so the sniper reads as a sniper at any zoom.
+      if (sprite.selWeapon === WeaponIndex.BARRETT && !sprite.deadMeat) {
+        this.drawBarrettWeapon(x, y, aimX, aimY);
+      }
 
       // TEAM CHEVRON above the head (real teams only): the Gostek textures
       // read as dark camo at spectator zoom, so the tinted shirt pixels are
@@ -284,6 +290,25 @@ export class EntityRenderer {
       .stroke({ color: 0x8a5a2b, width: 6 });
   }
 
+  /** Barrett carrier overlay: a long slim barrel + scope nub along the aim
+   *  line (vector only — drawn into markerGfx like the SPAS fallback). */
+  private drawBarrettWeapon(x: number, y: number, aimX: number, aimY: number): void {
+    const handY = y - EntityRenderer.SPAS_HAND_LIFT;
+    const dx = aimX - x;
+    const dy = aimY - handY;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    this.markerGfx
+      .moveTo(x + ux * 2, handY + uy * 2)
+      .lineTo(x + ux * 38, handY + uy * 38)
+      .stroke({ color: 0x1f242c, width: 3 })
+      // Scope nub perpendicular to the barrel, mid-length.
+      .moveTo(x + ux * 18 - uy * 2, handY + uy * 18 + ux * 2)
+      .lineTo(x + ux * 18 - uy * 6, handY + uy * 18 + ux * 6)
+      .stroke({ color: 0x4a5568, width: 3 });
+  }
+
   // -------------------------------------------------------------------------
   // Bullets
   // -------------------------------------------------------------------------
@@ -307,25 +332,33 @@ export class EntityRenderer {
 
       // Tracer: a short line along the bullet's velocity, plus a bright dot.
       // SHOTGUN pellets get a stubbier, hotter-colored streak so a six-pellet
-      // fan reads as one blast, not a burst of rifle rounds.
+      // fan reads as one blast, not a burst of rifle rounds. BARRETT rounds
+      // (PLAIN style, told apart by ownerWeapon — both AK and Barrett fire
+      // PLAIN) get a LONG, thin, ice-bright streak: at 55 px/tick the round
+      // crosses a screen in a blink, so the tracer IS the shot.
       const vx = parts.velocityX[num] ?? 0;
       const vy = parts.velocityY[num] ?? 0;
       const len = Math.hypot(vx, vy);
       const pellet = bullet.style === BulletStyle.SHOTGUN;
+      const sniper = bullet.ownerWeapon === WeaponNum.BARRETT;
       if (len > 0.0001) {
         const ux = vx / len;
         const uy = vy / len;
-        const tail = pellet ? 3.5 : 6;
+        const tail = pellet ? 3.5 : sniper ? 30 : 6;
         g.moveTo(x - ux * tail, y - uy * tail)
           .lineTo(x, y)
           .stroke(
             pellet
               ? { color: 0xffa24a, width: 2.5 }
-              : { color: 0xfff0a0, width: 1.5 },
+              : sniper
+                ? { color: 0xd8f4ff, width: 1.2 }
+                : { color: 0xfff0a0, width: 1.5 },
           );
       }
       if (pellet) {
         g.circle(x, y, 1.4).fill({ color: 0xffd9a0 });
+      } else if (sniper) {
+        g.circle(x, y, 1.6).fill({ color: 0xf2fbff });
       } else {
         g.circle(x, y, BULLET_RADIUS).fill({ color: 0xffffff });
       }

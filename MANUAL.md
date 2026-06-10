@@ -39,7 +39,7 @@ Prereqs: node + pnpm (pinned in `.tool-versions`, asdf-friendly).
 | `/?spectate&ai=kestrel,hydra&teams&seed=7&round=120&arena=23` | Broadcast mode: red vs blue, director camera, scoreboard, kill feed, team chevrons. |
 | `/?duel=pilot,reaper` | Side-by-side simultaneous matches, one per engine. |
 | `/?tournament` | Round-robin tiles across gameplay variants. |
-| `…&wildcard=shotgun\|none\|chance` | Arm the SPAS-12 wildcard (see §4). |
+| `…&wildcard=shotgun\|rifle\|none\|chance` | Arm a wildcard gun (see §4). |
 
 Controls in play mode: movement/jets on the keys in the controls screen,
 `R` reload, **`Tab` or `B` swap AK-74 ↔ SPAS-12** (per-weapon ammo;
@@ -87,8 +87,9 @@ pnpm arena fight fights/<you>.json fights/<champ>.json --matches 3 --arena <fres
 Key flags: `--matches N`, `--round SECS`, `--bots N` (3v3 default),
 `--arena N` (deterministic generated map; 0 = canonical Skyreach),
 `--seed N` (match k uses seed+k), `--variant NAME`,
-`--wildcard shotgun|none|chance` (**default `chance`** — every match
-rolls a 35 % seeded chance of arming one SPAS-12 carrier per team).
+`--wildcard shotgun|rifle|none|chance` (**default `chance`** — every match
+rolls a 35 % seeded chance of arming one wildcard carrier per team,
+shotgun or rifle picked 50/50 from a separate seeded hash).
 
 ### Fighter cards (`fights/*.json`, schema `soldat-fighter-card/1`)
 
@@ -142,7 +143,7 @@ Rules: write ONLY your bot's `sprite.control` (movement, fire, aim) and
 your own private state; read the world freely, never mutate it; **all
 randomness through `world.rng`** (or determinism — and every recorded
 replay — dies). `ctx` adds client-owned weapon state: `ammoOf(i)`,
-`reloadingOf(i)`, `magSize`, and `weaponOf?(i)` (`'AK74' | 'SPAS12'`)
+`reloadingOf(i)`, `magSize`, and `weaponOf?(i)` (`'AK74' | 'SPAS12' | 'BARRETT'`)
 so a brain can read its own hardware — and the enemy's.
 
 The recipe (copy `kestrel.ts` or `shrike.ts` for shape):
@@ -198,20 +199,30 @@ disciplined teacher.
 
 ---
 
-## 4. The shotgun wildcard
+## 4. The wildcard guns
 
-The SPAS-12 exists under the same Pascal weapon contract as the AK:
-**6 pellets per trigger pull, each its own simulated projectile**
-(pellet speed 14 px/tick — they rainbow past ~300 px; damage halves
-past 500 px; the fan spreads geometrically). One carrier per team,
-chosen deterministically from the match seed.
+Both wildcards come off the same Pascal weapon contract as the AK; one
+carrier per team, chosen deterministically from the match seed.
+
+**SPAS-12 (shotgun)**: 6 pellets per trigger pull, each its own simulated
+projectile (pellet speed 14 px/tick — they rainbow past ~300 px; damage
+halves past 500 px; the fan spreads geometrically). A deleter inside
+~200 px, confetti beyond.
+
+**Barrett M82A1 (rifle)**: one-hit kill at any distance — 55 px/tick
+rounds (the AK's fly at 24.6), exempt from distance degradation exactly
+as in the Pascal, so the kill carries across the whole map. The price:
+a 19-tick charge-up between trigger pull and shot (release to cancel),
+2.25 s between shots, a 3-round mag, and a 3.5 s reload. Miss and you
+are a long time vulnerable.
 
 Modes (CLI `--wildcard`, URL `?wildcard=`): `chance` (default — 35 %
-seeded roll per match), `shotgun` (force), `none` (stock). Spectate
-URLs without the param stay stock so every pre-wildcard watch URL
-replays byte-identically. Players swap weapons any time (`Tab`/`B`);
-bots keep what they're issued — unless their brain is weapon-aware
-(`weaponOf`).
+seeded roll per match; armed matches pick shotgun or rifle 50/50 from a
+separate hash, so shotgun-era replays stay byte-identical), `shotgun` /
+`rifle` (force), `none` (stock). Spectate URLs without the param stay
+stock so every pre-wildcard watch URL replays byte-identically. Players
+cycle all three weapons any time (`Tab`/`B`); bots keep what they're
+issued — unless their brain is weapon-aware (`weaponOf`).
 
 ---
 

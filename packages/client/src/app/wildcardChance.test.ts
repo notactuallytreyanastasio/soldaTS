@@ -1,9 +1,16 @@
 // Wildcard chance resolution: pure, seed-stable, and mode-correct — the
-// guarantee that "all games have a chance of shotgun play" never costs a
-// byte of replay determinism.
+// guarantee that "all games have a chance of wildcard play" never costs a
+// byte of replay determinism. Since the rifle era, an armed 'chance' match
+// picks shotgun-or-rifle 50/50 from a SEPARATE seeded hash; the arming roll
+// itself (rollWildcard) is the unchanged shotgun-era hash.
 
 import { describe, it, expect } from 'vitest';
-import { WILDCARD_CHANCE_PCT, rollWildcard, resolveWildcard } from './wildcardChance';
+import {
+  WILDCARD_CHANCE_PCT,
+  rollWildcard,
+  pickWildcardWeapon,
+  resolveWildcard,
+} from './wildcardChance';
 
 describe('rollWildcard', () => {
   it('is a pure function of the seed', () => {
@@ -22,18 +29,32 @@ describe('rollWildcard', () => {
   });
 });
 
+describe('pickWildcardWeapon', () => {
+  it('is a pure function of the seed and splits roughly 50/50', () => {
+    let rifles = 0;
+    for (let s = 1; s <= 2000; s++) {
+      expect(pickWildcardWeapon(s)).toBe(pickWildcardWeapon(s));
+      if (pickWildcardWeapon(s) === 'rifle') rifles += 1;
+    }
+    const pct = (rifles / 2000) * 100;
+    expect(pct).toBeGreaterThan(40);
+    expect(pct).toBeLessThan(60);
+  });
+});
+
 describe('resolveWildcard', () => {
-  it("'shotgun' forces, 'none'/undefined are stock, unknown is stock", () => {
+  it("'shotgun'/'rifle' force, 'none'/undefined are stock, unknown is stock", () => {
     expect(resolveWildcard('shotgun', 1)).toBe('shotgun');
+    expect(resolveWildcard('rifle', 1)).toBe('rifle');
     expect(resolveWildcard('none', 1)).toBeUndefined();
     expect(resolveWildcard(undefined, 1)).toBeUndefined();
     expect(resolveWildcard('definitely-not-real', 1)).toBeUndefined();
   });
 
-  it("'chance' follows the seed roll exactly", () => {
+  it("'chance' follows the seed roll exactly, then the seeded weapon pick", () => {
     for (const seed of [1, 2, 3, 1337, 1338, 1339]) {
       expect(resolveWildcard('chance', seed)).toBe(
-        rollWildcard(seed) ? 'shotgun' : undefined,
+        rollWildcard(seed) ? pickWildcardWeapon(seed) : undefined,
       );
     }
   });
