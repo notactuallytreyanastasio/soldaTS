@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARENA LIVE — the Claude Arena exchange</title>
+<style>
+  :root {
+    --bg: #04060a;
+    --panel: #0a0e16;
+    --panel2: #0f1521;
+    --line: #1c2536;
+    --text: #d6dbe6;
+    --dim: #6b7690;
+    --red: #ff5d5d;
+    --blue: #5da9ff;
+    --gold: #f5c542;
+    --up: #19d67c;
+    --down: #ff4d4d;
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.45 var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
+  .cred { color: var(--red); } .cblue { color: var(--blue); }
+  .dim { color: var(--dim); }
+
+  header {
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+    padding: 8px 16px 6px; border-bottom: 1px solid var(--line);
+    background: #070a10;
+  }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: 4px; color: var(--gold); }
+  header .live { color: var(--up); animation: blink 1.6s infinite; letter-spacing: 2px; }
+  @keyframes blink { 50% { opacity: 0.25; } }
+  header .meta { color: var(--dim); font-size: 11px; margin-left: auto; }
+
+  /* ---- ticker tape ------------------------------------------------------- */
+  .tape { overflow: hidden; white-space: nowrap; background: #020407; border-bottom: 1px solid var(--line); user-select: none; }
+  .tape-inner { display: inline-block; padding: 5px 0; animation: tapescroll 80s linear infinite; will-change: transform; }
+  .tape:hover .tape-inner { animation-play-state: paused; }
+  @keyframes tapescroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+  .chip { display: inline-block; margin: 0 26px 0 0; cursor: pointer; font-size: 12px; letter-spacing: 1px; }
+  .chip:hover { text-decoration: underline; }
+  .chip b { font-weight: bold; }
+
+  /* ---- LIVE hero --------------------------------------------------------- */
+  .hero {
+    margin: 14px 16px; border: 1px solid var(--line); border-radius: 10px;
+    background: linear-gradient(180deg, #0c1220, #080c14);
+    padding: 14px 20px; cursor: pointer; position: relative; overflow: hidden;
+  }
+  .hero:hover { border-color: #2c3a55; }
+  .hero .tag { font-size: 11px; letter-spacing: 3px; }
+  .hero .tag .reddot { color: var(--down); animation: blink 1s infinite; }
+  .hero .row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 6px; }
+  .hero .side { font-size: 26px; font-weight: bold; letter-spacing: 1px; }
+  .hero .side .eng { font-size: 13px; font-weight: normal; color: var(--dim); letter-spacing: 0; }
+  .hero .score { font-size: 38px; font-weight: bold; color: var(--gold); letter-spacing: 2px; }
+  .hero .mchips { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .hero .mchip { border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; background: var(--panel2); }
+  .hero .watchbtn {
+    position: absolute; right: 16px; top: 14px; border: 1px solid var(--gold); color: var(--gold);
+    border-radius: 6px; padding: 4px 12px; font-size: 12px; letter-spacing: 2px;
+  }
+  .hero .watchbtn:hover { background: var(--gold); color: #000; }
+
+  .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; padding: 0 16px 16px; max-width: 1700px; margin: 0 auto; }
+  @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
+  .panel h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .warnbar { background: #2a1d10; border: 1px solid #5a3d1a; color: #e8b06a; border-radius: 8px; padding: 6px 14px; margin: 10px 16px 0; font-size: 12px; }
+
+  /* ---- big board --------------------------------------------------------- */
+  table.board { border-collapse: collapse; width: 100%; font-size: 13px; }
+  table.board th { color: var(--dim); font-weight: normal; text-transform: uppercase; font-size: 10px; letter-spacing: 2px; border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: right; }
+  table.board td { padding: 6px 8px; border-bottom: 1px solid #131a29; text-align: right; }
+  table.board th:nth-child(-n+2), table.board td:nth-child(-n+2) { text-align: left; }
+  table.board tr.r { cursor: pointer; }
+  table.board tr.r:hover { background: var(--panel2); }
+  table.board .sym { font-weight: bold; font-size: 14px; letter-spacing: 1px; }
+  table.board .belt { color: var(--gold); }
+  .spark { vertical-align: middle; }
+
+  /* ---- time & sales (fight feed) ----------------------------------------- */
+  .fight { border: 1px solid var(--line); border-radius: 8px; margin-bottom: 12px; background: var(--panel); overflow: hidden; }
+  .fight-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 8px 12px; background: var(--panel2); border-bottom: 1px solid var(--line); cursor: pointer; }
+  .fight-head:hover { background: #141c2c; }
+  .fight-head .vs { font-size: 14px; font-weight: bold; letter-spacing: 1px; }
+  .fight-head .when, .fight-head .arena { color: var(--dim); font-size: 11px; }
+  .fight-head .series { margin-left: auto; font-size: 15px; font-weight: bold; }
+  .coaches { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--line); }
+  @media (max-width: 800px) { .coaches { grid-template-columns: 1fr; } }
+  .coach { padding: 8px 12px; font-size: 12px; }
+  .coach + .coach { border-left: 1px solid var(--line); }
+  .coach .who { font-weight: bold; font-size: 13px; }
+  .coach .rationale { color: var(--dim); font-style: italic; margin: 4px 0; }
+  .tweaks { font-size: 11px; color: var(--dim); }
+  .tweaks b { color: var(--up); font-weight: normal; }
+  details.resolved { font-size: 11px; color: var(--dim); margin-top: 3px; }
+  details.resolved summary { cursor: pointer; }
+  .matches { padding: 6px 12px 10px; }
+  .match { margin: 6px 0; }
+  .match .mline { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; cursor: pointer; border-radius: 4px; padding: 2px 4px; }
+  .match .mline:hover { background: var(--panel2); }
+  .match .mn { color: var(--gold); letter-spacing: 1px; }
+  .match .winner { font-weight: bold; }
+  table.stats { border-collapse: collapse; width: 100%; margin: 8px 0 4px; font-size: 12px; }
+  table.stats th, table.stats td { border-bottom: 1px solid #131a29; padding: 3px 8px; text-align: right; }
+  table.stats th:first-child, table.stats td:first-child,
+  table.stats th:nth-child(2), table.stats td:nth-child(2) { text-align: left; }
+  table.stats th { color: var(--dim); font-weight: normal; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
+  table.stats tr.r { cursor: pointer; }
+  table.stats tr.r:hover { background: var(--panel2); }
+  details.pbp { margin: 2px 0 8px; }
+  details.pbp summary { cursor: pointer; color: var(--gold); font-size: 11px; letter-spacing: 2px; }
+  .timeline { max-height: 240px; overflow-y: auto; margin: 6px 0; padding: 6px 10px; background: #05080d; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+  .timeline .k { padding: 1px 0; cursor: pointer; }
+  .timeline .k:hover { background: var(--panel2); }
+  .timeline .t { color: var(--dim); display: inline-block; width: 44px; }
+  .timeline .score { color: var(--gold); float: right; }
+
+  /* ---- news wire --------------------------------------------------------- */
+  .node { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px dashed var(--line); font-size: 12px; align-items: baseline; }
+  .node .badge { flex: none; font-size: 9px; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px; padding: 1px 6px; border: 1px solid; }
+  .b-goal { color: var(--gold); border-color: var(--gold); }
+  .b-action { color: var(--blue); border-color: var(--blue); }
+  .b-outcome { color: var(--up); border-color: var(--up); }
+  .b-decision { color: #d98aff; border-color: #d98aff; }
+  .b-option { color: #8ad0ff; border-color: #8ad0ff; }
+  .b-observation { color: var(--dim); border-color: var(--dim); }
+  .node .nt { flex: 1; }
+  .node .nwhen { color: var(--dim); flex: none; font-size: 10px; }
+  .cardbox { border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; margin: 7px 0; background: var(--panel2); font-size: 12px; }
+  .cardbox .who { font-weight: bold; }
+  .doctrine { margin: 7px 0; }
+  .doctrine summary { cursor: pointer; color: var(--gold); font-size: 12px; }
+  .doctrine pre { white-space: pre-wrap; font-size: 11px; color: var(--dim); background: #05080d; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; max-height: 300px; overflow-y: auto; }
+  .md { white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+  .md h2, .md h3 { color: var(--gold); margin: 8px 0 4px; font-size: 12px; letter-spacing: 1px; }
+  .md table { border-collapse: collapse; margin: 6px 0; font-size: 11px; }
+  .md th, .md td { border: 1px solid var(--line); padding: 3px 6px; text-align: left; }
+  .md code { background: var(--panel2); padding: 1px 4px; border-radius: 4px; color: var(--up); font-size: 11px; }
+  .md strong { color: var(--gold); }
+  footer { color: var(--dim); font-size: 11px; text-align: center; padding: 8px 0 22px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚔ ARENA LIVE</h1>
+  <span class="live">● LIVE</span>
+  <span class="meta" id="meta">loading…</span>
+</header>
+<div class="tape" id="tape"></div>
+<div id="hero"></div>
+<div id="warnbar" style="display:none" class="warnbar"></div>
+<div class="wrap">
+  <main id="main"><div class="panel">Loading market data…</div></main>
+  <aside id="aside"></aside>
+</div>
+<footer>Arena Live — rebuilt by arena-live/watch.mjs · page refetches data.json every 5s · click anything to open the replay (needs <code>pnpm play</code> on :5173)</footer>
+<script>
+'use strict';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const attr = (s) => esc(s).replace(/`/g, '');
+const ago = (iso) => {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!isFinite(ms)) return iso;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + 'h ' + (m % 60) + 'm ago';
+  return Math.floor(h / 24) + 'd ago';
+};
+function openUrl(u) { if (u) window.open(u, '_blank'); }
+// Delegated click-to-watch: anything carrying data-watch opens the replay.
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-watch]');
+  if (!el) return;
+  if (e.target.closest('a, details.pbp summary, details.resolved summary, details.doctrine')) return;
+  openUrl(el.getAttribute('data-watch'));
+});
+
+// Ticker symbol: first letter + consonants (then vowels) of the rest, 5 chars.
+function sym(name) {
+  const up = String(name ?? '?').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (up.length <= 5) return up || '?????';
+  const rest = up.slice(1);
+  const cons = rest.replace(/[AEIOU]/g, '');
+  const vows = rest.replace(/[^AEIOU]/g, '');
+  return (up[0] + cons + vows).slice(0, 5);
+}
+
+function sparkline(values, w, h) {
+  if (!values || values.length < 2) return '';
+  const min = Math.min(...values), max = Math.max(...values);
+  const span = max - min || 1;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * (w - 2) + 1;
+    const y = h - 2 - ((v - min) / span) * (h - 4);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  const upTrend = values[values.length - 1] >= values[0];
+  const color = upTrend ? 'var(--up)' : 'var(--down)';
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<polyline fill="none" stroke="${color}" stroke-width="1.4" points="${pts}"/></svg>`;
+}
+
+// Tiny markdown renderer for LADDER.md (headers, tables, bold, code, lists).
+function md(text) {
+  const lines = String(text).split('\n');
+  let html = '', table = [];
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  const flushTable = () => {
+    if (!table.length) return;
+    const rows = table.filter((r) => !/^\s*\|[\s:|-]+\|\s*$/.test(r));
+    html += '<table>' + rows.map((r, i) => {
+      const cells = r.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|');
+      const tag = i === 0 ? 'th' : 'td';
+      return '<tr>' + cells.map((c) => `<${tag}>${inline(c.trim())}</${tag}>`).join('') + '</tr>';
+    }).join('') + '</table>';
+    table = [];
+  };
+  for (const line of lines) {
+    if (/^\s*\|/.test(line)) { table.push(line); continue; }
+    flushTable();
+    const h = /^(#{1,4})\s+(.*)/.exec(line);
+    if (h) { html += `<h${h[1].length + 1}>${inline(h[2])}</h${h[1].length + 1}>`; continue; }
+    if (/^\s*[-*]\s+/.test(line)) { html += '<div>• ' + inline(line.replace(/^\s*[-*]\s+/, '')) + '</div>'; continue; }
+    html += inline(line) + '\n';
+  }
+  flushTable();
+  return '<div class="md">' + html + '</div>';
+}
+
+const tweakStr = (t) => {
+  const e = Object.entries(t ?? {});
+  if (!e.length) return '<span class="tweaks">stock config (no tweaks)</span>';
+  return '<span class="tweaks">' + e.map(([k, v]) => `${esc(k)}=<b>${esc(v)}</b>`).join(' · ') + '</span>';
+};
+
+// ---- ticker tape -------------------------------------------------------------
+function tapeHtml(fights) {
+  const chips = fights.slice(0, 40).map((f) => {
+    const a = f.sides[0], b = f.sides[1], st = f.standings;
+    if (!st) return '';
+    const aWin = st.red.wins > st.blue.wins;
+    const draw = st.red.wins === st.blue.wins;
+    const arrow = draw ? '<span class="flat">▶</span>' : aWin ? '<span class="up">▲</span>' : '<span class="down">▼</span>';
+    const url = f.matches[0] ? f.matches[0].watchUrl : '';
+    return `<span class="chip" data-watch="${attr(url)}">` +
+      `<b class="cred">${esc(sym(a.coach))}</b>` +
+      ` ${arrow} <b>${st.red.wins}–${st.blue.wins}${st.draws ? '–' + st.draws + 'd' : ''}</b> ` +
+      `<b class="cblue">${esc(sym(b.coach))}</b>` +
+      ` <span class="dim">${st.red.kills}:${st.blue.kills} · #${esc(f.arenaSeed)} · ${ago(f.createdAt)}</span></span>`;
+  }).join('');
+  return `<div class="tape-inner">${chips}${chips}</div>`; // doubled for seamless loop
+}
+
+// ---- LIVE hero (top and foremost) ---------------------------------------------
+function heroHtml(d) {
+  const lv = d.live;
+  if (!lv || !lv.red) {
+    const f = d.fights[0];
+    if (!f) return '';
+    return heroFromFight(f);
+  }
+  const fresh = Date.now() - new Date(lv.updatedAt ?? 0).getTime() < 120000;
+  const running = lv.status !== 'done';
+  const tag = running
+    ? `<span class="tag"><span class="reddot">●</span> <span class="down">LIVE NOW</span> — MATCH ${(lv.matches ? lv.matches.length + 1 : 1)}/${esc(lv.matchesPlanned)} · ARENA #${esc(lv.arenaSeed)}</span>`
+    : `<span class="tag dim">LATEST SERIES — FINAL${fresh ? ' (just ended)' : ''} · ARENA #${esc(lv.arenaSeed)} · ${ago(lv.updatedAt)}</span>`;
+  const s = lv.series ?? { red: 0, blue: 0, draws: 0 };
+  const mchips = (lv.matches ?? []).map((m) => {
+    const cls = m.winnerTeam === 1 ? 'cred' : m.winnerTeam === 2 ? 'cblue' : 'flat';
+    const who = m.winnerTeam ? esc(m.winnerCoach ?? '') : 'DRAW';
+    return `<span class="mchip">M${m.n} <b class="${cls}">${who}</b> ${m.redKills}–${m.blueKills}</span>`;
+  }).join('');
+  return `<div class="hero" data-watch="${attr(lv.watchUrl ?? '')}">
+    ${tag}
+    <span class="watchbtn">${running ? '▶ WATCH LIVE' : '▶ REPLAY'}</span>
+    <div class="row">
+      <span class="side cred">${esc(lv.red.coach)} <span class="eng">${esc(sym(lv.red.coach))} · ${esc(lv.red.engine)}</span></span>
+      <span class="score">${s.red} — ${s.blue}${s.draws ? `<span class="dim" style="font-size:14px"> (${s.draws}d)</span>` : ''}</span>
+      <span class="side cblue">${esc(lv.blue.coach)} <span class="eng">${esc(sym(lv.blue.coach))} · ${esc(lv.blue.engine)}</span></span>
+    </div>
+    <div class="mchips">${mchips || '<span class="dim">first match under way…</span>'}</div>
+  </div>`;
+}
+function heroFromFight(f) {
+  const a = f.sides[0], b = f.sides[1], st = f.standings;
+  const url = f.matches[0] ? f.matches[0].watchUrl : '';
+  return `<div class="hero" data-watch="${attr(url)}">
+    <span class="tag dim">LATEST SERIES — FINAL · ARENA #${esc(f.arenaSeed)} · ${ago(f.createdAt)}</span>
+    <span class="watchbtn">▶ REPLAY</span>
+    <div class="row">
+      <span class="side cred">${esc(a.coach)} <span class="eng">${esc(sym(a.coach))} · ${esc(a.engine)}</span></span>
+      <span class="score">${st ? `${st.red.wins} — ${st.blue.wins}` : '?'}</span>
+      <span class="side cblue">${esc(b.coach)} <span class="eng">${esc(sym(b.coach))} · ${esc(b.engine)}</span></span>
+    </div>
+  </div>`;
+}
+
+// ---- the big board -------------------------------------------------------------
+function boardHtml(d) {
+  const byCoach = new Map();
+  const chrono = d.fights.slice().reverse(); // oldest -> newest
+  for (const f of chrono) {
+    const st = f.standings;
+    if (!st) continue;
+    for (const [side, sideSt] of [[f.sides[0], st.red], [f.sides[1], st.blue]]) {
+      const key = String(side.coach).toUpperCase();
+      if (!byCoach.has(key)) {
+        byCoach.set(key, { coach: side.coach, engine: side.engine, kd: [], w: 0, l: 0, dr: 0,
+          kills: 0, deaths: 0, hits: 0, shots: 0, lastUrl: '', lastAt: null });
+      }
+      const r = byCoach.get(key);
+      r.engine = side.engine;
+      const otherWins = sideSt === st.red ? st.blue.wins : st.red.wins;
+      if (sideSt.wins > otherWins) r.w += 1; else if (sideSt.wins < otherWins) r.l += 1; else r.dr += 1;
+      r.kills += sideSt.kills; r.deaths += sideSt.deaths;
+      r.kd.push(sideSt.kills / Math.max(1, sideSt.deaths));
+      for (const bt of f.bots ?? []) {
+        if ((bt.team === 1) === (sideSt === st.red)) { r.hits += bt.hits; r.shots += bt.shots; }
+      }
+      const url = f.matches[0] ? f.matches[0].watchUrl : '';
+      r.lastUrl = url; r.lastAt = f.createdAt;
+    }
+  }
+  const champ = (() => {
+    const m = /champion[^]*?\*\*([A-Z]+)\*\*/i.exec(d.ladderMarkdown ?? '');
+    return m ? m[1].toUpperCase() : null;
+  })();
+  const rows = [...byCoach.values()]
+    .sort((x, y) => (y.w - y.l) - (x.w - x.l) || y.kd[y.kd.length - 1] - x.kd[x.kd.length - 1]);
+  const body = rows.map((r) => {
+    const last = r.kd[r.kd.length - 1] ?? 0;
+    const prev = r.kd.length > 1 ? r.kd[r.kd.length - 2] : last;
+    const chg = last - prev;
+    const cls = chg > 0.005 ? 'up' : chg < -0.005 ? 'down' : 'flat';
+    const arrow = chg > 0.005 ? '▲' : chg < -0.005 ? '▼' : '▶';
+    const isChamp = champ && String(r.coach).toUpperCase() === champ;
+    return `<tr class="r" data-watch="${attr(r.lastUrl)}" title="open latest replay">` +
+      `<td class="sym ${isChamp ? 'belt' : ''}">${isChamp ? '🏆 ' : ''}${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:11px"> ${esc(r.coach)}</span></td>` +
+      `<td>${esc(r.engine)}</td>` +
+      `<td><b>${last.toFixed(2)}</b></td>` +
+      `<td class="${cls}">${arrow} ${Math.abs(chg).toFixed(2)}</td>` +
+      `<td>${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''}</td>` +
+      `<td>${r.shots ? ((r.hits / r.shots) * 100).toFixed(1) + '%' : '—'}</td>` +
+      `<td>${r.kills}</td>` +
+      `<td>${sparkline(r.kd, 90, 22)}</td>` +
+      `<td class="dim">${ago(r.lastAt)}</td></tr>`;
+  }).join('');
+  return `<div class="panel"><h2>📈 The Big Board — coaches by K/D</h2>
+    <table class="board"><tr><th>sym</th><th>engine</th><th>last k/d</th><th>chg</th><th>rec</th><th>hit%</th><th>vol (kills)</th><th>trend</th><th>updated</th></tr>${body}</table>
+    <div class="dim" style="font-size:10px;margin-top:6px">LAST = K/D of newest series · CHG vs prior series · VOL = career kills · click a row to open the latest replay</div></div>`;
+}
+
+// ---- time & sales (fight feed) ---------------------------------------------------
+function coachBlock(s) {
+  const cls = s.team === 1 ? 'cred' : 'cblue';
+  return `<div class="coach">
+    <div class="who ${cls}">${esc(sym(s.coach))} <span class="dim">${esc(s.coach)} / ${esc(s.engine)}${s.coachKnown ? '' : ' (inferred)'}</span></div>
+    ${s.rationale ? `<div class="rationale">“${esc(s.rationale)}”</div>` : ''}
+    <div>${tweakStr(s.tweaks)}</div>
+    <details class="resolved"><summary>resolved config</summary>${tweakStr(s.resolvedTweaks)}</details>
+  </div>`;
+}
+
+function matchBlock(m, f) {
+  const r = m.result;
+  let line = `<span class="mn">M${m.n}</span> <span class="dim">seed ${esc(m.seed)}</span>`;
+  if (r) {
+    const wSide = f.sides[r.winnerTeam - 1];
+    const wcls = r.winnerTeam === 1 ? 'cred' : 'cblue';
+    line += r.winnerTeam
+      ? ` <span class="winner ${wcls}">${esc(wSide ? wSide.coach : r.winnerEngine)} ${r.redKills}–${r.blueKills}</span>`
+      : ` <span class="winner flat">DRAW ${r.redKills}–${r.blueKills}</span>`;
+    line += ` <span class="dim">dom ${r.redDom}–${r.blueDom} · ${Math.round(r.ticks / 60)}s</span>`;
+  } else {
+    line += ' <span class="dim">(no summary)</span>';
+  }
+  line += ` <span class="dim">▶ watch</span>`;
+  let pbp = '';
+  if (m.timeline && m.timeline.length) {
+    pbp = `<details class="pbp"><summary>PLAY-BY-PLAY · ${m.timeline.length} kills</summary><div class="timeline">` +
+      m.timeline.map((k) => {
+        const kc = k.killerTeam === 1 ? 'cred' : 'cblue';
+        const vc = k.victimTeam === 1 ? 'cred' : 'cblue';
+        return `<div class="k" data-watch="${attr(m.watchUrl)}"><span class="t">t=${esc(k.clock)}</span>` +
+          `<span class="${kc}">${esc(k.killer)} (${esc(sym(k.killerCoach))})</span>` +
+          ` ✕ <span class="${vc}">${esc(k.victim)} (${esc(sym(k.victimCoach))})</span>` +
+          (k.dist != null ? ` <span class="dim">@${esc(k.dist)}px</span>` : '') +
+          `<span class="score">${esc(k.score)}</span></div>`;
+      }).join('') + '</div></details>';
+  }
+  return `<div class="match"><div class="mline" data-watch="${attr(m.watchUrl)}">${line}</div>${pbp}</div>`;
+}
+
+function fightBlock(f) {
+  const a = f.sides[0], b = f.sides[1];
+  const st = f.standings;
+  const aWin = st && st.red.wins > st.blue.wins;
+  const draw = st && st.red.wins === st.blue.wins;
+  const seriesCls = !st ? '' : draw ? 'flat' : aWin ? 'cred' : 'cblue';
+  const series = st ? `${st.red.wins}–${st.blue.wins}${st.draws ? ` (${st.draws}d)` : ''}` : '?';
+  const headUrl = f.matches[0] ? f.matches[0].watchUrl : '';
+  let statsTable = '';
+  if (f.bots && f.bots.length) {
+    statsTable = `<table class="stats"><tr><th>bot</th><th>side</th><th>k</th><th>d</th><th>k/d</th><th>shots</th><th>hit%</th></tr>` +
+      f.bots.map((bt) => {
+        const cls = bt.team === 1 ? 'cred' : 'cblue';
+        const side = bt.team === 1 ? a : b;
+        return `<tr class="r" data-watch="${attr(headUrl)}" title="open replay"><td class="${cls}">${esc(bt.name)}</td><td class="${cls}">${esc(sym(side.coach))}/${esc(bt.engine)}</td>` +
+          `<td>${bt.kills}</td><td>${bt.deaths}</td><td>${(bt.kills / Math.max(1, bt.deaths)).toFixed(2)}</td>` +
+          `<td>${bt.shots}</td><td>${(bt.hitRate * 100).toFixed(1)}%</td></tr>`;
+      }).join('') + '</table>';
+  }
+  return `<div class="fight">
+    <div class="fight-head" data-watch="${attr(headUrl)}">
+      <span class="vs"><span class="cred">${esc(sym(a.coach))}</span> <span class="dim">${esc(a.engine)}</span> × <span class="cblue">${esc(sym(b.coach))}</span> <span class="dim">${esc(b.engine)}</span></span>
+      <span class="arena">arena #${esc(f.arenaSeed)} · ${esc(f.roundSecs)}s rounds</span>
+      <span class="when" title="${esc(f.createdAt)}">${ago(f.createdAt)}</span>
+      <span class="series ${seriesCls}">${series}</span>
+    </div>
+    <div class="coaches">${coachBlock(a)}${coachBlock(b)}</div>
+    <div class="matches">
+      ${f.matches.map((m) => matchBlock(m, f)).join('')}
+      ${statsTable}
+      <div class="dim" style="font-size:10px">dataset: ${esc(f.dirName)} · rev ${esc((f.gitRev || '').slice(0, 8))}</div>
+    </div>
+  </div>`;
+}
+
+function render(d) {
+  document.getElementById('meta').textContent =
+    `built ${ago(d.generatedAt)} · ${d.fights.length} fights on record`;
+  const wb = document.getElementById('warnbar');
+  if (d.warnings && d.warnings.length) {
+    wb.style.display = '';
+    wb.innerHTML = '⚠ builder warnings: ' + d.warnings.map(esc).join(' · ');
+  } else wb.style.display = 'none';
+
+  document.getElementById('tape').innerHTML = tapeHtml(d.fights);
+  document.getElementById('hero').innerHTML = heroHtml(d);
+
+  document.getElementById('main').innerHTML =
+    boardHtml(d) +
+    `<h2 style="letter-spacing:3px;color:var(--gold);font-size:12px;margin:4px 0 10px">TIME &amp; SALES — fight feed, newest first</h2>` +
+    (d.fights.length ? d.fights.map(fightBlock).join('') : '<div class="panel">No datasets yet.</div>');
+
+  const nodes = (d.warRoom.nodes || []).map((n) =>
+    `<div class="node"><span class="badge b-${esc(n.type)}">${esc(n.type)}</span>` +
+    `<span class="nt">${esc(n.title)}</span><span class="nwhen" title="${esc(n.createdAt)}">${ago(n.createdAt)}</span></div>`).join('');
+  const cards = (d.cards || []).map((c) =>
+    `<div class="cardbox"><div class="who">${esc(sym(c.coach))} <span class="dim">${esc(c.coach)} / ${esc(c.engine)} · ${ago(c.updatedAt)}</span></div>` +
+    `<div>${tweakStr(c.tweaks)}</div>` +
+    (c.rationale ? `<div class="rationale" style="font-style:italic;color:var(--dim)">“${esc(c.rationale)}”</div>` : '') + `</div>`).join('');
+  const doctrines = (d.doctrines || []).map((doc) =>
+    `<details class="doctrine"><summary>${esc(doc.engine)} doctrine</summary><pre>${esc(doc.doctrine)}</pre></details>`).join('');
+
+  document.getElementById('aside').innerHTML =
+    `<div class="panel"><h2>📰 News Wire — live coach feed</h2>` +
+    `<div class="dim" style="font-size:10px;margin-bottom:5px">source: ${esc(d.warRoom.source || 'unavailable')}</div>${nodes || '<div class="dim">no nodes</div>'}</div>` +
+    `<div class="panel"><h2>🏆 The Ladder</h2>${md(d.ladderMarkdown)}</div>` +
+    `<div class="panel"><h2>📋 Fighter cards on file</h2>${cards || '<div class="dim">none</div>'}</div>` +
+    `<div class="panel"><h2>📜 Engine doctrines</h2>${doctrines || '<div class="dim">none</div>'}</div>`;
+}
+
+let lastGenerated = null;
+async function tick() {
+  try {
+    const res = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (d.generatedAt !== lastGenerated) { lastGenerated = d.generatedAt; render(d); }
+    else document.getElementById('meta').textContent =
+      `built ${ago(d.generatedAt)} · ${d.fights.length} fights on record`;
+  } catch (e) {
+    document.getElementById('meta').textContent = 'fetch failed: ' + e.message + ' (retrying)';
+  }
+}
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>
