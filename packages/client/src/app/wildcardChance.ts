@@ -34,28 +34,48 @@ export function rollWildcard(seed: number, pct: number = WILDCARD_CHANCE_PCT): b
   return h % 100 < pct;
 }
 
+/** Every weapon a wildcard may arm, in pick-hash order. THE ORDER IS LOAD-
+ *  BEARING for 'chance' resolution (h % length indexes this array) — append
+ *  only, never reorder. */
+export const WILDCARD_WEAPONS = [
+  'shotgun',
+  'rifle',
+  'rocket',
+  'ricochet',
+  'chainsaw',
+] as const;
+export type WildcardWeapon = (typeof WILDCARD_WEAPONS)[number];
+
 /**
- * Which weapon an ARMED 'chance' match gets: 'shotgun' or 'rifle', 50/50.
- * A SEPARATE seeded hash (murmur3-style constants, distinct from the arming
- * hash's golden-ratio xor) so the pick is independent of rollWildcard and the
- * arming decision for every pre-rifle seed is untouched. Pure and stable.
+ * Which weapon an ARMED 'chance' match gets: an even split over
+ * WILDCARD_WEAPONS. A SEPARATE seeded hash (murmur3-style constants, distinct
+ * from the arming hash's golden-ratio xor) so the pick is independent of
+ * rollWildcard and the ARMING decision for every old seed is untouched.
+ * Pure and stable.
+ *
+ * THE THREE-GUN ERA (rocket/ricochet/chainsaw): the hash is UNCHANGED but the
+ * modulus widened 2 → 5, so an old armed seed MAY now pick a different weapon
+ * than it did in the 50/50 era. That is acceptable BY DESIGN for the pick
+ * (decision: recorded chance-era artifacts are safe regardless, because every
+ * recorded manifest match / watch URL carries the RESOLVED weapon, never the
+ * mode — replays force that value and never re-roll the pick).
  */
-export function pickWildcardWeapon(seed: number): 'shotgun' | 'rifle' {
+export function pickWildcardWeapon(seed: number): WildcardWeapon {
   const h = Math.imul(seed ^ 0x85ebca6b, 0xc2b2ae35) >>> 0;
-  return h % 2 === 0 ? 'shotgun' : 'rifle';
+  return WILDCARD_WEAPONS[h % WILDCARD_WEAPONS.length] ?? 'shotgun';
 }
 
 /**
- * Resolve a wildcard MODE ('shotgun' | 'rifle' | 'none' | 'chance' |
- * undefined) to the per-match armed value the Game accepts ('shotgun' |
- * 'rifle' | undefined). Unknown modes resolve to stock — a typo'd param
- * never bricks a match.
+ * Resolve a wildcard MODE (a WILDCARD_WEAPONS name | 'none' | 'chance' |
+ * undefined) to the per-match armed value the Game accepts (a weapon name |
+ * undefined). Unknown modes resolve to stock — a typo'd param never bricks a
+ * match.
  */
 export function resolveWildcard(
   mode: string | undefined,
   seed: number,
 ): string | undefined {
-  if (mode === 'shotgun' || mode === 'rifle') return mode;
+  if ((WILDCARD_WEAPONS as readonly string[]).includes(mode ?? '')) return mode;
   if (mode === 'chance') return rollWildcard(seed) ? pickWildcardWeapon(seed) : undefined;
   return undefined;
 }

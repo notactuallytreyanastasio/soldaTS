@@ -1,12 +1,14 @@
 // Wildcard chance resolution: pure, seed-stable, and mode-correct — the
 // guarantee that "all games have a chance of wildcard play" never costs a
 // byte of replay determinism. Since the rifle era, an armed 'chance' match
-// picks shotgun-or-rifle 50/50 from a SEPARATE seeded hash; the arming roll
-// itself (rollWildcard) is the unchanged shotgun-era hash.
+// picks its weapon from a SEPARATE seeded hash (now an even split over the
+// five WILDCARD_WEAPONS); the arming roll itself (rollWildcard) is the
+// unchanged shotgun-era hash.
 
 import { describe, it, expect } from 'vitest';
 import {
   WILDCARD_CHANCE_PCT,
+  WILDCARD_WEAPONS,
   rollWildcard,
   pickWildcardWeapon,
   resolveWildcard,
@@ -30,22 +32,26 @@ describe('rollWildcard', () => {
 });
 
 describe('pickWildcardWeapon', () => {
-  it('is a pure function of the seed and splits roughly 50/50', () => {
-    let rifles = 0;
+  it('is a pure function of the seed and splits roughly evenly over all five guns', () => {
+    const counts = new Map<string, number>();
     for (let s = 1; s <= 2000; s++) {
       expect(pickWildcardWeapon(s)).toBe(pickWildcardWeapon(s));
-      if (pickWildcardWeapon(s) === 'rifle') rifles += 1;
+      const w = pickWildcardWeapon(s);
+      counts.set(w, (counts.get(w) ?? 0) + 1);
     }
-    const pct = (rifles / 2000) * 100;
-    expect(pct).toBeGreaterThan(40);
-    expect(pct).toBeLessThan(60);
+    for (const weapon of WILDCARD_WEAPONS) {
+      const pct = ((counts.get(weapon) ?? 0) / 2000) * 100;
+      expect(pct).toBeGreaterThan(20 - 8); // even split = 20% each
+      expect(pct).toBeLessThan(20 + 8);
+    }
   });
 });
 
 describe('resolveWildcard', () => {
-  it("'shotgun'/'rifle' force, 'none'/undefined are stock, unknown is stock", () => {
-    expect(resolveWildcard('shotgun', 1)).toBe('shotgun');
-    expect(resolveWildcard('rifle', 1)).toBe('rifle');
+  it('every weapon name forces itself; \'none\'/undefined are stock, unknown is stock', () => {
+    for (const weapon of WILDCARD_WEAPONS) {
+      expect(resolveWildcard(weapon, 1)).toBe(weapon);
+    }
     expect(resolveWildcard('none', 1)).toBeUndefined();
     expect(resolveWildcard(undefined, 1)).toBeUndefined();
     expect(resolveWildcard('definitely-not-real', 1)).toBeUndefined();

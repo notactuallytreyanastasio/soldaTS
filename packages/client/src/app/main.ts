@@ -29,7 +29,7 @@ import { Hud, type HudState, type HudScores } from '../ui/hud';
 import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
 import { isBareUrl, showMenuScreen } from '../ui/menuScreen';
 import { START_HEALTH } from '../ui/helpers';
-import { BloodFx, Crosshair } from '../render/fx';
+import { BloodFx, Crosshair, ExplosionFx } from '../render/fx';
 import { resolveWildcard } from './wildcardChance';
 import { buildTexturedMap } from '../render/mapTextured';
 import { AudioEngine } from '../audio/audio';
@@ -767,6 +767,15 @@ async function main(): Promise<void> {
     blood.spawnHit(x, y, vx, vy, damage, fatal);
   };
 
+  // --- Explosions: the rocket wildcard's blast ring/flash ----------------
+  // Driven by the sim's onBulletExplode observer (same notification-only
+  // contract as onBulletHit — null headlessly, zero sim impact).
+  const blasts = new ExplosionFx();
+  renderer.world.addChild(blasts.gfx);
+  game.world.onBulletExplode = (x, y, radius): void => {
+    blasts.spawn(x, y, radius);
+  };
+
   // Crosshair at the aim point (in the world container, follows the camera).
   // Spectators don't aim — hide it entirely in spectate mode.
   const crosshair = new Crosshair();
@@ -1091,6 +1100,10 @@ async function main(): Promise<void> {
     // Blood droplets advance on the render clock (visual only, no sim state).
     blood.update(dt);
     blood.draw();
+
+    // Blast rings likewise (the rocket wildcard's detonations).
+    blasts.update(dt);
+    blasts.draw();
 
     // 5. Camera: follow the player, or (spectate) the director's pick of the
     //    most interesting bot.

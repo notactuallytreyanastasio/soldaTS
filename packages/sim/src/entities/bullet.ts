@@ -16,11 +16,14 @@
  *
  * SCOPE (M4, faithful subset). Implemented: plain/shotgun/M2 hitscan-style
  * bullets and frag/M79/LAW-style projectiles for ballistics + map collision +
- * timeout + distance degradation + flame upward force + a simplified sprite hit.
- * DEFERRED (commented at the use site): ricochet impulse math, collider/thing
- * collision, cluster spawning, explosion AoE, and the FULL per-body-part sprite
- * hitbox test (which needs the per-sprite `Skeleton` ParticleSystem that
- * `entities/types.ts` deliberately omits). The sprite-hit here uses the sprite
+ * timeout + distance degradation + flame upward force + a simplified sprite
+ * hit; the M79 explosion AoE (explodeBullet — the rocket) and the ricochet
+ * impulse (ricochetOffMap — the Ricochet Carbine, by WeaponNum) — both
+ * formerly deferred, both gated so pre-existing weapons are byte-identical.
+ * DEFERRED (commented at the use site): collider/thing collision, cluster
+ * spawning, and the FULL per-body-part sprite hitbox test (which needs the
+ * per-sprite `Skeleton` ParticleSystem that `entities/types.ts` deliberately
+ * omits). The sprite-hit here uses the sprite
  * centre-of-mass (`world.spriteParts`) as a single circular hitbox and reports a
  * torso hit; see {@link checkSpriteCollision}.
  *
@@ -43,7 +46,7 @@ import {
   POLY_TYPE_BACKGROUND,
   POLY_TYPE_BACKGROUND_TRANSITION,
 } from '../map/polymap';
-import { applyBulletDamage, type GunModifiers } from '../combat/damage';
+import { applyBulletDamage, applyHealthHit, type GunModifiers } from '../combat/damage';
 // BulletStyle + bullet-lifetime constants are owned by ../weapons/guns (single
 // source of truth, ported from Weapons.pas/Constants.pas). Imported for internal
 // use here — re-exported by the package barrel from guns, not from this module.
@@ -89,6 +92,128 @@ export const DEGRADATION_EXEMPT_NUMS: ReadonlySet<number> = new Set([
   WeaponNum.KNIFE,
   WeaponNum.LAW,
 ]);
+
+// ---------------------------------------------------------------------------
+// Ricochet — DESIGN OVERRIDE implementing the deferred Pascal ricochet impulse
+// (Bullets.pas grenade/M79 bounce: reposition to the pre-collision point, then
+// reflect the velocity across the colliding edge's perpendicular). The Pascal
+// engine only bounces grenades (with per-poly bounciness); this game gives the
+// behaviour to ONE gun — the Ricochet Carbine — gated STRICTLY on
+// WeaponNum.RICOCHET so every other bullet's map collision is byte-identical.
+// ---------------------------------------------------------------------------
+
+/** Max wall bounces before a RICOCHET round dies on the next map hit.
+ *  DESIGN OVERRIDE: 4 bounces ≈ one full room of pinball without making the
+ *  round effectively immortal (timeout still caps lifetime at 420 ticks). */
+export const MAX_RICOCHETS = 4;
+
+/** Speed retained per bounce. DESIGN OVERRIDE: 0.75 — three bounces leave
+ *  ~42% of muzzle speed (33 → 13.9 px/tick), still lethal (13.9 * 2.49 ≈ 35
+ *  damage on a chest hit) but visibly decaying, like the Pascal grenades'
+ *  per-poly bounciness which this stands in for. */
+export const RICOCHET_ENERGY_RETENTION = f(0.75);
+
+// ---------------------------------------------------------------------------
+// Explosion AoE — implements the deferred Bullets.pas explosion for the
+// BulletStyle.M79 rocket. The faithful Pascal AoE (Bullets.pas explosion on
+// map/sprite impact: every sprite within range takes distance-scaled damage
+// and impulse, INCLUDING the owner — rocket jumping) needs per-part skeletons
+// and collider tables this port omits, so the shape is reproduced over the
+// single COM hitbox with explicit constants:
+// ---------------------------------------------------------------------------
+
+/** Blast radius (px). DESIGN OVERRIDE standing in for the Pascal
+ *  AFTER_EXPLOSION_RADIUS family: 64 px ≈ 4 SPRITE_RADIUS — close pairs die
+ *  together, a body-length of clearance saves you. */
+export const EXPLOSION_RADIUS = 64;
+
+/** Epicentre damage, falling off LINEARLY to 0 at EXPLOSION_RADIUS.
+ *  DESIGN OVERRIDE: 250 vs STARTHEALTH 150 ⇒ the un-hit lethal core is
+ *  64 * (1 - 150/250) ≈ 25.6 px — about a body away from the blast point. */
+export const EXPLOSION_DAMAGE = 250;
+
+/** Self-damage factor for the bullet's OWNER caught in their own blast.
+ *  DESIGN OVERRIDE: 0.5 keeps Soldat's canon rocket jump alive — a floor
+ *  blast ~25 px under your COM costs ~75 hp instead of killing you. */
+export const EXPLOSION_SELF_FACTOR = f(0.5);
+
+/** Max velocity impulse (px/tick) added at the epicentre, scaled by the same
+ *  linear falloff, directed blast→sprite. DESIGN OVERRIDE: 6 px/tick at the
+ *  centre is a full jump's worth of boost — this is what makes rocket jumping
+ *  WORK (jets add the rest). A dead-centre blast pushes straight up. */
+export const EXPLOSION_PUSH = 6;
+
+/**
+ * Detonate bullet `bulletIndex` at its current position: distance-scaled
+ * damage + impulse to every live sprite within EXPLOSION_RADIUS (linear
+ * falloff), the owner included at EXPLOSION_SELF_FACTOR. Friendly-fire glue
+ * matches checkSpriteCollision: the owner's TEAMMATES are untouched (team 0 =
+ * FFA hits all), the owner hits themself. Fires the onBulletExplode observer
+ * (cosmetic; null headlessly). Zero rng. Does NOT kill the bullet — callers do.
+ *
+ * PORT (basis): the deferred Bullets.pas explosion AoE; all constants above
+ * are explicit DESIGN OVERRIDEs documented at their definitions.
+ */
+export function explodeBullet(world: World, bulletIndex: number): void {
+  const bp = world.bulletParts;
+  const sp = world.spriteParts;
+  const bullet = world.bullets[bulletIndex];
+  if (bp === null || sp === null || bullet === undefined) {
+    return;
+  }
+
+  const bx = bp.posX[bullet.num] ?? 0;
+  const by = bp.posY[bullet.num] ?? 0;
+  const owner = world.sprites[bullet.owner];
+
+  for (let j = 1; j <= world.sprites.length - 1; j++) {
+    const sprite = world.sprites[j];
+    if (sprite === undefined || !sprite.active || sprite.deadMeat) {
+      continue;
+    }
+    // GLUE (team dynamics, node 154): no friendly fire — but the OWNER is
+    // fair game for their own rocket (self-damage / rocket jumping).
+    if (
+      owner !== undefined &&
+      owner.team > 0 &&
+      sprite.team === owner.team &&
+      j !== bullet.owner
+    ) {
+      continue;
+    }
+
+    const dx = f((sp.posX[j] ?? 0) - bx);
+    const dy = f((sp.posY[j] ?? 0) - by);
+    const dist = f(Math.sqrt(f(f(dx * dx) + f(dy * dy))));
+    if (dist >= EXPLOSION_RADIUS) {
+      continue;
+    }
+
+    // Linear falloff: 1 at the epicentre, 0 at the radius edge.
+    const scale = f(1 - f(dist / EXPLOSION_RADIUS));
+    let amount = f(EXPLOSION_DAMAGE * scale);
+    if (j === bullet.owner) {
+      amount = f(amount * EXPLOSION_SELF_FACTOR);
+    }
+    applyHealthHit(world, j, amount, bulletIndex);
+
+    // Knockback impulse, blast→sprite. A dead-centre hit (dist ~ 0) has no
+    // direction — push straight up (the rocket-jump case: blast at your feet).
+    let ux = 0;
+    let uy = -1;
+    if (dist > 0.0001) {
+      ux = f(dx / dist);
+      uy = f(dy / dist);
+    }
+    const push = f(EXPLOSION_PUSH * scale);
+    sp.velocityX[j] = f((sp.velocityX[j] ?? 0) + f(ux * push));
+    sp.velocityY[j] = f((sp.velocityY[j] ?? 0) + f(uy * push));
+  }
+
+  // Cosmetic observer (blast ring/flash) — notification only, after the
+  // damage landed; null in headless/arena runs so replays are untouched.
+  world.onBulletExplode?.(bx, by, EXPLOSION_RADIUS);
+}
 
 /**
  * The slice of the SHARED WEAPON CONTRACT `Gun` that bullet spawn/update need.
@@ -486,15 +611,31 @@ export function updateBullet(world: World, bulletIndex: number, gun: BulletGun):
 
   // (3) map collision. On a wall hit the engine repositions + kills the bullet
   // for hitscan styles (Bullets.pas:1133-1211). We faithfully deactivate the
-  // bullet; ricochet impulse math is DEFERRED (// TODO ricochet).
+  // bullet — EXCEPT:
+  //   - RICOCHET rounds (by WeaponNum, never seen in any pre-ricochet replay)
+  //     BOUNCE off the polygon up to MAX_RICOCHETS times (the deferred Pascal
+  //     ricochet impulse, see ricochetOffMap),
+  //   - M79-style rockets DETONATE at the wall (the deferred explosion AoE).
+  // Every other style is byte-identical to the pre-rocket behaviour.
   const mapHit = checkBulletMapCollision(world, bulletIndex);
   if (mapHit.hit) {
+    if (
+      bullet.ownerWeapon === WeaponNum.RICOCHET &&
+      bullet.ricochetCount < MAX_RICOCHETS
+    ) {
+      ricochetOffMap(world, bulletIndex, mapHit.perp);
+      return;
+    }
+    if (bullet.style === BulletStyle.M79) {
+      explodeBullet(world, bulletIndex);
+    }
     killBullet(world, bulletIndex);
     return;
   }
 
   // (4) sprite collision → damage. Only the hitscan-style branch is modelled
-  // here (plain/shotgun/M2/punch/knife); explosive styles defer to AoE.
+  // here (plain/shotgun/M2/punch/knife); the M79 rocket adds a direct-hit +
+  // detonation branch (other explosive styles still defer).
   if (isHitscanStyle(bullet.style)) {
     const spriteHit = checkSpriteCollision(world, bulletIndex);
     if (spriteHit !== null) {
@@ -510,13 +651,28 @@ export function updateBullet(world: World, bulletIndex: number, gun: BulletGun):
       killBullet(world, bulletIndex);
       return;
     }
+  } else if (bullet.style === BulletStyle.M79) {
+    // Rocket body hit: the direct-hit damage path (|v| * 1550 * modifier ≈
+    // 16,585 on the chest — the contract's guaranteed kill), then the blast.
+    const spriteHit = checkSpriteCollision(world, bulletIndex);
+    if (spriteHit !== null) {
+      bp.posX[bullet.num] = spriteHit.point.x;
+      bp.posY[bullet.num] = spriteHit.point.y;
+      applyBulletDamage(world, bulletIndex, spriteHit.spriteIndex, spriteHit.where, gun);
+      bullet.hitBody = spriteHit.spriteIndex;
+      explodeBullet(world, bulletIndex);
+      killBullet(world, bulletIndex);
+      return;
+    }
   }
 
   // (5) timeout countdown (Bullets.pas:611-635).
   bullet.timeOut -= 1;
   if (bullet.timeOut === 0) {
-    // For the modelled styles, expiry simply kills the bullet (the explosive
-    // detonation-on-timeout for FRAGNADE/M79/etc. is DEFERRED with AoE).
+    // For the modelled styles, expiry simply kills the bullet. DESIGN: the
+    // M79 rocket also just dies at timeout (420 ticks = 7 s of flight) — it
+    // detonates on IMPACT only; detonation-on-timeout is the grenade styles'
+    // behaviour (FRAGNADE et al., still DEFERRED).
     killBullet(world, bulletIndex);
     return;
   }
@@ -542,6 +698,46 @@ export function updateBullet(world: World, bulletIndex: number, gun: BulletGun):
       }
     }
   }
+}
+
+/**
+ * Bounce a RICOCHET round off the map polygon it just entered.
+ *
+ * DESIGN OVERRIDE implementing the deferred Bullets.pas ricochet impulse:
+ *   1. step BACK to the pre-collision position. Bullets integrate pos += vel
+ *     with eDamping 1 (particles.ts euler), so `pos - vel` IS last tick's
+ *     position exactly — the spot already proven collision-free,
+ *   2. reflect the velocity across the colliding edge's unit perpendicular
+ *     (v' = v - 2(v·n)n — sign of n is irrelevant to the reflection),
+ *   3. retain RICOCHET_ENERGY_RETENTION of the speed and count the bounce.
+ *
+ * Damage (hitMultiply) is NOT touched here — it persists across bounces; the
+ * generic distance degradation in updateBullet still applies (RICOCHET is not
+ * in DEGRADATION_EXEMPT_NUMS). Zero rng; every step f()-wrapped.
+ */
+export function ricochetOffMap(world: World, bulletIndex: number, perp: Vec2): void {
+  const bp = world.bulletParts;
+  const bullet = world.bullets[bulletIndex];
+  if (bp === null || bullet === undefined) {
+    return;
+  }
+  const n = bullet.num;
+  const vx = bp.velocityX[n] ?? 0;
+  const vy = bp.velocityY[n] ?? 0;
+
+  // (1) reposition to last tick's (collision-free) point.
+  bp.posX[n] = f((bp.posX[n] ?? 0) - vx);
+  bp.posY[n] = f((bp.posY[n] ?? 0) - vy);
+
+  // (2) reflect across the edge perpendicular (collideCircle returns it unit).
+  const dot = f(f(vx * perp.x) + f(vy * perp.y));
+  const rx = f(vx - f(f(2 * dot) * perp.x));
+  const ry = f(vy - f(f(2 * dot) * perp.y));
+
+  // (3) energy retention + bounce bookkeeping.
+  bp.velocityX[n] = f(rx * RICOCHET_ENERGY_RETENTION);
+  bp.velocityY[n] = f(ry * RICOCHET_ENERGY_RETENTION);
+  bullet.ricochetCount += 1;
 }
 
 /**

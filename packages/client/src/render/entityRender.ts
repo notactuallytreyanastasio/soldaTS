@@ -53,6 +53,17 @@ const THING_HALF = 6;
 /** Radius (world units) of the dot drawn for each bullet. */
 const BULLET_RADIUS = 2;
 
+/** Ricochet tracer palette, indexed by the bullet's bounce count: fresh
+ *  rounds are acid-green and shift colder/violet with every wall bounce so a
+ *  banked shot reads as one round losing heat (clamped at the last entry). */
+const RICOCHET_BOUNCE_COLORS: readonly number[] = [
+  0xb6ff7a, // 0 bounces — acid green
+  0x5cf2c4, // 1 — mint
+  0x4fc9ff, // 2 — sky
+  0x9a8cff, // 3 — violet
+  0xff7ad9, // 4 — magenta (terminal)
+];
+
 /**
  * Draws sim entities into a pixi Container (added to the renderer's world
  * container so it shares the map camera transform). Call {@link render} once per
@@ -230,6 +241,20 @@ export class EntityRenderer {
       if (sprite.selWeapon === WeaponIndex.BARRETT && !sprite.deadMeat) {
         this.drawBarrettWeapon(x, y, aimX, aimY);
       }
+      // Rocket carrier: a fat stubby tube.
+      if (sprite.selWeapon === WeaponIndex.M79 && !sprite.deadMeat) {
+        this.drawRocketWeapon(x, y, aimX, aimY);
+      }
+      // Ricochet carrier: a slim carbine with an acid-green muzzle tip.
+      if (sprite.selWeapon === WeaponIndex.RICOCHET && !sprite.deadMeat) {
+        this.drawRicochetWeapon(x, y, aimX, aimY);
+      }
+      // Chainsaw carrier: the blade bar — plus grind sparks while sawing.
+      // (Blade BULLETS live for a single sim tick — MELEE_TIMEOUT 1 — so they
+      // are never alive at render time; the saw is drawn from sprite state.)
+      if (sprite.selWeapon === WeaponIndex.CHAINSAW && !sprite.deadMeat) {
+        this.drawChainsawWeapon(x, y, aimX, aimY, sprite.control.fire, world.ticks);
+      }
 
       // TEAM CHEVRON above the head (real teams only): the Gostek textures
       // read as dark camo at spectator zoom, so the tinted shirt pixels are
@@ -310,6 +335,77 @@ export class EntityRenderer {
       .stroke({ color: 0x4a5568, width: 3 });
   }
 
+  /** Rocket carrier overlay: a fat stubby olive tube along the aim line. */
+  private drawRocketWeapon(x: number, y: number, aimX: number, aimY: number): void {
+    const handY = y - EntityRenderer.SPAS_HAND_LIFT;
+    const dx = aimX - x;
+    const dy = aimY - handY;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    this.markerGfx
+      .moveTo(x + ux * 2, handY + uy * 2)
+      .lineTo(x + ux * 24, handY + uy * 24)
+      .stroke({ color: 0x4a4f3a, width: 7 })
+      // Muzzle ring.
+      .circle(x + ux * 24, handY + uy * 24, 3.2)
+      .stroke({ color: 0x2e3226, width: 2 });
+  }
+
+  /** Ricochet carrier overlay: a slim carbine, acid-green at the muzzle. */
+  private drawRicochetWeapon(x: number, y: number, aimX: number, aimY: number): void {
+    const handY = y - EntityRenderer.SPAS_HAND_LIFT;
+    const dx = aimX - x;
+    const dy = aimY - handY;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    this.markerGfx
+      .moveTo(x + ux * 2, handY + uy * 2)
+      .lineTo(x + ux * 28, handY + uy * 28)
+      .stroke({ color: 0x35402c, width: 3 })
+      .moveTo(x + ux * 22, handY + uy * 22)
+      .lineTo(x + ux * 28, handY + uy * 28)
+      .stroke({ color: 0xb6ff7a, width: 3 });
+  }
+
+  /** Chainsaw carrier overlay: blade bar + grind sparks while sawing.
+   *  Sparks rotate with the sim tick — pure cosmetics, no rng. */
+  private drawChainsawWeapon(
+    x: number,
+    y: number,
+    aimX: number,
+    aimY: number,
+    sawing: boolean,
+    ticks: number,
+  ): void {
+    const handY = y - EntityRenderer.SPAS_HAND_LIFT;
+    const dx = aimX - x;
+    const dy = aimY - handY;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len;
+    const uy = dy / len;
+    // Body + blade bar.
+    this.markerGfx
+      .moveTo(x + ux * 2, handY + uy * 2)
+      .lineTo(x + ux * 10, handY + uy * 10)
+      .stroke({ color: 0xa33b2a, width: 6 })
+      .moveTo(x + ux * 10, handY + uy * 10)
+      .lineTo(x + ux * 26, handY + uy * 26)
+      .stroke({ color: 0x8d949e, width: 4 });
+    if (!sawing) return;
+    // Grind sparks at the blade tip, fanned and spinning with the tick.
+    const tipX = x + ux * 26;
+    const tipY = handY + uy * 26;
+    const base = (ticks % 6) * (Math.PI / 3);
+    for (let s = 0; s < 3; s++) {
+      const a = base + s * ((2 * Math.PI) / 3);
+      this.markerGfx
+        .circle(tipX + Math.cos(a) * 4, tipY + Math.sin(a) * 4, 1.2)
+        .fill({ color: s === 0 ? 0xfff2b0 : 0xffb24a });
+    }
+  }
+
   // -------------------------------------------------------------------------
   // Bullets
   // -------------------------------------------------------------------------
@@ -336,16 +432,41 @@ export class EntityRenderer {
       // fan reads as one blast, not a burst of rifle rounds. BARRETT rounds
       // (PLAIN style, told apart by ownerWeapon — both AK and Barrett fire
       // PLAIN) get a LONG, thin, ice-bright streak: at 55 px/tick the round
-      // crosses a screen in a blink, so the tracer IS the shot.
+      // crosses a screen in a blink, so the tracer IS the shot. M79 ROCKETS
+      // get a fat ember streak + exhaust dot (slow and arcing — the rocket is
+      // a visible object, not a tracer). RICOCHET rounds (PLAIN, by
+      // ownerWeapon) shift colour with every bounce so a banked shot reads as
+      // one round losing heat wall to wall. CHAINSAW blade bullets (KNIFE
+      // style, alive for a single tick) draw NO tracer — just tiny sparks at
+      // the blade tip.
       const vx = parts.velocityX[num] ?? 0;
       const vy = parts.velocityY[num] ?? 0;
       const len = Math.hypot(vx, vy);
       const pellet = bullet.style === BulletStyle.SHOTGUN;
       const sniper = bullet.ownerWeapon === WeaponNum.BARRETT;
+      const rocket = bullet.style === BulletStyle.M79;
+      const bouncer = bullet.ownerWeapon === WeaponNum.RICOCHET;
+      const saw = bullet.style === BulletStyle.KNIFE;
+      if (saw) {
+        // Blade sparks: three small hot dots fanned around the contact point,
+        // rotated by the sim tick so the saw visibly chews. Cosmetic only.
+        const base = (world.ticks % 6) * (Math.PI / 3);
+        for (let s = 0; s < 3; s++) {
+          const a = base + s * ((2 * Math.PI) / 3);
+          g.circle(x + Math.cos(a) * 3, y + Math.sin(a) * 3, 1.1).fill({
+            color: s === 0 ? 0xfff2b0 : 0xffb24a,
+          });
+        }
+        continue;
+      }
+      const bounceColor =
+        RICOCHET_BOUNCE_COLORS[
+          Math.min(bullet.ricochetCount, RICOCHET_BOUNCE_COLORS.length - 1)
+        ] ?? 0xb6ff7a;
       if (len > 0.0001) {
         const ux = vx / len;
         const uy = vy / len;
-        const tail = pellet ? 3.5 : sniper ? 30 : 6;
+        const tail = pellet ? 3.5 : sniper ? 30 : rocket ? 12 : 6;
         g.moveTo(x - ux * tail, y - uy * tail)
           .lineTo(x, y)
           .stroke(
@@ -353,13 +474,22 @@ export class EntityRenderer {
               ? { color: 0xffa24a, width: 2.5 }
               : sniper
                 ? { color: 0xd8f4ff, width: 1.2 }
-                : { color: 0xfff0a0, width: 1.5 },
+                : rocket
+                  ? { color: 0xff8a3c, width: 3 }
+                  : bouncer
+                    ? { color: bounceColor, width: 1.8 }
+                    : { color: 0xfff0a0, width: 1.5 },
           );
       }
       if (pellet) {
         g.circle(x, y, 1.4).fill({ color: 0xffd9a0 });
       } else if (sniper) {
         g.circle(x, y, 1.6).fill({ color: 0xf2fbff });
+      } else if (rocket) {
+        g.circle(x, y, 3).fill({ color: 0xffd9a0 });
+        g.circle(x - vx * 0.4, y - vy * 0.4, 1.8).fill({ color: 0xff6a2a });
+      } else if (bouncer) {
+        g.circle(x, y, 1.8).fill({ color: bounceColor });
       } else {
         g.circle(x, y, BULLET_RADIUS).fill({ color: 0xffffff });
       }

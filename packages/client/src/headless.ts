@@ -15,9 +15,11 @@ export {
 } from './app/game';
 export {
   WILDCARD_CHANCE_PCT,
+  WILDCARD_WEAPONS,
   rollWildcard,
   pickWildcardWeapon,
   resolveWildcard,
+  type WildcardWeapon,
 } from './app/wildcardChance';
 export {
   MatchRecorder,

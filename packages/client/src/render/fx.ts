@@ -367,3 +367,67 @@ export class BloodFx {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Explosions — the rocket's blast ring/flash (sim onBulletExplode observer)
+// ---------------------------------------------------------------------------
+
+/** One live blast: an expanding ring + fading core flash. Render-clock only. */
+export interface BlastRing {
+  x: number;
+  y: number;
+  /** Final ring radius (the sim's EXPLOSION_RADIUS). */
+  radius: number;
+  /** Seconds remaining; spawned at {@link BLAST_LIFE}. */
+  life: number;
+}
+
+/** Blast animation length (s) — fast: an explosion is a punch, not a bloom. */
+export const BLAST_LIFE = 0.35;
+
+/**
+ * The client's explosion layer (the rocket wildcard's detonations): collects
+ * blasts from the sim's onBulletExplode observer, expands/fades them on the
+ * render clock, and redraws into its own Graphics each frame. Purely
+ * cosmetic — the observer pattern keeps the sim byte-identical headlessly.
+ * Add {@link gfx} to the camera/world container (world-space coordinates).
+ */
+export class ExplosionFx {
+  /** Draw target — add to the renderer's world container. */
+  readonly gfx: Graphics = new Graphics();
+
+  private readonly blasts: BlastRing[] = [];
+
+  /** Register one detonation at world (x, y) with the sim's blast radius. */
+  spawn(x: number, y: number, radius: number): void {
+    this.blasts.push({ x, y, radius, life: BLAST_LIFE });
+  }
+
+  /** Advance all blasts by `dt` seconds (call once per rendered frame). */
+  update(dt: number): void {
+    const step = dt > 0 && dt < 0.1 ? dt : 1 / 60;
+    for (let i = this.blasts.length - 1; i >= 0; i--) {
+      const b = this.blasts[i]!;
+      b.life -= step;
+      if (b.life <= 0) this.blasts.splice(i, 1);
+    }
+  }
+
+  /** Redraw every live blast: ring expands to `radius` as the flash fades. */
+  draw(): void {
+    const g = this.gfx;
+    g.clear();
+    for (const b of this.blasts) {
+      const t = 1 - b.life / BLAST_LIFE; // 0 → 1 over the animation
+      const ring = b.radius * (0.25 + 0.75 * t);
+      const fade = 1 - t;
+      // Expanding shockwave ring.
+      g.circle(b.x, b.y, ring).stroke({ color: 0xffc06a, width: 3, alpha: 0.9 * fade });
+      // Core flash, biggest at birth, gone by mid-life.
+      if (t < 0.5) {
+        const core = b.radius * 0.45 * (1 - t * 2);
+        g.circle(b.x, b.y, core).fill({ color: 0xfff3c0, alpha: 0.85 * fade });
+      }
+    }
+  }
+}

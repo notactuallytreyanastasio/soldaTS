@@ -15,7 +15,12 @@
 import { describe, it, expect } from 'vitest';
 import { BulletStyle, createWorld, initSimWorld } from '@soldat/sim';
 import { Game, DEFAULT_TUNING, SPAS_PELLETS } from './game';
-import { rollWildcard, pickWildcardWeapon, resolveWildcard } from './wildcardChance';
+import {
+  WILDCARD_WEAPONS,
+  rollWildcard,
+  pickWildcardWeapon,
+  resolveWildcard,
+} from './wildcardChance';
 import { buildArena, ARENA_SPAWNS } from './arena';
 
 const TICK_DT = 1 / 60;
@@ -83,8 +88,11 @@ describe('SPAS-12 pellet fan (the Pascal rule: one spawn per pellet)', () => {
   });
 });
 
+/** The full swap ring, in order, starting at the default slot. */
+const RING = ['AK74', 'SPAS12', 'BARRETT', 'ROCKET', 'RICOCHET', 'CHAINSAW'] as const;
+
 describe('player weapon swap (Tab/B → control.changeWeapon)', () => {
-  it('cycles AK74 → SPAS12 → BARRETT → AK74 on the RISING edge only', () => {
+  it('cycles all six slots in ring order on the RISING edge only', () => {
     const game = soloGame();
     const p = game.world.sprites[game.playerIndex]!;
     expect(game.weaponNameOf(game.playerIndex)).toBe('AK74');
@@ -94,10 +102,11 @@ describe('player weapon swap (Tab/B → control.changeWeapon)', () => {
     expect(game.weaponNameOf(game.playerIndex)).toBe('SPAS12');
     p.control = { ...p.control, changeWeapon: false };
     game.tick(TICK_DT);
-    swapWeapon(game, game.playerIndex);
-    expect(game.weaponNameOf(game.playerIndex)).toBe('BARRETT');
-    swapWeapon(game, game.playerIndex);
-    expect(game.weaponNameOf(game.playerIndex)).toBe('AK74');
+    // Walk the rest of the ring and wrap back to the AK.
+    for (const expected of [...RING.slice(2), 'AK74']) {
+      swapWeapon(game, game.playerIndex);
+      expect(game.weaponNameOf(game.playerIndex)).toBe(expected);
+    }
   });
 
   it('each weapon keeps its OWN ammo (a swap is not a free reload)', () => {
@@ -112,9 +121,9 @@ describe('player weapon swap (Tab/B → control.changeWeapon)', () => {
     p.control = { ...p.control, fire: false };
     expect(game.playerAmmo()).toBe(spasMag - 1);
     // AK magazine untouched; SPAS count survives the trip around the ring
-    // (SPAS → BARRETT → AK → SPAS).
-    swapWeapon(game, game.playerIndex);
-    swapWeapon(game, game.playerIndex);
+    // (SPAS → BARRETT → ROCKET → RICOCHET → CHAINSAW → AK → SPAS).
+    for (let s = 0; s < RING.length - 1; s++) swapWeapon(game, game.playerIndex);
+    expect(game.weaponNameOf(game.playerIndex)).toBe('AK74');
     expect(game.playerAmmo()).toBe(DEFAULT_TUNING.magSize);
     swapWeapon(game, game.playerIndex);
     expect(game.playerAmmo()).toBe(spasMag - 1);
@@ -134,9 +143,7 @@ describe('player weapon swap (Tab/B → control.changeWeapon)', () => {
     expect(game.playerReloading()).toBe(true);
     // Swap away and back around the ring: the reload is gone, the magazine
     // stayed partial.
-    swapWeapon(game, game.playerIndex);
-    swapWeapon(game, game.playerIndex);
-    swapWeapon(game, game.playerIndex);
+    for (let s = 0; s < RING.length; s++) swapWeapon(game, game.playerIndex);
     expect(game.weaponNameOf(game.playerIndex)).toBe('SPAS12');
     expect(game.playerReloading()).toBe(false);
     expect(game.playerAmmo()).toBe(spasMag - 1);
@@ -293,23 +300,23 @@ function toBarrett(game: Game): void {
   expect(game.weaponNameOf(game.playerIndex)).toBe('BARRETT');
 }
 
-describe('player weapon swap cycles all three slots', () => {
-  it('Tab/B walks AK74 → SPAS12 → BARRETT → AK74', () => {
+describe('player weapon swap cycles all six slots', () => {
+  it('Tab/B walks the full ring and wraps to the AK', () => {
     const game = soloGame();
     expect(game.weaponNameOf(game.playerIndex)).toBe('AK74');
-    swapWeapon(game, game.playerIndex);
-    expect(game.weaponNameOf(game.playerIndex)).toBe('SPAS12');
-    swapWeapon(game, game.playerIndex);
-    expect(game.weaponNameOf(game.playerIndex)).toBe('BARRETT');
-    swapWeapon(game, game.playerIndex);
-    expect(game.weaponNameOf(game.playerIndex)).toBe('AK74');
+    for (const expected of [...RING.slice(1), 'AK74']) {
+      swapWeapon(game, game.playerIndex);
+      expect(game.weaponNameOf(game.playerIndex)).toBe(expected);
+    }
   });
 
   it('the Barrett slot keeps its own 3-round magazine across swaps', () => {
     const game = soloGame();
     toBarrett(game);
     expect(game.playerAmmo()).toBe(BARRETT_MAG);
-    swapWeapon(game, game.playerIndex); // → AK
+    swapWeapon(game, game.playerIndex); // → ROCKET (mag 1)
+    expect(game.playerAmmo()).toBe(1);
+    for (let s = 0; s < 3; s++) swapWeapon(game, game.playerIndex); // → AK
     expect(game.playerAmmo()).toBe(DEFAULT_TUNING.magSize);
   });
 });
@@ -460,7 +467,7 @@ describe('rifle wildcard distribution (one Barrett carrier per team)', () => {
   });
 });
 
-describe("'chance' mode with two wildcards (35% armed, then shotgun|rifle 50/50)", () => {
+describe("'chance' mode with five wildcards (35% armed, then an even weapon pick)", () => {
   it('resolves armed seeds to pickWildcardWeapon and unarmed seeds to stock', () => {
     for (let seed = 1; seed <= 100; seed++) {
       const resolved = resolveWildcard('chance', seed);
@@ -474,7 +481,9 @@ describe("'chance' mode with two wildcards (35% armed, then shotgun|rifle 50/50)
 
   it('ARMING decisions for old seeds are unchanged (the shotgun-era hash, pinned inline)', () => {
     // The exact pre-rifle rollWildcard formula, reproduced literally: if this
-    // fails, recorded chance-era arming decisions have drifted.
+    // fails, recorded chance-era arming decisions have drifted. (The weapon
+    // PICK for an armed seed MAY differ from the 50/50 era — by design; the
+    // recorded artifacts carry the resolved weapon, never the mode.)
     const legacyRoll = (seed: number): boolean =>
       (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < 35;
     for (let seed = 1; seed <= 300; seed++) {
@@ -482,18 +491,183 @@ describe("'chance' mode with two wildcards (35% armed, then shotgun|rifle 50/50)
     }
   });
 
-  it('the weapon pick is a SEPARATE hash: all three outcomes occur and both picks appear among armed seeds', () => {
+  it('the weapon pick is a SEPARATE hash: stock and ALL FIVE weapons occur across seeds', () => {
     const outcomes = new Set<string>();
-    for (let seed = 1; seed <= 120; seed++) {
+    for (let seed = 1; seed <= 400; seed++) {
       outcomes.add(resolveWildcard('chance', seed) ?? 'none');
     }
-    expect(outcomes).toEqual(new Set(['none', 'shotgun', 'rifle']));
+    expect(outcomes).toEqual(new Set(['none', ...WILDCARD_WEAPONS]));
   });
 
-  it("forced modes pass through: 'rifle' → 'rifle', 'shotgun' → 'shotgun'", () => {
-    expect(resolveWildcard('rifle', 7)).toBe('rifle');
-    expect(resolveWildcard('shotgun', 7)).toBe('shotgun');
+  it('forced modes pass through for every weapon', () => {
+    for (const weapon of WILDCARD_WEAPONS) {
+      expect(resolveWildcard(weapon, 7)).toBe(weapon);
+    }
     expect(resolveWildcard('none', 7)).toBeUndefined();
     expect(resolveWildcard(undefined, 7)).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The three-gun era (goal node 440): rocket / ricochet / chainsaw — slot
+// behaviour and carrier determinism at the Game level. The ballistics
+// (explosion AoE, ricochet reflection, melee reach) are proven at the sim
+// level in packages/sim entities/bullet.test.ts.
+// ---------------------------------------------------------------------------
+
+/** Swap the solo player to a named slot (hops around the ring). */
+function toWeapon(game: Game, name: (typeof RING)[number]): void {
+  for (let s = 0; s < RING.length; s++) {
+    if (game.weaponNameOf(game.playerIndex) === name) return;
+    swapWeapon(game, game.playerIndex);
+  }
+  expect(game.weaponNameOf(game.playerIndex)).toBe(name);
+}
+
+describe('per-gun wildcard carrier determinism (rocket | ricochet | chainsaw)', () => {
+  const opts = {
+    seed: 42,
+    spawns: ARENA_SPAWNS,
+    botCount: 6,
+    spectate: true,
+    aiEngine: 'classic,pilot',
+  } as const;
+  const label: Record<string, string> = {
+    rocket: 'ROCKET',
+    ricochet: 'RICOCHET',
+    chainsaw: 'CHAINSAW',
+  };
+
+  for (const wildcard of ['rocket', 'ricochet', 'chainsaw'] as const) {
+    it(`'${wildcard}' arms one carrier per team, same indices as the shotgun era (one rng draw per pool)`, () => {
+      const a = new Game({ ...opts, wildcard });
+      const b = new Game({ ...opts, wildcard });
+      const shotgun = new Game({ ...opts, wildcard: 'shotgun' });
+      expect(a.wildcardCarriers()).toEqual(b.wildcardCarriers());
+      expect(a.wildcardCarriers()).toEqual(shotgun.wildcardCarriers());
+      expect(a.wildcardCarriers()).toHaveLength(2);
+      const teams = a.wildcardCarriers().map((i) => a.teamOf(i)).sort();
+      expect(teams).toEqual([1, 2]);
+      for (const i of a.wildcardCarriers()) {
+        expect(a.weaponNameOf(i)).toBe(label[wildcard]);
+      }
+      for (const i of a.botIndices()) {
+        if (!a.wildcardCarriers().includes(i)) expect(a.weaponNameOf(i)).toBe('AK74');
+      }
+    });
+
+    it(`the '${wildcard}' carrier respawns WITH the weapon`, () => {
+      const game = new Game({
+        seed: 9,
+        spawns: ARENA_SPAWNS,
+        botCount: 4,
+        spectate: true,
+        wildcard,
+      });
+      game.loadMap(buildArena());
+      expect(game.wildcardCarriers()).toHaveLength(1);
+      const carrier = game.wildcardCarriers()[0]!;
+      game.world.sprites[carrier]!.health = 0;
+      for (let t = 0; t < 260; t++) game.tick(TICK_DT);
+      const s = game.world.sprites[carrier]!;
+      expect(s.active && !s.deadMeat).toBe(true);
+      expect(game.weaponNameOf(carrier)).toBe(label[wildcard]);
+    });
+  }
+});
+
+describe('rocket launcher slot (M79 contract: 1 round, slow arcing rocket)', () => {
+  it('fires ONE M79-style bullet at contract speed 10.7, mag 1, then auto-reloads 178 ticks', () => {
+    const game = soloGame();
+    toWeapon(game, 'ROCKET');
+    expect(game.playerAmmo()).toBe(1);
+    const p = game.world.sprites[game.playerIndex]!;
+    p.control = { ...p.control, fire: true, mouseAimX: 100, mouseAimY: 0 };
+    game.tick(TICK_DT);
+    const bullets = activeBullets(game);
+    expect(bullets).toHaveLength(1);
+    const [vx, vy, style] = bullets[0]!;
+    expect(style).toBe(BulletStyle.M79);
+    // One tick of bullet gravity (0.135) already pulls vy — compare loosely.
+    expect(Math.hypot(vx, vy)).toBeCloseTo(10.7, 1);
+    expect(vx).toBeCloseTo(10.7, 3);
+    expect(game.playerAmmo()).toBe(0);
+    // Holding fire on the empty tube starts the long reload automatically
+    // (once the fireInterval cooldown of the shot just fired has elapsed).
+    for (let t = 0; t < 6; t++) game.tick(TICK_DT);
+    expect(game.playerReloading()).toBe(true);
+    p.control = { ...p.control, fire: false };
+    for (let t = 0; t < 178 + 2; t++) game.tick(TICK_DT);
+    expect(game.playerReloading()).toBe(false);
+    expect(game.playerAmmo()).toBe(1);
+  });
+
+  it('rocket rounds arc: bullet gravity pulls the shot down over flight', () => {
+    const game = soloGame();
+    toWeapon(game, 'ROCKET');
+    const p = game.world.sprites[game.playerIndex]!;
+    p.control = { ...p.control, fire: true, mouseAimX: 100, mouseAimY: 0 };
+    game.tick(TICK_DT);
+    p.control = { ...p.control, fire: false };
+    for (let t = 0; t < 20; t++) game.tick(TICK_DT);
+    const [, vy] = activeBullets(game)[0]!;
+    expect(vy).toBeGreaterThan(0); // fired flat, now falling
+  });
+});
+
+describe('chainsaw slot (contract as-is: melee stream)', () => {
+  it('holding fire spawns KNIFE-style blade bullets that die almost immediately (reach, not range)', () => {
+    const game = soloGame();
+    toWeapon(game, 'CHAINSAW');
+    expect(game.playerAmmo()).toBe(200);
+    let shots = 0;
+    game.onShot = (): void => {
+      shots += 1;
+    };
+    const p = game.world.sprites[game.playerIndex]!;
+    p.control = { ...p.control, fire: true, mouseAimX: 100, mouseAimY: 0 };
+    game.tick(TICK_DT);
+    // MELEE_TIMEOUT 1: the blade bullet died DURING its spawn tick (one
+    // collision sweep, then gone) — reach (~29 px), not range.
+    expect(activeBullets(game)).toHaveLength(0);
+    expect(shots).toBe(1);
+    expect(game.playerAmmo()).toBe(199);
+    // The corpse record proves what was fired: a KNIFE-style blade at the
+    // contract speed 8, owned by the chainsaw's weapon num.
+    const corpse = game.world.bullets[1]!;
+    expect(corpse.active).toBe(false);
+    expect(corpse.style).toBe(BulletStyle.KNIFE);
+    const bp = game.world.bulletParts!;
+    expect(Math.hypot(bp.velocityX[1] ?? 0, bp.velocityY[1] ?? 0)).toBeCloseTo(8, 3);
+    // Sustained sawing: fireInterval 2 ⇒ one spawn every other tick, each
+    // costing one fuel round.
+    for (let t = 0; t < 20; t++) game.tick(TICK_DT);
+    expect(game.playerAmmo()).toBeLessThanOrEqual(200 - 10);
+    expect(game.playerAmmo()).toBeGreaterThan(200 - 14);
+  });
+
+  it('sustained contact KILLS: a point-blank enemy dies within a few saw ticks', () => {
+    // Two-sprite game: player + one bot parked in blade reach. (spawnFor
+    // cycles spawns by SPRITE INDEX — the bot is index 2, so its spawn is
+    // spawns[2]; spawns[1] is a decoy slot nothing uses here.)
+    const game = new Game({
+      seed: 5,
+      spawns: [
+        { x: 0, y: 0 },
+        { x: 9999, y: 9999 },
+        { x: 24, y: 0 }, // inside MUZZLE_OFFSET(14) + speed(8) + hitbox(7)
+      ],
+      botCount: 1,
+    });
+    toWeapon(game, 'CHAINSAW');
+    const victim = game.botIndices()[0]!;
+    const startHealth = game.world.sprites[victim]!.health;
+    const p = game.world.sprites[game.playerIndex]!;
+    p.control = { ...p.control, fire: true, mouseAimX: 100, mouseAimY: 0 };
+    for (let t = 0; t < 12; t++) game.tick(TICK_DT);
+    const s = game.world.sprites[victim]!;
+    // Contact damage is 8 * 50 * chest ≈ 400 per blade tick — a contact kill.
+    expect(s.health).toBeLessThan(startHealth);
+    expect(s.deadMeat).toBe(true);
   });
 });

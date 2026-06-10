@@ -206,8 +206,8 @@ disciplined teacher.
 
 ## 4. The wildcard guns
 
-Both wildcards come off the same Pascal weapon contract as the AK; one
-carrier per team, chosen deterministically from the match seed.
+All five wildcards come off the same Pascal weapon contract as the AK;
+one carrier per team, chosen deterministically from the match seed.
 
 **SPAS-12 (shotgun)**: 6 pellets per trigger pull, each its own simulated
 projectile (pellet speed 14 px/tick — they rainbow past ~300 px; damage
@@ -221,13 +221,33 @@ a 19-tick charge-up between trigger pull and shot (release to cancel),
 2.25 s between shots, a 3-round mag, and a 3.5 s reload. Miss and you
 are a long time vulnerable.
 
+**M79 (rocket)**: one slow, arcing 10.7 px/tick rocket that detonates on
+impact. A direct hit is a guaranteed kill; the blast hurts everyone
+within 64 px (250 damage at the epicentre, fading linearly to nothing at
+the rim) — including you, at half strength, with a knockback kick that
+makes Soldat's canon rocket jump work. One round, ~3 s reload: every
+shot is a commitment.
+
+**Ricochet Carbine (ricochet)**: Ruger-class rounds (33 px/tick, 2.49
+hit multiplier) that BOUNCE off walls, floors and platforms — up to four
+ricochets at 75 % speed per bounce, damage intact (distance degradation
+still applies). The tracer shifts colour with every bounce. 6-round mag,
+2 s reload. Bank shots around cover are the whole point.
+
+**Chainsaw (chainsaw)**: no bullets to speak of — a stream of one-tick
+blade strikes (every other tick, ~29 px reach) that kill on contact, fed
+by a 200-round fuel tank (~6.7 s of continuous sawing, 110-tick refuel).
+Useless at range, absolute at arm's length.
+
 Modes (CLI `--wildcard`, URL `?wildcard=`): `chance` (default — 35 %
-seeded roll per match; armed matches pick shotgun or rifle 50/50 from a
-separate hash, so shotgun-era replays stay byte-identical), `shotgun` /
-`rifle` (force), `none` (stock). Spectate URLs without the param stay
-stock so every pre-wildcard watch URL replays byte-identically. Players
-cycle all three weapons any time (`Tab`/`B`); bots keep what they're
-issued — unless their brain is weapon-aware (`weaponOf`).
+seeded roll per match; armed matches pick one of the five weapons evenly
+from a separate hash — the ARMING roll is still the shotgun-era hash, and
+recorded replays carry the resolved weapon, so every old watch URL stays
+byte-identical), a weapon name (force), `none` (stock). Spectate URLs
+without the param stay stock so every pre-wildcard watch URL replays
+byte-identically. Players cycle all six weapons any time (`Tab`/`B`);
+bots keep what they're issued — unless their brain is weapon-aware
+(`weaponOf`).
 
 ---
 

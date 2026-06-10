@@ -41,6 +41,12 @@ export const WeaponIndex = {
   CLUSTERGRENADE: 21,
   CLUSTER: 22,
   THROWNKNIFE: 23,
+  // DESIGN OVERRIDE (no Pascal provenance): the Ricochet Carbine — a NEW gun
+  // for this game, derived from the RUGER77 stat row (same damage/speed/PLAIN
+  // style) plus wall-bounce ballistics implemented in entities/bullet.ts
+  // (the deferred Bullets.pas ricochet impulse, gated on this weapon's num).
+  // Index 24 extends the Pascal 1..23 table; existing indices are untouched.
+  RICOCHET: 24,
 } as const;
 
 // PORT: shared/Weapons.pas:80-87
@@ -87,6 +93,11 @@ export const WeaponNum = {
   CLUSTERGRENADE: 51,
   CLUSTER: 52,
   THROWNKNIFE: 53,
+  // DESIGN OVERRIDE: Num for the new Ricochet Carbine (see WeaponIndex note).
+  // 24 is unused by every Pascal weapon (nums there: 0-16, 30, 50-53, 255), so
+  // no recorded bullet stream can ever carry it — the ricochet branch in
+  // entities/bullet.ts gates on this num and is provably inert for old replays.
+  RICOCHET: 24,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -223,6 +234,8 @@ const BASE: Record<number, { name: string; num: number; clipReload: boolean }> =
   [WeaponIndex.CLUSTERGRENADE]: { name: 'Frag Grenade',  num: WeaponNum.CLUSTERGRENADE, clipReload: false },
   [WeaponIndex.CLUSTER]:        { name: 'Frag Grenade',  num: WeaponNum.CLUSTER,        clipReload: false },
   [WeaponIndex.THROWNKNIFE]:    { name: 'Combat Knife',  num: WeaponNum.THROWNKNIFE,    clipReload: false },
+  // DESIGN OVERRIDE: the new bouncing gun (see WeaponIndex.RICOCHET note).
+  [WeaponIndex.RICOCHET]:       { name: 'Ricochet Carbine', num: WeaponNum.RICOCHET,    clipReload: false },
 };
 
 // Per-weapon stats minus name/num/clipReload (those come from BASE).
@@ -271,6 +284,10 @@ const NORMAL: Record<number, StatRow> = {
   [WeaponIndex.NOWEAPON]: { hitMultiply: f(330), fireInterval: 6, ammo: 1, reloadTime: 3, bulletSpeed: f(5), bulletStyle: BulletStyle.PUNCH, startUpTime: 0, bink: 0, movementAcc: f(0), bulletSpread: f(0), recoil: 0, push: f(0), inheritedVelocity: f(0), modifierHead: f(1.15), modifierChest: f(1), modifierLegs: f(0.9) },
   // Frag grenade — Weapons.pas:858-874
   [WeaponIndex.FRAGGRENADE]: { hitMultiply: f(1500), fireInterval: 80, ammo: 1, reloadTime: 20, bulletSpeed: f(5), bulletStyle: BulletStyle.FRAGNADE, startUpTime: 0, bink: 0, movementAcc: f(0), bulletSpread: f(0), recoil: 0, push: f(0), inheritedVelocity: f(1), modifierHead: f(1), modifierChest: f(1), modifierLegs: f(1) },
+  // Ricochet Carbine — DESIGN OVERRIDE (no Pascal row): the Ruger 77 normal-mode
+  // stats verbatim except ammo 4 → 6 (the spec's mid-size magazine). The bounce
+  // behaviour itself lives in entities/bullet.ts, keyed off WeaponNum.RICOCHET.
+  [WeaponIndex.RICOCHET]: { hitMultiply: f(2.49), fireInterval: 45, ammo: 6, reloadTime: 78, bulletSpeed: f(33), bulletStyle: BulletStyle.PLAIN, startUpTime: 0, bink: 0, movementAcc: f(0.03), bulletSpread: f(0), recoil: 0, push: f(0.012), inheritedVelocity: f(0.5), modifierHead: f(1.2), modifierChest: f(1.05), modifierLegs: f(1) },
 };
 
 // PORT: CreateRealisticWeapons (Weapons.pas:877-1260)
@@ -315,6 +332,9 @@ const REALISTIC: Record<number, StatRow> = {
   [WeaponIndex.NOWEAPON]: { hitMultiply: f(330), fireInterval: 6, ammo: 1, reloadTime: 3, bulletSpeed: f(5), bulletStyle: BulletStyle.PUNCH, startUpTime: 0, bink: 0, movementAcc: f(0.01), bulletSpread: f(0), recoil: 10, push: f(0), inheritedVelocity: f(0), modifierHead: f(1.1), modifierChest: f(1), modifierLegs: f(0.6) },
   // Frag grenade — Weapons.pas:1243-1259
   [WeaponIndex.FRAGGRENADE]: { hitMultiply: f(1500), fireInterval: 80, ammo: 1, reloadTime: 20, bulletSpeed: f(5), bulletStyle: BulletStyle.FRAGNADE, startUpTime: 0, bink: 0, movementAcc: f(0.01), bulletSpread: f(0), recoil: 10, push: f(0), inheritedVelocity: f(1), modifierHead: f(1.1), modifierChest: f(1), modifierLegs: f(0.6) },
+  // Ricochet Carbine — DESIGN OVERRIDE: Ruger 77 realistic-mode stats verbatim
+  // except ammo 4 → 6 (mirrors the NORMAL-table derivation; see that note).
+  [WeaponIndex.RICOCHET]: { hitMultiply: f(2.22), fireInterval: 52, ammo: 6, reloadTime: 104, bulletSpeed: f(33), bulletStyle: BulletStyle.PLAIN, startUpTime: 0, bink: 14, movementAcc: f(0.03), bulletSpread: f(0), recoil: 54, push: f(0.0096), inheritedVelocity: f(0.5), modifierHead: f(1.1), modifierChest: f(1), modifierLegs: f(0.6) },
 };
 
 // PORT: BuildWeapons (Weapons.pas:1339-1350) — derive bullet lifetime from BulletStyle.

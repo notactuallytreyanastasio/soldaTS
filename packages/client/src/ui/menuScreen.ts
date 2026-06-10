@@ -131,6 +131,9 @@ export function showMenuScreen(): void {
     ['chance', 'chance (seeded roll — the default)'],
     ['shotgun', 'shotgun (one SPAS12 carrier per team)'],
     ['rifle', 'rifle (one Barrett carrier per team)'],
+    ['rocket', 'rocket (one M79 launcher per team)'],
+    ['ricochet', 'ricochet (one wall-bouncing carbine per team)'],
+    ['chainsaw', 'chainsaw (one melee saw per team)'],
     ['none', 'none (stock AK74 loadouts)'],
   ] as const) {
     const opt = document.createElement('option');

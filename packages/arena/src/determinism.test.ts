@@ -3,7 +3,11 @@
 // seed) fully determines every replay byte.
 
 import { describe, it, expect } from 'vitest';
-import { rollWildcard, pickWildcardWeapon } from '@soldat/client/headless';
+import {
+  WILDCARD_WEAPONS,
+  rollWildcard,
+  pickWildcardWeapon,
+} from '@soldat/client/headless';
 import { runMatch, type MatchConfig } from './runner';
 import { buildManifest } from './store';
 
@@ -153,7 +157,7 @@ describe('rifle wildcard determinism (Barrett, goal node 382)', () => {
   });
 });
 
-describe("'chance' mode three-way split (none | shotgun | rifle)", () => {
+describe("'chance' mode six-way split (none | the five WILDCARD_WEAPONS)", () => {
   it('resolves to rollWildcard ? pickWildcardWeapon : stock — recorded on the result', () => {
     const expected = rollWildcard(CONFIG.seed)
       ? pickWildcardWeapon(CONFIG.seed)
@@ -162,18 +166,20 @@ describe("'chance' mode three-way split (none | shotgun | rifle)", () => {
     expect(r.wildcard).toBe(expected);
   });
 
-  it('all three outcomes occur across seeds, and both weapons appear among armed ones', () => {
+  it('stock and ALL FIVE weapons occur across seeds', () => {
     const outcomes = new Set<string>();
-    for (let seed = 1; seed <= 120; seed++) {
+    for (let seed = 1; seed <= 400; seed++) {
       outcomes.add(rollWildcard(seed) ? pickWildcardWeapon(seed) : 'none');
     }
-    expect(outcomes).toEqual(new Set(['none', 'shotgun', 'rifle']));
+    expect(outcomes).toEqual(new Set(['none', ...WILDCARD_WEAPONS]));
   });
 
   it("old-seed SHOTGUN replays are safe: forced-'shotgun' resolution and arming are untouched", () => {
     // Recorded chance-era artifacts (manifests + watch URLs) carry the
     // RESOLVED value 'shotgun', never the mode — and forcing 'shotgun' for
     // an old seed reproduces the exact same match as the chance-era run.
+    // (The PICK for an armed seed may differ now that the hash spans five
+    // weapons — by design; nothing recorded ever re-rolls the pick.)
     const forced = runMatch({ ...CONFIG, wildcard: 'shotgun' });
     const again = runMatch({ ...CONFIG, wildcard: 'shotgun' });
     expect(forced.replayJsonl === again.replayJsonl).toBe(true);
@@ -183,6 +189,40 @@ describe("'chance' mode three-way split (none | shotgun | rifle)", () => {
       (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < 35;
     for (let seed = 1; seed <= 300; seed++) {
       expect(rollWildcard(seed)).toBe(legacyRoll(seed));
+    }
+  });
+});
+
+describe('three-gun-era wildcards (rocket | ricochet | chainsaw, goal node 440)', () => {
+  for (const wildcard of ['rocket', 'ricochet', 'chainsaw'] as const) {
+    it(`'${wildcard}': identical config ⇒ byte-identical artifacts`, () => {
+      const a = runMatch({ ...CONFIG, wildcard });
+      const b = runMatch({ ...CONFIG, wildcard });
+      expect(a.replayJsonl === b.replayJsonl).toBe(true);
+      expect(b.events).toEqual(a.events);
+      expect(b.telemetry).toEqual(a.telemetry);
+      expect(b.round).toEqual(a.round);
+      expect(a.wildcard).toBe(wildcard);
+    });
+
+    it(`'${wildcard}' differs from the same seed forced to shotgun (the weapon matters)`, () => {
+      const a = runMatch({ ...CONFIG, wildcard });
+      const b = runMatch({ ...CONFIG, wildcard: 'shotgun' });
+      expect(a.replayJsonl).not.toBe(b.replayJsonl);
+    });
+  }
+
+  it('kill tags come from the six-gun label set (self-kills — rocket jumps gone wrong — stay untagged)', () => {
+    const LABELS = ['AK74', 'SPAS12', 'BARRETT', 'ROCKET', 'RICOCHET', 'CHAINSAW'];
+    for (const wildcard of ['rocket', 'ricochet', 'chainsaw'] as const) {
+      const r = runMatch({ ...CONFIG, wildcard, roundTicks: 3600 });
+      for (const k of r.events.filter((e) => e.type === 'kill')) {
+        if (k.killer > 0 && k.killer !== k.victim) {
+          expect('weapon' in k && LABELS.includes(k.weapon as string)).toBe(true);
+        } else {
+          expect('weapon' in k).toBe(false); // unattributed/self: no tag
+        }
+      }
     }
   });
 });

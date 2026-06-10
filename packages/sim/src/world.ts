@@ -84,6 +84,13 @@ export interface World {
         fatal: boolean,
       ) => void)
     | null;
+  /**
+   * Optional explosion observer: (blast x/y, blast radius) after an explosive
+   * bullet (BulletStyle.M79 — the rocket) detonates. Notification ONLY —
+   * observers must never mutate the world, or determinism dies. Used by the
+   * render client for the cosmetic blast ring/flash; null headlessly.
+   */
+  onBulletExplode: ((x: number, y: number, radius: number) => void) | null;
 }
 
 // --- Sentinel/empty record factories ---------------------------------------
@@ -262,5 +269,6 @@ export function createWorld(): World {
     rng: new Rng(),
     onDamage: null,
     onBulletHit: null,
+    onBulletExplode: null,
   };
 }

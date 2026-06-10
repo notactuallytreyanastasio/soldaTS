@@ -71,6 +71,22 @@ export interface GameTuning {
 // map-distance sniper rifle — reachable via the 'rifle' wildcard or the
 // player's swap key, and exactly as inert as the SPAS when unused.
 //
+// Slot 3 is the M79 rocket launcher (contract M79 row): a slow arcing rocket
+// that detonates on impact — direct hit kills, the blast AoE hits everyone
+// near it including the shooter (rocket jumping). 'rocket' wildcard.
+//
+// Slot 4 is the Ricochet Carbine (new contract row derived from the Ruger 77):
+// PLAIN rounds that BOUNCE off walls/floors/platforms up to four times at 75%
+// energy per bounce (sim ricochetOffMap). 'ricochet' wildcard.
+//
+// Slot 5 is the Chainsaw (contract row, KNIFE style): a melee stream — every
+// other tick a short-lived 8 px/tick blade bullet that dies after one update
+// (MELEE_TIMEOUT 1), giving a ~25-40 px reach and contact kills (8 * 50 *
+// chest = 400 vs 150 hp), fed by a 200-round fuel tank. 'chainsaw' wildcard.
+//
+// All off-slots are equally inert when unused: no rng draw, no sim effect,
+// byte-identical default matches.
+//
 // --- Rocket boots ------------------------------------------------------------
 // This is a VERY vertical game (decision node 94): flying around is the point.
 // A big tank plus on-ground regen means jets gate ENGAGEMENTS (you can't hover
@@ -101,19 +117,42 @@ export const SLOT_AK = 0;
 export const SLOT_SPAS = 1;
 /** Slot 2: the Barrett M82A1 (wildcard carriers / player swap). */
 export const SLOT_BARRETT = 2;
+/** Slot 3: the M79 rocket launcher (wildcard carriers / player swap). */
+export const SLOT_ROCKET = 3;
+/** Slot 4: the Ricochet Carbine (wildcard carriers / player swap). */
+export const SLOT_RICOCHET = 4;
+/** Slot 5: the Chainsaw (wildcard carriers / player swap). */
+export const SLOT_CHAINSAW = 5;
 /** Pellets per SPAS-12 trigger pull. PORT: the Pascal fire path spawns one
  *  bullet per pellet — 6 pellets per shell. */
 export const SPAS_PELLETS = 6;
 /** Kill-feed / HUD weapon labels per slot (kept terse: `Killer [SPAS12] Victim`). */
-export const WEAPON_LABELS: readonly [string, string, string] = ['AK74', 'SPAS12', 'BARRETT'];
+export const WEAPON_LABELS: readonly [string, string, string, string, string, string] = [
+  'AK74',
+  'SPAS12',
+  'BARRETT',
+  'ROCKET',
+  'RICOCHET',
+  'CHAINSAW',
+];
 /** All slots, in swap-cycle order (Tab/B walks this ring). */
-const SLOTS = [SLOT_AK, SLOT_SPAS, SLOT_BARRETT] as const;
+const SLOTS = [
+  SLOT_AK,
+  SLOT_SPAS,
+  SLOT_BARRETT,
+  SLOT_ROCKET,
+  SLOT_RICOCHET,
+  SLOT_CHAINSAW,
+] as const;
 type Slot = (typeof SLOTS)[number];
 /** Contract WeaponIndex per slot (sprite.selWeapon mirrors the active slot). */
-const SLOT_WEAPON_INDEX: readonly [number, number, number] = [
+const SLOT_WEAPON_INDEX: readonly [number, number, number, number, number, number] = [
   WeaponIndex.AK74,
   WeaponIndex.SPAS12,
   WeaponIndex.BARRETT,
+  WeaponIndex.M79,
+  WeaponIndex.RICOCHET,
+  WeaponIndex.CHAINSAW,
 ];
 
 // Barrett gameplay overrides (the SPEC: one-hit-kill, SLOW, map-distance).
@@ -127,6 +166,26 @@ const BARRETT_MAG_STOCK = 3;
 /** Barrett reload at stock tuning: 210 ticks = 3.5 s — the spec's ~3-4 s feel. */
 const BARRETT_RELOAD_STOCK = 210;
 
+// Rocket / Ricochet / Chainsaw stock anchors (the Barrett precedent: where the
+// pure AK-ratio scaling would betray the gun's spec, the stat is an explicit
+// stock-anchored value, still scaled by the variant's own AK ratio so tuned
+// matches move every gun in step).
+/** Rocket reload at stock tuning: the contract's punishing 178 ticks (~3 s)
+ *  kept VERBATIM (the AK-ratio would compress it to 102). */
+const ROCKET_RELOAD_STOCK = 178;
+/** Ricochet magazine at stock tuning: the contract's 6 (AK-ratio gives 5). */
+const RICOCHET_MAG_STOCK = 6;
+/** Ricochet reload at stock tuning: 120 ticks (2 s) — medium, between the
+ *  AK's 95 and the Barrett's 210 (the contract's Ruger-derived 78 scaled by
+ *  the AK ratio would be a 45-tick blink — too forgiving for a bouncer). */
+const RICOCHET_RELOAD_STOCK = 120;
+/** Chainsaw cadence/fuel/reload at stock tuning: the contract row VERBATIM
+ *  (fireInterval 2 / ammo 200 / reload 110) — "the contract as-is". The
+ *  AK-ratio would distort all three (1 / 171 / 63). */
+const CHAINSAW_FIRE_INTERVAL_STOCK = 2;
+const CHAINSAW_MAG_STOCK = 200;
+const CHAINSAW_RELOAD_STOCK = 110;
+
 /** Per-slot effective numbers derived from GameTuning + the weapon contract. */
 interface SlotTuning {
   fireInterval: number;
@@ -134,6 +193,32 @@ interface SlotTuning {
   reloadTicks: number;
   spreadBase: number; // rad — per-shot (per-pellet for the SPAS) angle jitter
 }
+
+/** One SlotTuning per slot, indexed by SLOT_*. */
+type SlotTunings = readonly [
+  SlotTuning,
+  SlotTuning,
+  SlotTuning,
+  SlotTuning,
+  SlotTuning,
+  SlotTuning,
+];
+
+/** One contract Gun per slot, indexed by SLOT_*. */
+type SlotGuns = readonly [Gun, Gun, Gun, Gun, Gun, Gun];
+
+/** Per-slot mutable state arrays (indexed by SLOT_*, then sprite index). */
+type PerSlot<T> = [T, T, T, T, T, T];
+const perSlotArrays = (): PerSlot<number[]> => [[], [], [], [], [], []];
+
+/** Wildcard name → the slot it arms (unknown / undefined = stock loadouts). */
+const WILDCARD_SLOT: Readonly<Record<string, Slot>> = {
+  shotgun: SLOT_SPAS,
+  rifle: SLOT_BARRETT,
+  rocket: SLOT_ROCKET,
+  ricochet: SLOT_RICOCHET,
+  chainsaw: SLOT_CHAINSAW,
+};
 
 /**
  * Derive all weapon slots' numbers from the match tuning.
@@ -166,15 +251,27 @@ interface SlotTuning {
  *   Distance is handled in the sim, not here: Barrett rounds are EXEMPT from
  *   the 500/900 px hitMultiply halving (DEGRADATION_EXEMPT_NUMS, bullet.ts),
  *   so 4.45 holds at any range and the OHK survives a cross-map shot.
+ *
+ * Slot 3 (M79 rocket) keeps the contract's 1-round magazine and scales its
+ * cadence by the AK ratio; the 178-tick reload is a stock-anchored value
+ * (ROCKET_RELOAD_STOCK — the contract number verbatim at stock).
+ * ROCKET KILL MATH: a direct hit is 10.7 * 1550 * chest ≈ 16,585 vs 150 hp —
+ * guaranteed; the blast AoE handles everyone else (sim explodeBullet:
+ * 250 epicentre damage, linear falloff over 64 px, owner at 0.5).
+ *
+ * Slot 4 (Ricochet Carbine) scales cadence from its Ruger-derived contract
+ * row (45 → 27 ticks stock); mag 6 and reload 120 are stock-anchored
+ * (RICOCHET_MAG_STOCK / RICOCHET_RELOAD_STOCK — see their docs).
+ *
+ * Slot 5 (Chainsaw) is the contract row verbatim at stock — fireInterval 2,
+ * fuel 200, reload 110 — via stock anchors (CHAINSAW_*_STOCK).
  */
-function deriveSlotTuning(
-  tuning: GameTuning,
-  ak: Gun,
-  spas: Gun,
-  barrett: Gun,
-): [SlotTuning, SlotTuning, SlotTuning] {
+function deriveSlotTuning(tuning: GameTuning, guns: SlotGuns): SlotTunings {
+  const [ak, spas, barrett, rocket, ricochet] = guns;
   const scale = (stat: number, akStat: number, tunedAk: number): number =>
     Math.max(1, Math.round((stat * tunedAk) / akStat));
+  /** Angular spread from the contract's velocity-perturbation spread model. */
+  const angular = (gun: Gun): number => Math.atan(gun.bulletSpread / gun.bulletSpeed);
   return [
     {
       fireInterval: tuning.fireInterval,
@@ -186,14 +283,36 @@ function deriveSlotTuning(
       fireInterval: scale(spas.fireInterval, ak.fireInterval, tuning.fireInterval),
       magSize: scale(spas.ammo, ak.ammo, tuning.magSize),
       reloadTicks: scale(spas.reloadTime, ak.reloadTime, tuning.reloadTicks),
-      spreadBase: Math.atan(spas.bulletSpread / spas.bulletSpeed),
+      spreadBase: angular(spas),
     },
     {
       fireInterval: scale(barrett.fireInterval, ak.fireInterval, tuning.fireInterval),
       // Gameplay overrides anchored at stock (NOT contract ratios — see doc).
       magSize: scale(BARRETT_MAG_STOCK, DEFAULT_TUNING.magSize, tuning.magSize),
       reloadTicks: scale(BARRETT_RELOAD_STOCK, DEFAULT_TUNING.reloadTicks, tuning.reloadTicks),
-      spreadBase: Math.atan(barrett.bulletSpread / barrett.bulletSpeed), // 0 — a laser
+      spreadBase: angular(barrett), // 0 — a laser
+    },
+    {
+      fireInterval: scale(rocket.fireInterval, ak.fireInterval, tuning.fireInterval),
+      magSize: rocket.ammo, // the contract's single round — never scaled up
+      reloadTicks: scale(ROCKET_RELOAD_STOCK, DEFAULT_TUNING.reloadTicks, tuning.reloadTicks),
+      spreadBase: angular(rocket), // 0 — aim is the skill
+    },
+    {
+      fireInterval: scale(ricochet.fireInterval, ak.fireInterval, tuning.fireInterval),
+      magSize: scale(RICOCHET_MAG_STOCK, DEFAULT_TUNING.magSize, tuning.magSize),
+      reloadTicks: scale(RICOCHET_RELOAD_STOCK, DEFAULT_TUNING.reloadTicks, tuning.reloadTicks),
+      spreadBase: angular(ricochet), // 0 — bank shots want precision
+    },
+    {
+      fireInterval: scale(
+        CHAINSAW_FIRE_INTERVAL_STOCK,
+        DEFAULT_TUNING.fireInterval,
+        tuning.fireInterval,
+      ),
+      magSize: scale(CHAINSAW_MAG_STOCK, DEFAULT_TUNING.magSize, tuning.magSize),
+      reloadTicks: scale(CHAINSAW_RELOAD_STOCK, DEFAULT_TUNING.reloadTicks, tuning.reloadTicks),
+      spreadBase: 0, // a blade has no spread
     },
   ];
 }
@@ -290,10 +409,11 @@ export interface GameOptions {
    *  instantiated (mixed matches: each side's tweaks tracked separately). */
   engineTweaks?: Record<string, Record<string, number>> | undefined;
   /**
-   * Opt-in wildcard ('shotgun' | 'rifle'): exactly one bot per team (one bot
-   * total in FFA) carries the wildcard weapon — SPAS-12 for 'shotgun', Barrett
-   * for 'rifle' — picked deterministically from the match seed via world.rng.
-   * Absent/undefined = stock loadouts, zero rng consumed.
+   * Opt-in wildcard ('shotgun' | 'rifle' | 'rocket' | 'ricochet' |
+   * 'chainsaw'): exactly one bot per team (one bot total in FFA) carries the
+   * wildcard weapon — SPAS-12 / Barrett / M79 rocket launcher / Ricochet
+   * Carbine / Chainsaw respectively — picked deterministically from the match
+   * seed via world.rng. Absent/undefined = stock loadouts, zero rng consumed.
    */
   wildcard?: string | undefined;
 }
@@ -398,28 +518,30 @@ export class Game {
   private readonly bots: BotEntry[] = [];
   /** Bot navigation graph; rebuilt from real map waypoints in spectate mode. */
   private graph: WaypointGraph;
-  /** The guns from the shared weapon contract: [AK74, SPAS12, BARRETT]. */
-  private readonly guns: readonly [Gun, Gun, Gun];
+  /** The guns from the shared weapon contract, indexed by SLOT_*:
+   *  [AK74, SPAS12, BARRETT, M79 rocket, RICOCHET, CHAINSAW]. */
+  private readonly guns: SlotGuns;
   /** Per-slot effective fire/mag/reload/spread numbers (see deriveSlotTuning). */
-  private readonly slotTuning: readonly [SlotTuning, SlotTuning, SlotTuning];
+  private readonly slotTuning: SlotTunings;
   /** Per-sprite active weapon slot (SLOT_AK everywhere by default). */
   private readonly weaponSlot: number[] = [];
   /** Per-sprite previous changeWeapon flag — swap on the rising edge only. */
   private readonly prevChangeWeapon: boolean[] = [];
   /** Wildcard carriers: sprite index → armed slot (survives respawn). */
   private readonly carrierSlot = new Map<number, Slot>();
-  /** The active wildcard ('shotgun' | 'rifle') or undefined (stock loadouts). */
+  /** The active wildcard ('shotgun' | 'rifle' | 'rocket' | 'ricochet' |
+   *  'chainsaw') or undefined (stock loadouts). */
   readonly wildcard: string | undefined;
   /** Per-slot per-sprite next-fire tick (world.mainTickCounter clock). */
-  private readonly nextFireTick: [number[], number[], number[]] = [[], [], []];
+  private readonly nextFireTick: PerSlot<number[]> = perSlotArrays();
   /** Per-sprite respawn countdown (ticks); 0 = alive. */
   private readonly respawnIn: number[] = [];
   /** Per-slot per-sprite rounds left in the magazine. */
-  private readonly ammo: [number[], number[], number[]] = [[], [], []];
+  private readonly ammo: PerSlot<number[]> = perSlotArrays();
   /** Per-slot per-sprite tick the current reload completes (0 = not reloading). */
-  private readonly reloadUntil: [number[], number[], number[]] = [[], [], []];
+  private readonly reloadUntil: PerSlot<number[]> = perSlotArrays();
   /** Per-slot per-sprite spray bloom (radians) — grows firing, decays at rest. */
-  private readonly sprayHeat: [number[], number[], number[]] = [[], [], []];
+  private readonly sprayHeat: PerSlot<number[]> = perSlotArrays();
   /** Per-sprite Barrett charge progress (ticks of fire held while ready);
    *  the shot fires once this reaches the contract startUpTime (19). Releasing
    *  fire mid-charge cancels (reset to 0); swap and respawn also reset. */
@@ -469,13 +591,11 @@ export class Game {
       getGun(WeaponIndex.AK74, false),
       getGun(WeaponIndex.SPAS12, false),
       getGun(WeaponIndex.BARRETT, false),
+      getGun(WeaponIndex.M79, false),
+      getGun(WeaponIndex.RICOCHET, false),
+      getGun(WeaponIndex.CHAINSAW, false),
     ];
-    this.slotTuning = deriveSlotTuning(
-      this.tuning,
-      this.guns[SLOT_AK],
-      this.guns[SLOT_SPAS],
-      this.guns[SLOT_BARRETT],
-    );
+    this.slotTuning = deriveSlotTuning(this.tuning, this.guns);
     this.wildcard = opts.wildcard;
 
     // The brain context: a narrow window onto the world plus the client-owned
@@ -517,19 +637,15 @@ export class Game {
       this.bots.push({ index, brain: engine.createBrain() });
     }
 
-    // Weapon wildcard ('shotgun' → SPAS-12, 'rifle' → Barrett): ONE carrier
+    // Weapon wildcard ('shotgun' → SPAS-12, 'rifle' → Barrett, 'rocket' →
+    // M79, 'ricochet' → Ricochet Carbine, 'chainsaw' → Chainsaw): ONE carrier
     // per team (one total in FFA), picked from the match seed through
     // world.rng — the only randomness source — so the same seed always arms
-    // the same bot. The rng draw ORDER is identical for both wildcards (one
+    // the same bot. The rng draw ORDER is identical for every wildcard (one
     // nextInt per pool), so a given seed arms the same carrier indices
     // whichever weapon rides the wildcard. Skipped entirely (no rng draw)
     // when the wildcard is off: default matches stay byte-identical.
-    const armedSlot: Slot | undefined =
-      this.wildcard === 'shotgun'
-        ? SLOT_SPAS
-        : this.wildcard === 'rifle'
-          ? SLOT_BARRETT
-          : undefined;
+    const armedSlot: Slot | undefined = WILDCARD_SLOT[this.wildcard ?? ''];
     if (armedSlot !== undefined && this.bots.length > 0) {
       const pools: number[][] = this.teamsEnabled
         ? [1, 2].map((team) =>
@@ -553,7 +669,8 @@ export class Game {
     return [...this.carrierSlot.keys()].sort((a, b) => a - b);
   }
 
-  /** Kill-feed/HUD label of `index`'s weapon ('AK74' | 'SPAS12' | 'BARRETT'). */
+  /** Kill-feed/HUD label of `index`'s weapon ('AK74' | 'SPAS12' | 'BARRETT'
+   *  | 'ROCKET' | 'RICOCHET' | 'CHAINSAW'). */
   weaponNameOf(index: number): string {
     return WEAPON_LABELS[this.slotOf(index)];
   }
@@ -730,10 +847,10 @@ export class Game {
     this.barrettCharge[index] = 0;
   }
 
-  /** `index`'s active weapon slot (SLOT_AK | SLOT_SPAS | SLOT_BARRETT). */
+  /** `index`'s active weapon slot (SLOT_AK .. SLOT_CHAINSAW). */
   private slotOf(index: number): Slot {
     const slot = this.weaponSlot[index];
-    return slot === SLOT_SPAS || slot === SLOT_BARRETT ? slot : SLOT_AK;
+    return (SLOTS as readonly number[]).includes(slot ?? -1) ? (slot as Slot) : SLOT_AK;
   }
 
   /** Rounds left in `index`'s CURRENT weapon's magazine (for the HUD). */
@@ -902,7 +1019,8 @@ export class Game {
 
   /**
    * Swap `index`'s weapon on the rising edge of control.changeWeapon, cycling
-   * AK74 → SPAS12 → BARRETT → AK74 (shotgun-era precedent: the player may
+   * AK74 → SPAS12 → BARRETT → ROCKET → RICOCHET → CHAINSAW → AK74 (shotgun-era
+   * precedent: the player may
    * always cycle to every slot regardless of the match's wildcard — bots
    * never raise the flag, so only carriers ever fire the off-slots). Each
    * slot keeps its OWN ammo/cooldown/heat; a swap is never a free reload, and
