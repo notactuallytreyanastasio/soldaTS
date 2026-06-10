@@ -180,8 +180,7 @@ export function showMenuScreen(): void {
     // Mouseover shows the WHOLE doctrine: the ellipsized one-liner unwraps
     // inline (instant, unlike the native title tooltip's hover delay).
     row.addEventListener('mouseenter', () => {
-      row.style.borderColor = '#5a647c';
-      blurb.style.whiteSpace = 'normal';
+      blurb.style.whiteSpace = 'normal'; // gold border via the handler above
     });
     row.addEventListener('mouseleave', () => {
       row.style.borderColor = '#2a2f3a';
