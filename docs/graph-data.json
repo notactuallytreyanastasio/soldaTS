@@ -1682,6 +1682,105 @@
       "created_at": "2026-06-09T20:25:24.311756-04:00",
       "updated_at": "2026-06-09T20:25:24.311756-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"0e1de5b\",\"confidence\":95}"
+    },
+    {
+      "id": 154,
+      "change_id": "52e8434f-c82e-4270-a786-c307be301a51",
+      "node_type": "goal",
+      "title": "Tournament: 4 mixed-AI games, dominance scoring, evolve toward winners + displayed leaderboard + red-vs-blue teams",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:33:52.544457-04:00",
+      "updated_at": "2026-06-09T20:33:52.544457-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"lets make a script that fires up 4 games, each running with a mixture of AIs, and we score which one has the most dominant fighter and then model more after them \\n\\nwe also want to make this have a leaderboard that is displayed\\n\\nwe also want to introduce team dynamics: red team vs blue team\"}"
+    },
+    {
+      "id": 155,
+      "change_id": "c61feadd-7bc9-4d2b-b9ab-dca4144c4602",
+      "node_type": "action",
+      "title": "Implemented teams+leaderboard+tournament",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:42:19.986289-04:00",
+      "updated_at": "2026-06-09T20:42:19.986289-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c28f41\",\"confidence\":90}"
+    },
+    {
+      "id": 156,
+      "change_id": "4fb8e39b-579b-4fab-8dee-0e132eaeefe4",
+      "node_type": "outcome",
+      "title": "Tournament live: pilot crowned (dom 90.5 vs -0.5), evolution rosters 5:1 pilot (408 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:42:20.217764-04:00",
+      "updated_at": "2026-06-09T20:42:20.217764-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"2c28f41\",\"confidence\":95}"
+    },
+    {
+      "id": 157,
+      "change_id": "60a73ba1-7c9e-435b-8c84-e91a76d3f0d9",
+      "node_type": "goal",
+      "title": "Round system: per-game team scoreboards (MVP per team), 10-min round winner (team+AI), unique per-game value tweaks",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:42:50.844728-04:00",
+      "updated_at": "2026-06-09T20:42:50.844728-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"lets do a workflow -- each should have their own scoreboard -- the winningest killer per-team (and we have a red team and a blue team) and if the game goes on for ten minutes the most winning one is determined the winner of that round of games and AI. each game should have unique tweaks to values that seed it differently\"}"
+    },
+    {
+      "id": 158,
+      "change_id": "173baaf8-f7cb-487d-8ad4-dff85a5c0c19",
+      "node_type": "action",
+      "title": "Implement team MVP scoreboards, 10-min rounds, per-game variants",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T20:48:53.567675-04:00",
+      "updated_at": "2026-06-09T20:48:53.567675-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 159,
+      "change_id": "8c68af01-28b2-4ca3-b349-4763ba6911a0",
+      "node_type": "outcome",
+      "title": "Team MVP scoreboards, 10-min timed rounds, and 4 tournament variants shipped — typecheck + 434 tests green, headless round-mode verified",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T21:01:12.183457-04:00",
+      "updated_at": "2026-06-09T21:01:12.183457-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95,\"files\":[\"soldat-ts/packages/client/src/app/game.ts\",\"soldat-ts/packages/client/src/app/main.ts\",\"soldat-ts/packages/client/src/app/tournament.ts\",\"soldat-ts/packages/client/src/ui/leaderboard.ts\",\"soldat-ts/packages/client/src/app/telemetry.ts\",\"soldat-ts/tools/run-tournament.mjs\"]}"
+    },
+    {
+      "id": 160,
+      "change_id": "7ad490fe-a063-4f52-b6d1-84959b6f85f4",
+      "node_type": "outcome",
+      "title": "Round-1 verification PASS: team MVP scoreboard, 10-min timed rounds w/ freeze+banner, 4 named tuning variants, tournament round winner — 434 tests green, headless tournament round completed",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T21:05:23.823900-04:00",
+      "updated_at": "2026-06-09T21:05:23.823900-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 161,
+      "change_id": "76cd9eda-7536-497d-bb82-7db7f18058a6",
+      "node_type": "action",
+      "title": "Whole teams (one engine per team, even split), knob-turn values in UI, gen-seeded next rounds (no roster collapse)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T21:10:51.388864-04:00",
+      "updated_at": "2026-06-09T21:10:51.388864-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90,\"prompt\":\"it appears every player is on pilot -- it should be each team is entirely in one mode with the knob turns and the turns should be shown in the UI\"}"
+    },
+    {
+      "id": 162,
+      "change_id": "ebc03af1-6dd4-4156-b222-2d73675a4afb",
+      "node_type": "outcome",
+      "title": "Round system live: pilot swept 4-0 across all variants; whole teams + knob display verified (438 tests)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-09T21:21:20.039496-04:00",
+      "updated_at": "2026-06-09T21:21:20.039496-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"29eba3e\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -3653,6 +3752,83 @@
       "weight": 1.0,
       "rationale": "Committed as 0e1de5b",
       "created_at": "2026-06-09T20:25:24.449252-04:00"
+    },
+    {
+      "id": 190,
+      "from_node_id": 154,
+      "to_node_id": 155,
+      "from_change_id": "52e8434f-c82e-4270-a786-c307be301a51",
+      "to_change_id": "c61feadd-7bc9-4d2b-b9ab-dca4144c4602",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Implementation committed",
+      "created_at": "2026-06-09T20:42:20.096823-04:00"
+    },
+    {
+      "id": 191,
+      "from_node_id": 155,
+      "to_node_id": 156,
+      "from_change_id": "c61feadd-7bc9-4d2b-b9ab-dca4144c4602",
+      "to_change_id": "4fb8e39b-579b-4fab-8dee-0e132eaeefe4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "First tournament verdict",
+      "created_at": "2026-06-09T20:42:20.325432-04:00"
+    },
+    {
+      "id": 192,
+      "from_node_id": 157,
+      "to_node_id": 158,
+      "from_change_id": "60a73ba1-7c9e-435b-8c84-e91a76d3f0d9",
+      "to_change_id": "173baaf8-f7cb-487d-8ad4-dff85a5c0c19",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation step",
+      "created_at": "2026-06-09T20:49:06.195507-04:00"
+    },
+    {
+      "id": 193,
+      "from_node_id": 158,
+      "to_node_id": 159,
+      "from_change_id": "173baaf8-f7cb-487d-8ad4-dff85a5c0c19",
+      "to_change_id": "8c68af01-28b2-4ca3-b349-4763ba6911a0",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation result",
+      "created_at": "2026-06-09T21:01:16.592832-04:00"
+    },
+    {
+      "id": 194,
+      "from_node_id": 157,
+      "to_node_id": 160,
+      "from_change_id": "60a73ba1-7c9e-435b-8c84-e91a76d3f0d9",
+      "to_change_id": "7ad490fe-a063-4f52-b6d1-84959b6f85f4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "verification of the workflow/scoreboard/rounds/variants implementation",
+      "created_at": "2026-06-09T21:05:28.738831-04:00"
+    },
+    {
+      "id": 195,
+      "from_node_id": 157,
+      "to_node_id": 161,
+      "from_change_id": "60a73ba1-7c9e-435b-8c84-e91a76d3f0d9",
+      "to_change_id": "76cd9eda-7536-497d-bb82-7db7f18058a6",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "User correction during workflow",
+      "created_at": "2026-06-09T21:10:51.504983-04:00"
+    },
+    {
+      "id": 196,
+      "from_node_id": 161,
+      "to_node_id": 162,
+      "from_change_id": "76cd9eda-7536-497d-bb82-7db7f18058a6",
+      "to_change_id": "ebc03af1-6dd4-4156-b222-2d73675a4afb",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "Workflow + correction pass committed as 29eba3e",
+      "created_at": "2026-06-09T21:21:34.201970-04:00"
     }
   ]
 }

@@ -1,5 +1,21 @@
 [
   {
+    "hash": "29eba3e6aa0a85537df32034754c3355406aca71",
+    "short_hash": "29eba3e",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T21:21:19-04:00",
+    "message": "feat: round system — team MVP scoreboards, 10-min round winners, knob variants shown in UI\n\nROUNDS: team matches end after 10 sim-minutes (?round=SECS overrides):\nGame freezes (tick no-ops; UI/telemetry keep serving the final state), a\n56px RED WINS / BLUE WINS / DRAW banner names the winning team AND its\nengine, verdict = kills then total dominance then draw (pure\ndecideRoundWinner, tested). Telemetry dump().round carries the verdict.\n\nPER-GAME TEAM SCOREBOARD: top-center panel in every team match — RED and\nBLUE kill totals plus each team's winningest killer (MVP), live.\n\nKNOB VARIANTS, SHOWN: GameTuning instance values (defaults = the old\nconstants exactly; ?play byte-identical) with 4 named variants — baseline /\nhigh-octane / thin-air / marksman. The actual knob TURNS are spelled out in\nthe UI (banner: 'fire 6->4 · reload 95->70 · ...'; tournament sidebar per\ngame) and recorded in telemetry meta.\n\nWHOLE TEAMS (user correction): in team matches each team is ENTIRELY one\nengine, split evenly — a lopsided roster can never produce 1v5 'everyone is\non pilot'. Next round (N / printed URL) keeps the same whole teams on FRESH\ngeneration-derived seeds instead of evolving rosters toward the winner;\nthe round champion across games = engine with most game wins (dominance\ntiebreak). tools/run-tournament.mjs round mode waits for all 4 verdicts.\n\nLive 20s-round tournament: pilot swept 4-0 across all four variants.\n438 tests green (multi-agent workflow + correction pass).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 12
+  },
+  {
+    "hash": "2c28f418b77b69d40a2de648af07e89a32211887",
+    "short_hash": "2c28f41",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:42:19-04:00",
+    "message": "feat: teams + displayed leaderboard + 4-game tournament with evolution\n\nTEAMS (red vs blue): Sprite.team in the sim — findTarget skips teammates\n(the deferred AI.pas team refinement) and bullets pass through the owner's\nteammates (friendly fire off). Mixed-engine matches auto-team BY ENGINE\n(red = group 0, blue = group 1 — engine warfare); uniform matches alternate\nwith ?teams. Gostek tinting reads the real team; persists across respawns;\nhot-swap re-teams.\n\nLEADERBOARD (displayed): live top-left K/D ranking of every fighter with\nteam dots and engine tags, ranked by dominance (kills - deaths/2); L\ntoggles.\n\nTOURNAMENT (?tournament + tools/run-tournament.mjs): 4 simultaneous\nmixed-AI team games on DISTINCT seeds (the sim is deterministic — same\nseed = same match), aggregated sidebar standings (per-engine totals, crowned\ndominant, top fighters across games), and an evolutionary next round:\nrosters re-weighted by dominance, every engine keeps >= 1 slot. N key or\nthe printed command starts round 2.\n\nFirst live run (90s x 4 games): pilot crowned 124K/67D dom=90.5 vs classic\n62K/125D dom=-0.5; all top-10 fighters were pilots; evolved roster 5:1\npilot. 408 tests green (12 new).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 12
+  },
+  {
     "hash": "77b5ed64fe890e17d045ab2b72c0215a069ac2c0",
     "short_hash": "77b5ed6",
     "author": "Robert Grayson",
