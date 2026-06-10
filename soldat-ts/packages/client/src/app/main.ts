@@ -28,7 +28,7 @@ import { InputController } from '../input/input';
 import { Hud, type HudState, type HudScores } from '../ui/hud';
 import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
 import { START_HEALTH } from '../ui/helpers';
-import { Crosshair } from '../render/fx';
+import { BloodFx, Crosshair } from '../render/fx';
 import { buildTexturedMap } from '../render/mapTextured';
 import { AudioEngine } from '../audio/audio';
 import { SoundManager } from '../audio/soundManager';
@@ -726,6 +726,16 @@ async function main(): Promise<void> {
     console.warn('textured Gostek unavailable, using vector figures:', err);
   });
 
+  // --- Blood: cosmetic droplet bursts on bullet impacts ------------------
+  // Driven by the sim's onBulletHit observer (notification only — the hook is
+  // null in headless/arena runs, so replay determinism is untouched). Lives in
+  // the world container ABOVE the entity layer so wounds read over the bodies.
+  const blood = new BloodFx();
+  renderer.world.addChild(blood.gfx);
+  game.world.onBulletHit = (_victim, x, y, vx, vy, damage, fatal): void => {
+    blood.spawnHit(x, y, vx, vy, damage, fatal);
+  };
+
   // Crosshair at the aim point (in the world container, follows the camera).
   // Spectators don't aim — hide it entirely in spectate mode.
   const crosshair = new Crosshair();
@@ -1046,6 +1056,10 @@ async function main(): Promise<void> {
 
     // 4. Render entities, interpolated between ticks by the leftover fraction.
     entityRenderer.render(game.world, game.framePercent);
+
+    // Blood droplets advance on the render clock (visual only, no sim state).
+    blood.update(dt);
+    blood.draw();
 
     // 5. Camera: follow the player, or (spectate) the director's pick of the
     //    most interesting bot.

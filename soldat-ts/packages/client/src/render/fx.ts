@@ -205,3 +205,165 @@ export function drawMuzzleFlash(
   // Hot core blob at the muzzle.
   g.circle(x, y, r * 0.7).fill({ color: FLASH_CORE, alpha: 0.85 * t });
 }
+
+// ---------------------------------------------------------------------------
+// Blood — cosmetic droplet bursts when a bullet lands on a soldier.
+//
+// In OpenSoldat blood IS the spark system (Bullets.pas sprite-hit calls
+// CreateSpark with the blood styles, count scaled by damage). The faithful
+// sim-side port would have to draw randomness, so here the burst lives purely
+// in the render layer: driven by the world.onBulletHit observer, simulated
+// with Math.random (visual only — the sim never sees these particles), and
+// integrated against the render clock. Zero effect on determinism.
+// ---------------------------------------------------------------------------
+
+/** One blood droplet (world units; velocities are world units per SECOND). */
+export interface BloodParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  /** Seconds of life remaining (alpha fades as life → 0). */
+  life: number;
+  /** Initial life (the fade reference). */
+  maxLife: number;
+  /** Droplet radius (world units). */
+  r: number;
+  /** Fill color (one of BLOOD_COLORS). */
+  color: number;
+}
+
+/** Downward pull on droplets (world units / s²) — sim gravity is ~216 u/s². */
+export const BLOOD_GRAVITY = 320;
+/** Dark-to-bright reds; each droplet picks one so the spray has depth. */
+const BLOOD_COLORS: readonly number[] = [0x8c0a0a, 0xb01414, 0xd02020, 0x6e0606];
+/** Hard cap on live droplets (oldest are dropped first). */
+const MAX_BLOOD_PARTICLES = 900;
+/** Half-angle (rad) of the forward spray cone around the bullet direction. */
+const SPRAY_CONE = 0.85;
+
+/**
+ * Build the droplet burst for one bullet impact at (x, y). `dirX/dirY` is the
+ * bullet's travel velocity (only its direction matters); `damage` scales the
+ * droplet count the way the Pascal hit code scales its CreateSpark count, and
+ * a `fatal` hit roughly doubles the burst with bigger, longer-lived droplets.
+ *
+ * Pure (randomness injected via `rand`) so the burst shape is unit-testable.
+ */
+export function spawnBloodBurst(
+  x: number,
+  y: number,
+  dirX: number,
+  dirY: number,
+  damage: number,
+  fatal: boolean,
+  rand: () => number = Math.random,
+): BloodParticle[] {
+  // Direction of travel; a (near-)stationary hit sprays in a full circle.
+  const speed = Math.hypot(dirX, dirY);
+  const hasDir = speed >= MIN_SPEED;
+  const baseAng = hasDir ? Math.atan2(dirY, dirX) : 0;
+
+  // Count scales with damage (AK body hits land ~30-60): 8..22, x2 on a kill.
+  let count = Math.round(8 + Math.min(damage, 80) * 0.18);
+  if (fatal) count = Math.round(count * 2.2);
+
+  const sizeBoost = fatal ? 1.45 : 1;
+  const out: BloodParticle[] = [];
+  for (let i = 0; i < count; i++) {
+    // Most droplets carry on along the bullet's travel; roughly a quarter
+    // splash BACK out of the entry side, slower.
+    const backsplash = hasDir && rand() < 0.25;
+    const ang = hasDir
+      ? baseAng + (backsplash ? Math.PI : 0) + (rand() * 2 - 1) * SPRAY_CONE
+      : rand() * Math.PI * 2;
+    const v = (backsplash ? 30 : 60) + rand() * (backsplash ? 90 : 220);
+    const life = (fatal ? 0.55 : 0.4) + rand() * 0.5;
+    out.push({
+      x,
+      y,
+      vx: Math.cos(ang) * v,
+      vy: Math.sin(ang) * v - (20 + rand() * 40), // slight upward kick
+      life,
+      maxLife: life,
+      r: (1.4 + rand() * 1.8) * sizeBoost,
+      color: BLOOD_COLORS[Math.floor(rand() * BLOOD_COLORS.length)] ?? 0xb01414,
+    });
+  }
+  // A short-lived central splash so the impact reads at spectator zoom.
+  const splashes = fatal ? 3 : 2;
+  for (let i = 0; i < splashes; i++) {
+    const life = 0.14 + rand() * 0.12;
+    out.push({
+      x,
+      y,
+      vx: (rand() * 2 - 1) * 30,
+      vy: (rand() * 2 - 1) * 30,
+      life,
+      maxLife: life,
+      r: (3.2 + rand() * 2.2) * sizeBoost,
+      color: BLOOD_COLORS[1] ?? 0xb01414,
+    });
+  }
+  return out;
+}
+
+/**
+ * Advance droplets by `dt` seconds IN PLACE (gravity + integration + life
+ * countdown) and compact away the expired ones (swap-pop; order not kept).
+ * Pure array math — exported for tests.
+ */
+export function updateBloodParticles(parts: BloodParticle[], dt: number): void {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    if (p === undefined) continue;
+    p.life -= dt;
+    if (p.life <= 0) {
+      const last = parts[parts.length - 1];
+      if (last !== undefined) parts[i] = last;
+      parts.pop();
+      continue;
+    }
+    p.vy += BLOOD_GRAVITY * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+  }
+}
+
+/**
+ * The client's blood layer: collects bursts from bullet-hit events, advances
+ * them on the render clock, and redraws into its own Graphics each frame.
+ * Add {@link gfx} to the camera/world container (world-space coordinates).
+ */
+export class BloodFx {
+  /** Draw target — add to the renderer's world container. */
+  readonly gfx: Graphics = new Graphics();
+
+  private readonly parts: BloodParticle[] = [];
+
+  /** Spawn a burst for one bullet impact (see {@link spawnBloodBurst}). */
+  spawnHit(x: number, y: number, dirX: number, dirY: number, damage: number, fatal: boolean): void {
+    const burst = spawnBloodBurst(x, y, dirX, dirY, damage, fatal);
+    // Cap the pool: drop the OLDEST droplets to make room for the new burst.
+    const overflow = this.parts.length + burst.length - MAX_BLOOD_PARTICLES;
+    if (overflow > 0) this.parts.splice(0, overflow);
+    this.parts.push(...burst);
+  }
+
+  /** Advance all droplets by `dt` seconds (call once per rendered frame). */
+  update(dt: number): void {
+    // Clamp: a background-tab stall must not teleport droplets off-screen.
+    updateBloodParticles(this.parts, dt > 0 && dt < 0.1 ? dt : 1 / 60);
+  }
+
+  /** Redraw every live droplet (alpha fades out over the last 60% of life). */
+  draw(): void {
+    const g = this.gfx;
+    g.clear();
+    for (const p of this.parts) {
+      const t = p.life / p.maxLife;
+      const alpha = 0.95 * (t > 0.6 ? 1 : t / 0.6);
+      g.circle(p.x, p.y, p.r).fill({ color: p.color, alpha });
+    }
+  }
+}

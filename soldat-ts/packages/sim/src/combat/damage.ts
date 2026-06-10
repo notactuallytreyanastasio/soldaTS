@@ -111,7 +111,25 @@ export function applyBulletDamage(
   // Amount := Speed * HitMultiply * HitboxModifier   (Bullets.pas:1628-1630)
   const amount = f(f(speed * bullet.hitMultiply) * modifier);
 
-  return applyHealthHit(world, spriteIndex, amount, bulletIndex);
+  const wasDead = sprite.deadMeat;
+  const hm = applyHealthHit(world, spriteIndex, amount, bulletIndex);
+
+  // GLUE: bullet-impact observer (cosmetic blood FX) — notification only,
+  // after the damage landed. The bullet particle was moved to the exact hit
+  // point by updateBullet before this call, so its position IS the wound.
+  if (world.onBulletHit !== null && bp !== null) {
+    world.onBulletHit(
+      spriteIndex,
+      bp.posX[bullet.num] ?? 0,
+      bp.posY[bullet.num] ?? 0,
+      velocity.x,
+      velocity.y,
+      hm,
+      !wasDead && sprite.deadMeat,
+    );
+  }
+
+  return hm;
 }
 
 /**

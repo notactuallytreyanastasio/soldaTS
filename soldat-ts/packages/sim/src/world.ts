@@ -67,6 +67,23 @@ export interface World {
    * never mutate the world, or determinism dies. Used by match telemetry.
    */
   onDamage: ((victim: number, attacker: number, amount: number) => void) | null;
+  /**
+   * Optional bullet-impact observer: (victim, hit point x/y, bullet velocity
+   * vx/vy, damage dealt, fatal) after a bullet body hit lands. Notification
+   * ONLY — observers must never mutate the world, or determinism dies. Used by
+   * the render client for cosmetic blood FX; null headlessly.
+   */
+  onBulletHit:
+    | ((
+        victim: number,
+        x: number,
+        y: number,
+        vx: number,
+        vy: number,
+        damage: number,
+        fatal: boolean,
+      ) => void)
+    | null;
 }
 
 // --- Sentinel/empty record factories ---------------------------------------
@@ -244,5 +261,6 @@ export function createWorld(): World {
     thingParts: null,
     rng: new Rng(),
     onDamage: null,
+    onBulletHit: null,
   };
 }

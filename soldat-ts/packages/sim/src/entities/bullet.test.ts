@@ -267,3 +267,60 @@ describe('applyBulletDamage', () => {
     expect(victim.health).toBeLessThan(1);
   });
 });
+
+describe('applyBulletDamage — onBulletHit observer (cosmetic blood FX hook)', () => {
+  function hitSetup(health: number) {
+    const { world, bulletParts } = freshWorld();
+    const victim = world.sprites[2]!;
+    victim.active = true;
+    victim.health = health;
+    const i = spawnBullet(world, {
+      pos: { x: 40, y: 60 }, // updateBullet moves the bullet to the hit point;
+      velocity: { x: 20, y: 0 }, // here the spawn pos stands in for it.
+      owner: 1,
+      hitMultiply: 1.5,
+      gun: PLAIN_GUN,
+    });
+    const num = world.bullets[i]!.num;
+    bulletParts.velocityX[num] = 20;
+    bulletParts.velocityY[num] = 0;
+    return { world, i };
+  }
+
+  it('reports victim, hit point, bullet velocity, damage and fatal=false', () => {
+    const { world, i } = hitSetup(150);
+    const calls: unknown[][] = [];
+    world.onBulletHit = (...args): void => {
+      calls.push(args);
+    };
+    const hm = applyBulletDamage(world, i, 2, 10, PLAIN_GUN);
+    expect(calls).toHaveLength(1);
+    const [victim, x, y, vx, vy, damage, fatal] = calls[0] as number[];
+    expect(victim).toBe(2);
+    expect(x).toBe(40);
+    expect(y).toBe(60);
+    expect(vx).toBeCloseTo(20, 4);
+    expect(vy).toBeCloseTo(0, 4);
+    expect(damage).toBeCloseTo(hm, 6);
+    expect(fatal).toBe(false);
+  });
+
+  it('flags fatal=true exactly on the killing hit', () => {
+    const { world, i } = hitSetup(10); // any torso hit kills
+    const fatals: boolean[] = [];
+    world.onBulletHit = (_v, _x, _y, _vx, _vy, _dmg, fatal): void => {
+      fatals.push(fatal);
+    };
+    applyBulletDamage(world, i, 2, 10, PLAIN_GUN);
+    expect(fatals).toEqual([true]);
+    // A hit on the already-dead body is NOT fatal again.
+    applyBulletDamage(world, i, 2, 10, PLAIN_GUN);
+    expect(fatals).toEqual([true, false]);
+  });
+
+  it('is a no-op when the hook is null (headless determinism path)', () => {
+    const { world, i } = hitSetup(150);
+    expect(world.onBulletHit).toBeNull();
+    expect(() => applyBulletDamage(world, i, 2, 10, PLAIN_GUN)).not.toThrow();
+  });
+});
