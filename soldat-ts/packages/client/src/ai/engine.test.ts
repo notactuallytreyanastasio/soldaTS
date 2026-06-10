@@ -8,9 +8,10 @@ import { Game } from '../app/game';
 import { ARENA_SPAWNS } from '../app/arena';
 
 describe('engine registry', () => {
-  it('registers classic and pilot', () => {
+  it('registers classic, pilot, and reaper', () => {
     expect(engineIds()).toContain('classic');
     expect(engineIds()).toContain('pilot');
+    expect(engineIds()).toContain('reaper');
   });
 
   it('resolves engines by id and falls back to classic on unknown ids', () => {
@@ -21,7 +22,7 @@ describe('engine registry', () => {
   });
 });
 
-describe.each(['classic', 'pilot'] as const)(
+describe.each(['classic', 'pilot', 'reaper'] as const)(
   'spectate match under the %s engine',
   (engine) => {
     it('sustains kills and respawns over 6000 ticks', () => {

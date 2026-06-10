@@ -5,8 +5,10 @@
 import { registerEngine } from './engine';
 import { createClassicEngine } from './classic';
 import { createPilotEngine } from './pilot';
+import { createReaperEngine } from './reaper';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
+registerEngine('reaper', createReaperEngine);
 
 export * from './engine';
