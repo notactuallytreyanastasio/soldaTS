@@ -1,5 +1,13 @@
 [
   {
+    "hash": "235a0885aaf8016599fdf32b4452887fddfa6afa",
+    "short_hash": "235a088",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T22:36:27-04:00",
+    "message": "feat(ai): third engine — reaper, the dive brawler built to counter pilot\n\nPilot wins by holding a 200-420px range band with a height edge. Reaper\ndenies the band: relentless gap-close with an rng-jittered run-in, approach\nABOVE the target and cut jets to FALL onto it (gravity is the best juke),\nknife-range commitment (full-auto inside 180px, push THROUGH the target,\nreload only on a dry mag), 5s hunt memory, same ceiling-stall give-up as\npilot.\n\nTuned against live tournament telemetry in one iteration: v1 held fire\nunder 320px and ate free tap-bursts on the run-in — pilot swept 4-0\n(84K/53D). v2 returns fire from 460px, approaches at 200px height (above\npilot's preferred edge), commits at 180px: round went 3-1 with one game\nDECIDED ON TIEBREAK (16-16), two others by 2 kills, and reaper WON the\nmarksman variant 13-11. The meta has its first real rivalry.\n\nreaper registers like any engine: ?ai=reaper, ?duel=pilot,reaper,\n?tournament&ai=pilot,reaper, E-cycle. 439 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "29eba3e6aa0a85537df32034754c3355406aca71",
     "short_hash": "29eba3e",
     "author": "Robert Grayson",
