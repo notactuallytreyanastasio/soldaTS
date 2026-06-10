@@ -7,6 +7,8 @@ import { createEngine, resolveTweaks } from './index';
 import { CLASSIC_DEFAULTS } from './classic';
 import { PILOT_DEFAULTS } from './pilot';
 import { REAPER_DEFAULTS } from './reaper';
+import { MATADOR_DEFAULTS } from './matador';
+import { KESTREL_DEFAULTS } from './kestrel';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -85,6 +87,62 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
 
   it('CLASSIC_DEFAULTS', () => {
     expect(CLASSIC_DEFAULTS).toEqual({ ACCURACY: 9 });
+  });
+
+  it('MATADOR_DEFAULTS', () => {
+    expect(MATADOR_DEFAULTS).toEqual({
+      POKE_MIN: 380,
+      POKE_MAX: 520,
+      FIRE_MAX_DIST: 620,
+      AUTO_RANGE: 230,
+      WINDOW_AUTO: 620,
+      PUNISH_RANGE: 120,
+      LOW_MAG_OPEN: 4,
+      WINDOW_HUNT: 760,
+      STALK_MAG: 11,
+      STALK_DIST: 250,
+      SELF_RELOAD_AT: 9,
+      VEL_EMA: 1,
+      LEVEL_BAND: 50,
+      HEIGHT_CAP: 200,
+      FUEL_RESERVE: 110,
+      FUEL_PUNISH_MIN: 40,
+      JUKE_MIN_TICKS: 14,
+      JUKE_VAR_TICKS: 22,
+      BURST_PERIOD: 12,
+      BURST_OPEN: 4,
+      HUNT_MEMORY_TICKS: 240,
+      STALL_RISE_VY: -0.1,
+      STALL_TRIGGER: 25,
+      STALL_COOLDOWN: 180,
+    });
+  });
+
+  it('KESTREL_DEFAULTS', () => {
+    expect(KESTREL_DEFAULTS).toEqual({
+      BAND_MIN: 240,
+      BAND_MAX: 430,
+      FIRE_MAX_DIST: 600,
+      APPROACH_FIRE_DIST: 460,
+      KNIFE_DIST: 170,
+      TAP_PERIOD: 7,
+      TAP_OPEN: 2,
+      EMA_ALPHA: 0.15,
+      DROP_G: 0.135,
+      BOB_UP_TICKS: 12,
+      BOB_DOWN_MIN: 18,
+      BOB_DOWN_VAR: 14,
+      DODGE_HORIZON: 26,
+      DANGER_RADIUS: 56,
+      DODGE_COMMIT: 6,
+      HEIGHT_SLACK: 110,
+      FUEL_FLOOR: 80,
+      RELOAD_LOW: 6,
+      HUNT_MEMORY_TICKS: 240,
+      STALL_RISE_VY: -0.1,
+      STALL_TRIGGER: 25,
+      STALL_COOLDOWN: 180,
+    });
   });
 });
 

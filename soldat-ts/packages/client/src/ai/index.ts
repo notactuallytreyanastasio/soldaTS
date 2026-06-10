@@ -6,12 +6,18 @@ import { registerEngine } from './engine';
 import { createClassicEngine } from './classic';
 import { createPilotEngine } from './pilot';
 import { createReaperEngine } from './reaper';
+import { createMatadorEngine } from './matador';
+import { createKestrelEngine } from './kestrel';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
 registerEngine('reaper', createReaperEngine);
+registerEngine('matador', createMatadorEngine);
+registerEngine('kestrel', createKestrelEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
 export { PILOT_DEFAULTS, type PilotConfig } from './pilot';
 export { REAPER_DEFAULTS, type ReaperConfig } from './reaper';
+export { MATADOR_DEFAULTS, type MatadorConfig } from './matador';
+export { KESTREL_DEFAULTS, type KestrelConfig } from './kestrel';

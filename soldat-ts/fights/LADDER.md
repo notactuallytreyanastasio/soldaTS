@@ -7,14 +7,19 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
-**VEGA** — `fights/vega.json` (pilot: RANGE_MAX 360, HEIGHT_EDGE_MIN 80,
-FUEL_RESERVE 160)
+**FALCONER** — `fights/falconer.json` (kestrel: TAP_PERIOD 6, TAP_OPEN 1,
+BAND_MIN 320, FIRE_MAX_DIST 620). Fifth doctrine: the wind-hover marksman —
+plant to shoot (movement spread is a tax), bob in the untaxed vertical axis,
+dodge only bullets that will actually pass close, lead with smoothed
+velocity and the TRUE 0.135 bullet drop.
 
 ## Fight record
 
 | Date | Challenger | Champion | Result | Arena | Dataset |
 |------|-----------|----------|--------|-------|---------|
 | 2026-06-10 | OKONKWO (reaper, match-4 closer config) | VEGA (pilot, session shape) | **VEGA 3–0** | #7 | `20260610-044923-VEGA-pilot-vs-OKONKWO-reaper` |
+| 2026-06-10 | FALCONER (kestrel, factory defaults) | VEGA (pilot, session shape) | **VEGA 3–0** | #23 | `20260610-052212-FALCONER-kestrel-vs-VEGA-pilot` |
+| 2026-06-10 | FALCONER (kestrel, cooldown-locked taps + vertical dodge) | VEGA (pilot, session shape) | **FALCONER 2–0** (1 draw) | #31 | `20260610-052555-FALCONER-kestrel-vs-VEGA-pilot` |
 
 ## Coaching-session archive
 

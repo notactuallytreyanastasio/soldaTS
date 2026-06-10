@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "FALCONER",
+  "engine": "kestrel",
+  "tweaks": { "TAP_PERIOD": 6, "TAP_OPEN": 1, "BAND_MIN": 320, "FIRE_MAX_DIST": 620 },
+  "rationale": "Series-1 fix: tap clock locked to the 6-tick cooldown (full auto rate at zero bloom — taps were giving up 15% volume), band floor at 320 so the duel settles at the far edge of pilot's full-auto band, and the dodge rewritten vertical-first so 30 incoming bullets/s can't tax the plant with horizontal steps."
+}
