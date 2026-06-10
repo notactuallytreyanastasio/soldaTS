@@ -8,13 +8,14 @@ export declare function parseTeams(teamsOpt: string | undefined, positionals: re
 /** `['RANGE_MAX=500', ...]` → `{RANGE_MAX: 500, ...}`; throws on malformed. */
 export declare function parseTweaks(list: readonly string[] | undefined): Record<string, number>;
 /** Known opt-in wildcards (the match-rule mutators a run may arm). */
-export declare const WILDCARDS: readonly ["shotgun"];
+export declare const WILDCARDS: readonly ["shotgun", "rifle"];
 /** Wildcard MODES a run may request: a specific wildcard forced on every
  *  match, 'none' (stock), or 'chance' — each match rolls the seeded chance
- *  (client wildcardChance.ts) so ALL games may incorporate shotgun play. */
-export declare const WILDCARD_MODES: readonly ["shotgun", "none", "chance"];
+ *  (client wildcardChance.ts: 35% armed, then shotgun-or-rifle 50/50 from a
+ *  separate seeded hash) so ALL games may incorporate wildcard play. */
+export declare const WILDCARD_MODES: readonly ["shotgun", "rifle", "none", "chance"];
 /** Validate --wildcard; absent defaults to 'chance' (every run gets a shot
- *  at shotgun play — pass --wildcard none for guaranteed-stock runs). */
+ *  at wildcard play — pass --wildcard none for guaranteed-stock runs). */
 export declare function parseWildcard(raw: string | undefined): string;
 export interface SweepSpec {
     team: 'a' | 'b';

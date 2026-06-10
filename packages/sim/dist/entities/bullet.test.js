@@ -14,8 +14,8 @@ import { createWorld } from '../world';
 import { ParticleSystem } from '../physics/particles';
 import { buildPolyMap } from '../map/buildPolyMap';
 import { spawnBullet, updateBullet, configureBulletParts, BULLET_GRAVITY, } from './bullet';
-import { BulletStyle } from '../weapons/guns';
-import { applyBulletDamage } from '../combat/damage';
+import { BulletStyle, getGun, WeaponIndex } from '../weapons/guns';
+import { applyBulletDamage, STARTHEALTH } from '../combat/damage';
 // A plain rifle-like gun stat block satisfying the BulletGun/GunModifiers contract.
 const PLAIN_GUN = {
     timeout: 420,
@@ -286,6 +286,130 @@ describe('applyBulletDamage — onBulletHit observer (cosmetic blood FX hook)', 
         const { world, i } = hitSetup(150);
         expect(world.onBulletHit).toBeNull();
         expect(() => applyBulletDamage(world, i, 2, 10, PLAIN_GUN)).not.toThrow();
+    });
+});
+// ---------------------------------------------------------------------------
+// Barrett (goal node 382): distance-degradation exemption + one-hit kill.
+//
+// The Pascal degradation rule (Bullets.pas:638-665) halves hitMultiply past
+// 500 px and again past 900 px — but EXEMPTS BARRETT/M79/KNIFE/LAW by weapon
+// num. These tests prove the port's exemption with the REAL contract gun
+// (getGun(WeaponIndex.BARRETT)): a Barrett round keeps its full 4.45 across
+// the map, and a torso hit one-shots a full-health (150 hp) soldier at point
+// blank AND past 900 px. AK rounds still degrade exactly as before.
+//
+// OHK math: damage = |v| * hitMultiply * modifierChest = 55 * 4.45 * 1.0
+//         = 244.75 >= 150 (minimum hitMultiply for OHK at speed 55: 150/55
+//         ≈ 2.73 — the contract's 4.45 clears it with 63% margin).
+// Gravity is zeroed test-locally so the flight path is exactly horizontal;
+// the exemption itself is a pure function of travel distance, not gravity.
+// ---------------------------------------------------------------------------
+const BARRETT_GUN = getGun(WeaponIndex.BARRETT, false);
+function sniperWorld(victimX) {
+    const { world, bulletParts } = freshWorld();
+    bulletParts.gravity = 0; // flat flight for exact distances (test-local)
+    if (victimX !== undefined) {
+        const spriteParts = new ParticleSystem();
+        world.spriteParts = spriteParts;
+        spriteParts.createPart({ x: victimX, y: 0 }, { x: 0, y: 0 }, 1, 2);
+        const victim = world.sprites[2];
+        victim.active = true;
+        victim.num = 2;
+        victim.health = STARTHEALTH;
+        victim.deadMeat = false;
+    }
+    return { world, bulletParts };
+}
+function fireBarrett(world) {
+    return spawnBullet(world, {
+        pos: { x: 0, y: 0 },
+        velocity: { x: BARRETT_GUN.bulletSpeed, y: 0 }, // 55 px/tick, horizontal
+        owner: 1,
+        hitMultiply: BARRETT_GUN.hitMultiply, // contract 4.45
+        gun: BARRETT_GUN,
+    });
+}
+describe('Barrett distance-degradation exemption (DEGRADATION_EXEMPT_NUMS)', () => {
+    it('keeps full hitMultiply past 500 AND 900 px (degradeCount stays 0)', () => {
+        const { world, bulletParts } = sniperWorld();
+        const i = fireBarrett(world);
+        const num = world.bullets[i].num;
+        for (let t = 0; t < 24; t++) {
+            // 24 ticks * 55 = 1320 px — past both thresholds
+            bulletParts.doEulerTimeStepFor(num);
+            updateBullet(world, i, BARRETT_GUN);
+        }
+        const b = world.bullets[i];
+        expect(b.active).toBe(true);
+        expect(bulletParts.posX[num]).toBeGreaterThan(900);
+        expect(b.degradeCount).toBe(0);
+        expect(b.hitMultiply).toBeCloseTo(BARRETT_GUN.hitMultiply, 6);
+    });
+    it('control: an AK74 round still degrades (x0.5 past 500, x0.25 past 900)', () => {
+        const { world, bulletParts } = sniperWorld();
+        const i = spawnBullet(world, {
+            pos: { x: 0, y: 0 },
+            velocity: { x: 55, y: 0 }, // same trajectory, non-exempt num 3
+            owner: 1,
+            hitMultiply: PLAIN_GUN.hitMultiply,
+            gun: PLAIN_GUN,
+        });
+        const num = world.bullets[i].num;
+        for (let t = 0; t < 24; t++) {
+            bulletParts.doEulerTimeStepFor(num);
+            updateBullet(world, i, PLAIN_GUN);
+        }
+        const b = world.bullets[i];
+        expect(b.degradeCount).toBe(2);
+        expect(b.hitMultiply).toBeCloseTo(PLAIN_GUN.hitMultiply * 0.25, 6);
+    });
+    it('one-hit-kills a full-health soldier at point blank (torso)', () => {
+        const { world, bulletParts } = sniperWorld(60);
+        const i = fireBarrett(world);
+        const num = world.bullets[i].num;
+        for (let t = 0; t < 5 && world.bullets[i].active; t++) {
+            bulletParts.doEulerTimeStepFor(num);
+            updateBullet(world, i, BARRETT_GUN);
+        }
+        const victim = world.sprites[2];
+        expect(world.bullets[i].active).toBe(false); // round spent on the hit
+        expect(victim.deadMeat).toBe(true);
+        expect(victim.health).toBeLessThan(1); // 150 - 244.75
+    });
+    it('one-hit-kills at 935 px — the exemption preserves the OHK cross-map', () => {
+        const { world, bulletParts } = sniperWorld(935);
+        const i = fireBarrett(world);
+        const num = world.bullets[i].num;
+        let hitTick = -1;
+        for (let t = 0; t < 30 && world.bullets[i].active; t++) {
+            bulletParts.doEulerTimeStepFor(num);
+            updateBullet(world, i, BARRETT_GUN);
+            hitTick = t;
+        }
+        const victim = world.sprites[2];
+        expect(world.bullets[i].active).toBe(false);
+        expect(hitTick).toBeGreaterThan(12); // travelled > 700 px before impact
+        expect(victim.deadMeat).toBe(true);
+        expect(victim.health).toBeLessThan(1);
+    });
+    it('control: the same AK74 shot at 935 px does NOT one-hit-kill', () => {
+        const { world, bulletParts } = sniperWorld(935);
+        const i = spawnBullet(world, {
+            pos: { x: 0, y: 0 },
+            velocity: { x: 55, y: 0 },
+            owner: 1,
+            hitMultiply: PLAIN_GUN.hitMultiply,
+            gun: PLAIN_GUN,
+        });
+        const num = world.bullets[i].num;
+        for (let t = 0; t < 30 && world.bullets[i].active; t++) {
+            bulletParts.doEulerTimeStepFor(num);
+            updateBullet(world, i, PLAIN_GUN);
+        }
+        const victim = world.sprites[2];
+        // Degraded: 55 * (1.004 * 0.5) * 0.95 ≈ 26.2 — a scratch, not a kill.
+        expect(victim.deadMeat).toBe(false);
+        expect(victim.health).toBeGreaterThan(100);
     });
 });
 //# sourceMappingURL=bullet.test.js.map

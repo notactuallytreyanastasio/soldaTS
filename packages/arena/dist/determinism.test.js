@@ -2,7 +2,7 @@
 // This is the dataset's reproducibility guarantee — a manifest (config +
 // seed) fully determines every replay byte.
 import { describe, it, expect } from 'vitest';
-import { rollWildcard } from '@soldat/client/headless';
+import { rollWildcard, pickWildcardWeapon } from '@soldat/client/headless';
 import { runMatch } from './runner';
 import { buildManifest } from './store';
 const CONFIG = {
@@ -93,6 +93,74 @@ describe("'chance' wildcard mode (all games get a shot at shotgun play)", () => 
         const a = runMatch(CONFIG);
         const b = runMatch({ ...CONFIG, wildcard: 'none' });
         expect(a.replayJsonl === b.replayJsonl).toBe(true);
+    });
+});
+describe('rifle wildcard determinism (Barrett, goal node 382)', () => {
+    const RIFLE = { ...CONFIG, wildcard: 'rifle' };
+    it('identical rifle config ⇒ byte-identical artifacts', () => {
+        const a = runMatch(RIFLE);
+        const b = runMatch(RIFLE);
+        expect(a.replayJsonl === b.replayJsonl).toBe(true);
+        expect(b.events).toEqual(a.events);
+        expect(b.telemetry).toEqual(a.telemetry);
+        expect(b.round).toEqual(a.round);
+    });
+    it('a rifle match differs from the same seed forced to shotgun (the weapon matters)', () => {
+        const a = runMatch(RIFLE);
+        const b = runMatch({ ...CONFIG, wildcard: 'shotgun' });
+        expect(a.replayJsonl).not.toBe(b.replayJsonl);
+    });
+    it('rifle kills carry weapon tags from the three-gun label set', () => {
+        const r = runMatch({ ...RIFLE, roundTicks: 3600 });
+        expect(r.wildcard).toBe('rifle');
+        const kills = r.events.filter((e) => e.type === 'kill' && e.killer > 0);
+        for (const k of kills) {
+            expect('weapon' in k && ['AK74', 'SPAS12', 'BARRETT'].includes(k.weapon)).toBe(true);
+        }
+    });
+    it("the manifest records 'rifle' (run-level and per match)", () => {
+        const results = [runMatch(RIFLE)];
+        const base = {
+            runId: 'rifle-test',
+            teams: RIFLE.teams,
+            results,
+            variantName: 'baseline',
+            botCount: 4,
+            roundTicks: 600,
+            maxTicks: 1200,
+        };
+        expect(buildManifest({ ...base, wildcard: 'rifle' }).wildcard).toBe('rifle');
+        expect(buildManifest({ ...base, wildcard: 'rifle' }).matches[0]?.wildcard).toBe('rifle');
+    });
+});
+describe("'chance' mode three-way split (none | shotgun | rifle)", () => {
+    it('resolves to rollWildcard ? pickWildcardWeapon : stock — recorded on the result', () => {
+        const expected = rollWildcard(CONFIG.seed)
+            ? pickWildcardWeapon(CONFIG.seed)
+            : null;
+        const r = runMatch({ ...CONFIG, wildcard: 'chance' });
+        expect(r.wildcard).toBe(expected);
+    });
+    it('all three outcomes occur across seeds, and both weapons appear among armed ones', () => {
+        const outcomes = new Set();
+        for (let seed = 1; seed <= 120; seed++) {
+            outcomes.add(rollWildcard(seed) ? pickWildcardWeapon(seed) : 'none');
+        }
+        expect(outcomes).toEqual(new Set(['none', 'shotgun', 'rifle']));
+    });
+    it("old-seed SHOTGUN replays are safe: forced-'shotgun' resolution and arming are untouched", () => {
+        // Recorded chance-era artifacts (manifests + watch URLs) carry the
+        // RESOLVED value 'shotgun', never the mode — and forcing 'shotgun' for
+        // an old seed reproduces the exact same match as the chance-era run.
+        const forced = runMatch({ ...CONFIG, wildcard: 'shotgun' });
+        const again = runMatch({ ...CONFIG, wildcard: 'shotgun' });
+        expect(forced.replayJsonl === again.replayJsonl).toBe(true);
+        expect(forced.wildcard).toBe('shotgun');
+        // And the arming hash itself is the shotgun-era one (pinned inline).
+        const legacyRoll = (seed) => (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < 35;
+        for (let seed = 1; seed <= 300; seed++) {
+            expect(rollWildcard(seed)).toBe(legacyRoll(seed));
+        }
     });
 });
 //# sourceMappingURL=determinism.test.js.map

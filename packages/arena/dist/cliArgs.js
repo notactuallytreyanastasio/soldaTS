@@ -52,13 +52,14 @@ export function parseTweaks(list) {
     return out;
 }
 /** Known opt-in wildcards (the match-rule mutators a run may arm). */
-export const WILDCARDS = ['shotgun'];
+export const WILDCARDS = ['shotgun', 'rifle'];
 /** Wildcard MODES a run may request: a specific wildcard forced on every
  *  match, 'none' (stock), or 'chance' — each match rolls the seeded chance
- *  (client wildcardChance.ts) so ALL games may incorporate shotgun play. */
+ *  (client wildcardChance.ts: 35% armed, then shotgun-or-rifle 50/50 from a
+ *  separate seeded hash) so ALL games may incorporate wildcard play. */
 export const WILDCARD_MODES = [...WILDCARDS, 'none', 'chance'];
 /** Validate --wildcard; absent defaults to 'chance' (every run gets a shot
- *  at shotgun play — pass --wildcard none for guaranteed-stock runs). */
+ *  at wildcard play — pass --wildcard none for guaranteed-stock runs). */
 export function parseWildcard(raw) {
     if (raw === undefined)
         return 'chance';

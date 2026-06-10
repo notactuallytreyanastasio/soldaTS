@@ -8,6 +8,16 @@ export declare const PART_RADIUS: 7;
 export declare const SPRITE_RADIUS: 16;
 export declare const FLAME_UPWARD_FORCE: number;
 /**
+ * Weapons whose bullets are EXEMPT from distance degradation.
+ * PORT: shared/mechanics/Bullets.pas:638-643 — the degradation branch runs only
+ * when `OwnerWeapon` is none of Guns[BARRETT/M79/KNIFE/LAW].Num. Matched by the
+ * bullet's `ownerWeapon` (== Gun.Num), so a BARRETT round keeps its full
+ * HitMultiply past 500/900 px — the map-distance one-hit-kill survives.
+ * No behaviour change for any other weapon (AK74 num 3 / SPAS12 num 5 still
+ * degrade exactly as before; the other exempt nums have no shipped gun yet).
+ */
+export declare const DEGRADATION_EXEMPT_NUMS: ReadonlySet<number>;
+/**
  * The slice of the SHARED WEAPON CONTRACT `Gun` that bullet spawn/update need.
  * A resolved `Gun` from Track A's `getGun(...)` satisfies this structurally.
  */

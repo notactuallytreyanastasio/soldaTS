@@ -37,7 +37,7 @@ import { applyBulletDamage } from '../combat/damage';
 // BulletStyle + bullet-lifetime constants are owned by ../weapons/guns (single
 // source of truth, ported from Weapons.pas/Constants.pas). Imported for internal
 // use here — re-exported by the package barrel from guns, not from this module.
-import { BulletStyle, BULLET_TIMEOUT, GRENADE_TIMEOUT, M2BULLET_TIMEOUT, FLAMER_TIMEOUT, } from '../weapons/guns';
+import { BulletStyle, WeaponNum, BULLET_TIMEOUT, GRENADE_TIMEOUT, M2BULLET_TIMEOUT, FLAMER_TIMEOUT, } from '../weapons/guns';
 // ---------------------------------------------------------------------------
 // Constants — PORT: shared/Constants.pas / shared/Weapons.pas
 // ---------------------------------------------------------------------------
@@ -51,6 +51,21 @@ export const PART_RADIUS = 7;
 export const SPRITE_RADIUS = 16;
 // PORT: shared/mechanics/Bullets.pas:725 — flame upward force per tick.
 export const FLAME_UPWARD_FORCE = f(-0.15);
+/**
+ * Weapons whose bullets are EXEMPT from distance degradation.
+ * PORT: shared/mechanics/Bullets.pas:638-643 — the degradation branch runs only
+ * when `OwnerWeapon` is none of Guns[BARRETT/M79/KNIFE/LAW].Num. Matched by the
+ * bullet's `ownerWeapon` (== Gun.Num), so a BARRETT round keeps its full
+ * HitMultiply past 500/900 px — the map-distance one-hit-kill survives.
+ * No behaviour change for any other weapon (AK74 num 3 / SPAS12 num 5 still
+ * degrade exactly as before; the other exempt nums have no shipped gun yet).
+ */
+export const DEGRADATION_EXEMPT_NUMS = new Set([
+    WeaponNum.BARRETT,
+    WeaponNum.M79,
+    WeaponNum.KNIFE,
+    WeaponNum.LAW,
+]);
 // ---------------------------------------------------------------------------
 // BulletParts configuration
 // ---------------------------------------------------------------------------
@@ -378,9 +393,10 @@ export function updateBullet(world, bulletIndex, gun) {
         return;
     }
     // (6) distance degradation (Bullets.pas:638-665). Excludes BARRETT/M79/KNIFE/
-    // LAW by weapon num; without those nums wired here we apply the generic rule
-    // (the exclusion is a // TODO once Track A's WeaponIndex nums are available).
-    if (bullet.timeOut % 6 === 0) {
+    // LAW by weapon num (DEGRADATION_EXEMPT_NUMS) — ownerWeapon carries Gun.Num,
+    // so the exclusion is wired exactly as the Pascal `OwnerWeapon <> Guns[...].Num`
+    // chain. Non-exempt bullets run the unchanged generic rule.
+    if (bullet.timeOut % 6 === 0 && !DEGRADATION_EXEMPT_NUMS.has(bullet.ownerWeapon)) {
         const initial = bullet.initial;
         const pos = { x: bp.posX[bullet.num] ?? 0, y: bp.posY[bullet.num] ?? 0 };
         const dist = vec2Length(vec2Sub(initial, pos));

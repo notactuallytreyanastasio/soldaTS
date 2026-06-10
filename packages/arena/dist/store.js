@@ -62,7 +62,7 @@ export function buildManifest(args) {
             wildcard: r.wildcard ?? null,
             files: {
                 replay: `match-${i + 1}.replay.jsonl.gz`,
-                telemetry: `match-${i + 1}.telemetry.json`,
+                telemetry: `match-${i + 1}.telemetry.json.gz`,
                 events: `match-${i + 1}.events.jsonl.gz`,
             },
         })),
@@ -164,7 +164,9 @@ export function writeRun(baseDir, runId, manifest, results) {
     results.forEach((r, i) => {
         const n = i + 1;
         fs.writeFileSync(path.join(dir, `match-${n}.replay.jsonl.gz`), zlib.gzipSync(Buffer.from(r.replayJsonl)));
-        fs.writeFileSync(path.join(dir, `match-${n}.telemetry.json`), JSON.stringify(r.telemetry, null, 2));
+        // Telemetry gzips too (~8:1) — it was 29% of corpus bytes as raw JSON.
+        // Readers resolve names via the manifest and sniff the gzip magic.
+        fs.writeFileSync(path.join(dir, `match-${n}.telemetry.json.gz`), zlib.gzipSync(Buffer.from(JSON.stringify(r.telemetry, null, 2))));
         // Events gzip too — every post-game JSONL artifact is compressed (the
         // manifest's files[] entries are the source of truth for exact names).
         fs.writeFileSync(path.join(dir, `match-${n}.events.jsonl.gz`), zlib.gzipSync(Buffer.from(eventsToJsonl(r.events))));

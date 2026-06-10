@@ -1,42 +1,26 @@
-[arena-live] WARN: unreadable JSON datasets/LIVE.json: ENOENT: no such file or directory, open '/Users/robertgrayson/code/soldat_remastered/soldat/datasets/LIVE.json'
-2026-06-10T16:49:47.819Z rebuilt (startup) in 211ms — 0 fights, 30 graph nodes, 1 warnings
-2026-06-10T16:49:47.819Z Arena Live serving http://localhost:8901/  (pid 8192)
-2026-06-10T16:49:52.774Z rebuilt (inputs changed) in 161ms — 1 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:49:57.769Z rebuilt (inputs changed) in 155ms — 1 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:02.788Z rebuilt (inputs changed) in 173ms — 4 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:07.790Z rebuilt (inputs changed) in 173ms — 7 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:12.799Z rebuilt (inputs changed) in 182ms — 10 fights, 30 graph nodes, 0 warnings
-[arena-live] WARN: unreadable JSON datasets/20260610-165017-classic-vs-angler/manifest.json: ENOENT: no such file or directory, open '/Users/robertgrayson/code/soldat_remastered/soldat/datasets/20260610-165017-classic-vs-angler/manifest.json'
-[arena-live] WARN: unreadable JSON datasets/20260610-165017-classic-vs-angler/summary.json: ENOENT: no such file or directory, open '/Users/robertgrayson/code/soldat_remastered/soldat/datasets/20260610-165017-classic-vs-angler/summary.json'
-[arena-live] WARN: dataset 20260610-165017-classic-vs-angler: missing/bad manifest.json — skipped
-2026-06-10T16:50:17.796Z rebuilt (inputs changed) in 177ms — 12 fights, 30 graph nodes, 3 warnings
-2026-06-10T16:50:22.813Z rebuilt (inputs changed) in 193ms — 16 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:27.818Z rebuilt (inputs changed) in 197ms — 19 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:32.824Z rebuilt (inputs changed) in 202ms — 22 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:37.829Z rebuilt (inputs changed) in 205ms — 25 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:42.843Z rebuilt (inputs changed) in 219ms — 28 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:47.844Z rebuilt (inputs changed) in 219ms — 31 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:52.847Z rebuilt (inputs changed) in 220ms — 34 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:50:57.949Z rebuilt (inputs changed) in 320ms — 37 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:02.879Z rebuilt (inputs changed) in 249ms — 40 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:07.873Z rebuilt (inputs changed) in 242ms — 43 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:12.889Z rebuilt (inputs changed) in 257ms — 46 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:17.897Z rebuilt (inputs changed) in 264ms — 50 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:22.901Z rebuilt (inputs changed) in 267ms — 53 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:27.897Z rebuilt (inputs changed) in 262ms — 56 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:32.906Z rebuilt (inputs changed) in 270ms — 59 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:37.911Z rebuilt (inputs changed) in 274ms — 62 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:42.925Z rebuilt (inputs changed) in 287ms — 65 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:47.925Z rebuilt (inputs changed) in 284ms — 68 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:52.982Z rebuilt (inputs changed) in 340ms — 71 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:51:57.977Z rebuilt (inputs changed) in 334ms — 74 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:02.963Z rebuilt (inputs changed) in 319ms — 76 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:07.956Z rebuilt (inputs changed) in 311ms — 79 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:12.959Z rebuilt (inputs changed) in 313ms — 82 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:17.972Z rebuilt (inputs changed) in 324ms — 85 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:22.966Z rebuilt (inputs changed) in 318ms — 88 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:27.983Z rebuilt (inputs changed) in 333ms — 90 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:32.964Z rebuilt (inputs changed) in 313ms — 92 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:52:42.979Z rebuilt (inputs changed) in 327ms — 92 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:53:17.985Z rebuilt (inputs changed) in 325ms — 92 fights, 30 graph nodes, 0 warnings
-2026-06-10T16:53:23.009Z rebuilt (inputs changed) in 339ms — 92 fights, 30 graph nodes, 0 warnings
+2026-06-10T18:51:51.137Z Arena Live serving http://localhost:8901/  (pid 22193)
+2026-06-10T18:52:00.574Z rebuilt (startup) in 9570ms — 1730 fights, 13 cards, 21 board rows, 415 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:52:10.877Z rebuilt (inputs changed) in 9624ms — 1737 fights, 13 cards, 21 board rows, 417 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:52:21.065Z rebuilt (inputs changed) in 9816ms — 1745 fights, 13 cards, 21 board rows, 417 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:52:31.124Z rebuilt (inputs changed) in 9821ms — 1750 fights, 13 cards, 21 board rows, 419 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:52:46.471Z rebuilt (inputs changed) in 10109ms — 1761 fights, 13 cards, 21 board rows, 421 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:53:01.831Z rebuilt (inputs changed) in 10459ms — 1771 fights, 13 cards, 21 board rows, 421 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:53:16.493Z rebuilt (inputs changed) in 10136ms — 1782 fights, 13 cards, 21 board rows, 423 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:53:31.522Z rebuilt (inputs changed) in 10165ms — 1792 fights, 13 cards, 21 board rows, 424 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:53:46.478Z rebuilt (inputs changed) in 10120ms — 1803 fights, 13 cards, 21 board rows, 424 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:54:01.978Z rebuilt (inputs changed) in 10589ms — 1812 fights, 13 cards, 21 board rows, 424 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:54:16.481Z rebuilt (inputs changed) in 10112ms — 1823 fights, 13 cards, 21 board rows, 425 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:54:33.274Z rebuilt (inputs changed) in 11893ms — 1833 fights, 13 cards, 21 board rows, 425 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:54:47.131Z rebuilt (inputs changed) in 10740ms — 1844 fights, 13 cards, 21 board rows, 425 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:55:02.512Z rebuilt (inputs changed) in 11107ms — 1853 fights, 13 cards, 21 board rows, 425 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:55:17.445Z rebuilt (inputs changed) in 11058ms — 1865 fights, 13 cards, 21 board rows, 426 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:55:32.025Z rebuilt (inputs changed) in 10634ms — 1875 fights, 13 cards, 21 board rows, 426 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:55:49.664Z rebuilt (inputs changed) in 13251ms — 1886 fights, 13 cards, 21 board rows, 426 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:56:02.950Z rebuilt (inputs changed) in 11554ms — 1895 fights, 13 cards, 21 board rows, 426 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:56:20.465Z rebuilt (inputs changed) in 14048ms — 1906 fights, 13 cards, 21 board rows, 426 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:56:36.035Z rebuilt (inputs changed) in 14631ms — 1914 fights, 13 cards, 21 board rows, 427 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:56:50.060Z rebuilt (inputs changed) in 13655ms — 1925 fights, 13 cards, 21 board rows, 430 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:57:04.571Z rebuilt (inputs changed) in 13162ms — 1934 fights, 13 cards, 21 board rows, 431 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:57:19.046Z rebuilt (inputs changed) in 12617ms — 1946 fights, 13 cards, 21 board rows, 433 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:57:33.702Z rebuilt (inputs changed) in 12267ms — 1956 fights, 13 cards, 21 board rows, 435 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
+2026-06-10T18:57:48.795Z rebuilt (inputs changed) in 12374ms — 1968 fights, 13 cards, 21 board rows, 436 rank snapshots, 17 doctrines, 30 graph nodes, 0 warnings
