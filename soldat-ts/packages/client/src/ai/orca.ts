@@ -98,6 +98,7 @@ export type OrcaConfig = {
   SPAS_FIRE_MAX: number;
   SPAS_AUTO: number;
   SPAS_STALK: number;
+  FAN_RESPECT: number;
   EMA_ALPHA: number;
   DROP_G: number;
   TAP_PERIOD: number;
@@ -143,6 +144,8 @@ export const ORCA_DEFAULTS: Readonly<OrcaConfig> = {
   SPAS_FIRE_MAX: 480, // px — own-SPAS: beyond this the pellets are halved rainbow, hold
   SPAS_AUTO: 300, // px — own-SPAS: full pulls inside the fan's kill envelope
   SPAS_STALK: 260, // px — own-SPAS standoff: live at the envelope's edge, not the AK band
+  FAN_RESPECT: 360, // px — an ARMED enemy fan inside this overrides the prey: open
+  // range and hose the carrier (the silent dive killed the v2 spar's shotgun games)
   EMA_ALPHA: 0.2, // per-tick velocity smoothing — bobbers and jukers average to center
   DROP_G: 0.135, // px/tick² — TRUE bullet gravity (GRAV 0.06 × 2.25)
   TAP_PERIOD: 6, // ticks — tap clock locked to the fire cooldown
@@ -221,6 +224,41 @@ class OrcaBrain implements BotBrain {
   /** Pillar 6: the hardware check (absent host context = everyone on AK74). */
   private holdsSpas(idx: number, ctx: BotEngineContext): boolean {
     return ctx.weaponOf?.(idx) === 'SPAS12';
+  }
+
+  /** Nearest ARMED enemy SPAS carrier with line of sight inside FAN_RESPECT —
+   *  the one threat that outranks the shared prey. A carrier mid-reload or
+   *  dry is just a target; one with shells is a dive about to happen. */
+  private fanThreat(botIndex: number, ctx: BotEngineContext): number {
+    const { world } = ctx;
+    const cfg = this.cfg;
+    const self = world.sprites[botIndex];
+    const parts = world.spriteParts;
+    if (self === undefined || parts === null) return 0;
+    const px = parts.posX[botIndex] ?? 0;
+    const py = parts.posY[botIndex] ?? 0;
+    const respectSq = cfg.FAN_RESPECT * cfg.FAN_RESPECT;
+    let best = 0;
+    let bestD = Infinity;
+    for (let e = 1; e < world.sprites.length; e++) {
+      if (e === botIndex) continue;
+      const o = world.sprites[e];
+      if (o === undefined || !o.active || o.deadMeat) continue;
+      if (self.team > 0 && o.team === self.team) continue;
+      if (o.alpha !== 255 && o.holdedThing === 0) continue;
+      if (!this.holdsSpas(e, ctx)) continue;
+      if (ctx.reloadingOf(e) || ctx.ammoOf(e) <= 0) continue;
+      const ex = parts.posX[e] ?? 0;
+      const ey = parts.posY[e] ?? 0;
+      const dx = ex - px;
+      const dy = ey - py;
+      const d = dx * dx + dy * dy;
+      if (d > respectSq || d >= bestD) continue;
+      if (!hasLineOfSight(world, { x: px, y: py }, { x: ex, y: ey })) continue;
+      bestD = d;
+      best = e;
+    }
+    return best;
   }
 
   /** Band motion: plant-and-bob by default (vertical is the untaxed axis);
@@ -304,9 +342,12 @@ class OrcaBrain implements BotBrain {
 
     let open = 0; // best disarmed prey (tier 0)
     let openD = Infinity;
-    let fallback = 0; // best by health (tier 1)
+    let fallback = 0; // best by health IN REACH (tier 1)
     let fbHealth = Infinity;
     let fbD = Infinity;
+    let far = 0; // best by health beyond reach (tier 2 — never chase a
+    let farHealth = Infinity; // withdrawn anchor past healthy guns)
+    let farD = Infinity;
     for (let e = 1; e < world.sprites.length; e++) {
       if (e === botIndex) continue;
       const o = world.sprites[e];
@@ -337,13 +378,22 @@ class OrcaBrain implements BotBrain {
         openD = d;
         open = e;
       }
-      if (o.health < fbHealth || (o.health === fbHealth && d < fbD)) {
-        fbHealth = o.health;
-        fbD = d;
-        fallback = e;
+      if (d <= reachSq) {
+        if (o.health < fbHealth || (o.health === fbHealth && d < fbD)) {
+          fbHealth = o.health;
+          fbD = d;
+          fallback = e;
+        }
+      } else if (o.health < farHealth || (o.health === farHealth && d < farD)) {
+        farHealth = o.health;
+        farD = d;
+        far = e;
       }
     }
-    return open > 0 ? open : fallback;
+    // A wounded enemy parked beyond the fight (the hydra's anchor, the
+    // cuadrilla's reserve) cannot drag the pod past healthy guns.
+    if (open > 0) return open;
+    return fallback > 0 ? fallback : far;
   }
 
   /** Centroid of living enemies, or null when none remain. */
@@ -652,15 +702,18 @@ class OrcaBrain implements BotBrain {
     const ammo = ctx.ammoOf(botIndex);
     const reloading = ctx.reloadingOf(botIndex);
     if (!reloading && ammo === 0) c.reload = true;
-    if (
-      !reloading &&
-      ammo > 0 &&
-      ammo <= cfg.SELF_RELOAD_AT &&
-      !windowOpen &&
-      !stalking &&
-      dist > cfg.POKE_MIN
-    ) {
-      c.reload = true;
+    if (!reloading && ammo > 0 && ammo <= cfg.SELF_RELOAD_AT && !windowOpen && !stalking && dist > cfg.POKE_MIN) {
+      // Safe means safe from EVERYONE: a pack that hunts reload windows
+      // (ours is not the only one anymore) watches all six mags — never
+      // open a window with any enemy gun inside the band.
+      const nearest = findTarget(world, botIndex);
+      let nearestDist = Infinity;
+      if (nearest > 0) {
+        const nx = parts.posX[nearest] ?? 0;
+        const ny = parts.posY[nearest] ?? 0;
+        nearestDist = Math.hypot(nx - px, ny - py);
+      }
+      if (nearestDist > cfg.POKE_MIN) c.reload = true;
     }
 
     if (reloading) {
@@ -673,15 +726,40 @@ class OrcaBrain implements BotBrain {
       return;
     }
 
+    // THE FAN COMES FIRST: an armed enemy SPAS inside FAN_RESPECT outranks
+    // the shared prey — it has to close to its kill envelope to matter, so
+    // back away from IT (not the prey) and hose it on the way in.
+    if (!meSpas) {
+      const fan = this.fanThreat(botIndex, ctx);
+      if (fan > 0) {
+        const fx = parts.posX[fan] ?? 0;
+        if (fx > px) c.left = true;
+        else c.right = true;
+        if (
+          (parts.posY[fan] ?? 0) < py - cfg.LEVEL_BAND &&
+          s.jetsCount > cfg.FUEL_PUNISH_MIN &&
+          clock >= this.noClimbUntil
+        ) {
+          c.jetpack = true; // the dive comes from above — don't sit under it
+        }
+        this.aimAndFire(botIndex, fan, ctx, cfg.FIRE_MAX_DIST, cfg.AUTO_RANGE);
+        return;
+      }
+    }
+
     // --- Movement -----------------------------------------------------------
     if (meSpas) {
       // OWN-SPAS: the AK band wastes the fan. Live at the envelope's edge —
       // close to SPAS_STALK regardless of their mag, bob there, fire inside
       // the kill envelope only. The pod's AK guns keep the band honest.
-      if (dist > cfg.SPAS_STALK) {
+      // When a window opens, the carrier IS the wave: six shells into a gun
+      // that cannot answer is the best trade on the field.
+      const diving = inWave && !preySpas;
+      const spasStop = diving ? cfg.PUNISH_RANGE : cfg.SPAS_STALK;
+      if (dist > spasStop) {
         if (dx > 0) c.right = true;
         else c.left = true;
-      } else {
+      } else if (!diving) {
         this.bandMotion(botIndex, ctx);
       }
       if (

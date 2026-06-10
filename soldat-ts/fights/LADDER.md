@@ -7,6 +7,23 @@ file with the result, the dataset path, and their card.
 
 ## 🏆 Current champion
 
+**BLACKFISH** — `fights/blackfish.json` (orca, EMA_ALPHA 1). Eleventh
+doctrine: the pod hunts the gap — the same family as the cuadrilla (pack
+selection keyed on the enemy's mag clock) but faster and harder to read.
+The shared prey is recomputed EVERY TICK, stateless, so the pod turns onto
+a reload the tick it starts (a 30-tick bull clock donates half a second of
+free convergence per window); the band guns PLANT and bob instead of
+juking (movement spread is a tax — the spar showed slot-juking donates the
+long trade); it is weapon-aware both ways (a SPAS prey is only "open"
+while actually reloading, an armed enemy fan inside 360px outranks the
+shared prey, an orca the wildcard arms dives reload windows with pellet
+ballistics); the health fallback never chases a withdrawn reserve; and
+reloads only happen when safe from EVERY gun, not just the prey's. Took
+the belt 3–0 with the champion's own sweep finding (EMA_ALPHA 1) turned
+against it — its crew-wide passes outran a smoothed lead.
+
+## Previous champions
+
 **BELMONTE** — `fights/belmonte.json` (cuadrilla, EMA_ALPHA 1). Tenth
 doctrine: the bullfighter's crew — a matador never works alone. One bull
 picked by MAG STATE (a disarmed enemy beats a merely wounded one; in a
@@ -19,8 +36,6 @@ withdrawn anchors — fight the fronts 3v2. EMA_ALPHA swept 0.15/0.4/0.7/1
 across the field: instantaneous lead won every matchup. Spar record en
 route to the belt: 9–0 LERNA, 8–1 AKELA (two arenas), 7–1 VERONICA, 8–1
 BLACKFISH, 9–0 FALCONER.
-
-## Previous champions
 
 **FALCONER** — `fights/falconer-shrike.json` (shrike v3, factory defaults).
 Ninth doctrine, the first weapon-aware brain, rebuilt on a controlled A/B
@@ -66,6 +81,7 @@ one 3v1.
 | 2026-06-10 | LERNA (hydra, factory defaults) | AKELA (wolf, factory defaults) | **LERNA 2–1** (40–34, 34–34 dom, 34–35) | #53 | `20260610-062053-LERNA-hydra-vs-AKELA-wolf` |
 | 2026-06-10 | FALCONER (shrike v3, hardware-gated roles) | LERNA (hydra, factory defaults) | **FALCONER 3–0** (28–22 ×3) | #73 | `20260610-142049-FALCONER-shrike-vs-LERNA-hydra` |
 | 2026-06-10 | BELMONTE (cuadrilla, EMA_ALPHA 1) | FALCONER (shrike v3, factory defaults) | **BELMONTE 2–0** (34–27, 33–26, 36–36 draw) | #137 | `20260610-142850-BELMONTE-cuadrilla-vs-FALCONER-shrike` |
+| 2026-06-10 | BLACKFISH (orca, EMA_ALPHA 1) | BELMONTE (cuadrilla, EMA_ALPHA 1) | **BLACKFISH 3–0** (43–35, 37–30, 41–36) | #211 | `20260610-143821-BLACKFISH-orca-vs-BELMONTE-cuadrilla` |
 
 ## Coaching-session archive
 

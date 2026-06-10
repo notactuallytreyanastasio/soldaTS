@@ -2,6 +2,6 @@
   "schema": "soldat-fighter-card/1",
   "coach": "BLACKFISH",
   "engine": "orca",
-  "tweaks": {},
-  "rationale": "The pod hunts the gap: matador's mag-window punish (the only winning record vs hydra) synchronized across three guns, re-read every tick, with the kestrel dodge matador never had."
+  "tweaks": { "EMA_ALPHA": 1 },
+  "rationale": "Eleventh doctrine: the pod hunts the gap. Mag-window pack punish re-read EVERY TICK (the cuadrilla's 30-tick bull clock donates half a second of convergence per window), planted band gunnery (its slot juke pays the spread tax), fan-aware vs the shrike's breacher, never chases a withdrawn reserve, reloads only when safe from ALL guns. EMA_ALPHA 1 — the champion's own sweep finding, turned: 8-1 BELMONTE and 9-0 FALCONER-shrike on arena 19 (was 3-6 and 4-3 at 0.2; their passes outran the smoothed lead)."
 }
