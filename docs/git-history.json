@@ -1,5 +1,13 @@
 [
   {
+    "hash": "d8ad2fc87f6f3f3cc635a9b1d6b10c32e499ee22",
+    "short_hash": "d8ad2fc",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T12:05:09-04:00",
+    "message": "feat: ONLINE GOES TEAM-vs-TEAM — 3v3 with player-picked bot squads (goal 450)\n\nNot 1v1 anymore: each human brings two bots running the brain THEY chose.\n\nProtocol v2: the hello carries an `engine` field (the codec reads '' from a\nv1 frame and the lobby maps the stale envelope onto a clean WrongVersion\nreject). The lobby stores the choice per waiter and hands LobbyPlayers to\nonPair.\n\nMatch is now humanCount 2 + botCount 4, teams on: bots 3..6 alternate\nred/blue via Game's per-team engine rule (aiEngine 'e1,e2'), so team 1's\nbots run player A's pick and team 2's run player B's; unknown/empty choices\nfall back to 'classic' (warned). The welcome's mapName recipe gains\ne1/e2 so the match start echoes both choices. Snapshots now replicate ALL\nSIX sprites; heartbeats carry six rows and SUM team kills. The chance\nwildcard rolls per match — bot carriers exist online now (one per team,\nhumans never carry).\n\nGame grows a `combat` flag: spectate's alpha-255 + engine sustainment\nWITHOUT removing human slots — online bots actually perceive and fight.\nDefault off; every existing mode byte-identical (replay suites green).\n\nClient: brain-picker overlay (engine list + LEARNED badges, random default)\nbefore queueing; banner/HUD read 'YOU + WOLF vs STRANGER + HYDRA'\nteam-colored; all five remote sprites dead-reckoned + cosmetic fire; kill\nfeed attributes bot kills to engine names, humans stay You/Stranger.\n\nSmoke harness: two clients hello wolf-vs-hydra, assert the recipe echo,\n6-sprite replication, and a bot kill in both feeds. PASSED locally and\nagainst wss://bobbby.online/arena/ws after deploy (kill:4:3 + kill:4:1 —\na hydra bot dropped both a wolf bot and the human). 668/668 tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 14
+  },
+  {
     "hash": "fcab978f33a16b3c5dd28936ed26ba30a5a4a433",
     "short_hash": "fcab978",
     "author": "Robert Grayson",

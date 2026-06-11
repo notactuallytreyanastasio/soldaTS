@@ -5081,6 +5081,105 @@
       "created_at": "2026-06-11T11:36:26.746723-04:00",
       "updated_at": "2026-06-11T11:36:26.746723-04:00",
       "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 463,
+      "change_id": "60ba10b4-d576-469b-ab15-769862a66ef4",
+      "node_type": "option",
+      "title": "Teams via a new dedicated matchStart/roster message type (bigger protocol surface)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T11:43:21.127704-04:00",
+      "updated_at": "2026-06-11T11:43:21.127704-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":60}"
+    },
+    {
+      "id": 464,
+      "change_id": "f418680d-2044-42f7-8465-2857659a70a8",
+      "node_type": "option",
+      "title": "Hello gains an engine field (protocol v2) + choices ride the welcome's mapName recipe; Game grows a combat flag so online bots perceive targets",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T11:43:21.345359-04:00",
+      "updated_at": "2026-06-11T11:43:21.345359-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85}"
+    },
+    {
+      "id": 465,
+      "change_id": "7db198ca-5436-4a94-811f-cd34c3202253",
+      "node_type": "decision",
+      "title": "Engine field on hello (PROTOCOL_VERSION 2) + e1/e2 in the welcome recipe + Game combat flag; 3v3 = humans 1/2 + bots 3-6 alternating teams via the existing aiEngine 'a,b' whole-team rule",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T11:43:28.870846-04:00",
+      "updated_at": "2026-06-11T11:43:28.870846-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 466,
+      "change_id": "fd7f9763-cc7a-480e-9190-a90b3ae75490",
+      "node_type": "action",
+      "title": "Implementing team-vs-team online: protocol v2, lobby choice carry, 3v3 match, brain-picker overlay, 6-sprite client replication, smoke extension",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T11:43:29.330806-04:00",
+      "updated_at": "2026-06-11T11:43:47.604137-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":85,\"prompt\":\"i want the two humans to have bots with them … not 1v1, they each get a team and choose its AI\"}"
+    },
+    {
+      "id": 467,
+      "change_id": "8c719d1c-9364-46c0-8b6b-94f94c48c3b9",
+      "node_type": "observation",
+      "title": "Public /arena is the VPS live container rendering /opt/soldat (deploy-arena-live.sh), not the publish.mjs static snapshot — a mid-edit deploy by the concurrent session froze an intermediate template publicly; redeploying via the script",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T11:44:15.612742-04:00",
+      "updated_at": "2026-06-11T11:44:15.612742-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":90}"
+    },
+    {
+      "id": 468,
+      "change_id": "e15c2307-bfef-4387-929f-c9bfc9307019",
+      "node_type": "outcome",
+      "title": "Public bobbby.online/arena serves the pocket edition — verified at 390px: swipe deck, 4-col board, mobile desk; VPS redeployed via deploy-arena-live.sh with the 20-min build timeout",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T11:50:36.258602-04:00",
+      "updated_at": "2026-06-11T11:50:36.258602-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 469,
+      "change_id": "d0e5abaf-0aa3-4e1e-9c03-4ab6ae20fa73",
+      "node_type": "outcome",
+      "title": "LOCAL PROOF GREEN (3v3): 668/668 tests; smoke over real WS — recipe echoes e1=wolf e2=hydra, all 6 sprites replicate to both clients, teams 1:t1 2:t2 3:t1 4:t2 5:t1 6:t2, bot kill kill:3:4:AK74 in both feeds, A moved +346.5px in B's view; chance wildcard armed match verified (seed 7 = rifle, one bot carrier per team, humans never carry)",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T12:04:40.105585-04:00",
+      "updated_at": "2026-06-11T12:04:40.105585-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 470,
+      "change_id": "09130306-3bf3-44f7-95a4-24522ee85966",
+      "node_type": "outcome",
+      "title": "LIVE ON bobbby.online (3v3): wss smoke through Caddy/Cloudflare PASSED — e1=wolf e2=hydra echoed, 6 sprites in snapshots both sides, bot kills kill:4:3 and kill:4:1 (a hydra bot killed bot 3 AND human 1) in both feeds, teamScore [0,2]; client republished (brain picker at /arena/play/?online); blog + /arena/ + /arena/play/ + desk all 200",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T12:04:48.475918-04:00",
+      "updated_at": "2026-06-11T12:04:48.475918-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"confidence\":95}"
+    },
+    {
+      "id": 471,
+      "change_id": "23e5c5c5-055e-4996-a6bd-e5fe72f6181e",
+      "node_type": "action",
+      "title": "Shipped team-vs-team online commit d8ad2fc: protocol v2 + lobby choices + 3v3 match + combat flag + brain picker + smoke",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T12:05:16.393891-04:00",
+      "updated_at": "2026-06-11T12:05:16.393891-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"d8ad2fc\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -10440,6 +10539,127 @@
       "weight": 1.0,
       "rationale": "local proof preceded the ship commit",
       "created_at": "2026-06-11T11:36:43.284540-04:00"
+    },
+    {
+      "id": 532,
+      "from_node_id": 450,
+      "to_node_id": 463,
+      "from_change_id": "63f1428e-ca6a-49f6-9305-25bf2dc5f0aa",
+      "to_change_id": "60ba10b4-d576-469b-ab15-769862a66ef4",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "approach for team-vs-team upgrade",
+      "created_at": "2026-06-11T11:43:39.428021-04:00"
+    },
+    {
+      "id": 533,
+      "from_node_id": 450,
+      "to_node_id": 464,
+      "from_change_id": "63f1428e-ca6a-49f6-9305-25bf2dc5f0aa",
+      "to_change_id": "f418680d-2044-42f7-8465-2857659a70a8",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "approach for team-vs-team upgrade",
+      "created_at": "2026-06-11T11:43:39.619258-04:00"
+    },
+    {
+      "id": 534,
+      "from_node_id": 463,
+      "to_node_id": 465,
+      "from_change_id": "60ba10b4-d576-469b-ab15-769862a66ef4",
+      "to_change_id": "7db198ca-5436-4a94-811f-cd34c3202253",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "rejected: more protocol surface than needed",
+      "created_at": "2026-06-11T11:43:39.808927-04:00"
+    },
+    {
+      "id": 535,
+      "from_node_id": 464,
+      "to_node_id": 465,
+      "from_change_id": "f418680d-2044-42f7-8465-2857659a70a8",
+      "to_change_id": "7db198ca-5436-4a94-811f-cd34c3202253",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "chosen: minimal wire delta, reuses Game's per-team engine machinery",
+      "created_at": "2026-06-11T11:43:40.010326-04:00"
+    },
+    {
+      "id": 536,
+      "from_node_id": 465,
+      "to_node_id": 466,
+      "from_change_id": "7db198ca-5436-4a94-811f-cd34c3202253",
+      "to_change_id": "fd7f9763-cc7a-480e-9190-a90b3ae75490",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "implementation",
+      "created_at": "2026-06-11T11:43:40.192650-04:00"
+    },
+    {
+      "id": 538,
+      "from_node_id": 449,
+      "to_node_id": 467,
+      "from_change_id": "fe836aab-b804-4b80-aaeb-413993750734",
+      "to_change_id": "8c719d1c-9364-46c0-8b6b-94f94c48c3b9",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "deploy-path discovery",
+      "created_at": "2026-06-11T11:44:22.490007-04:00"
+    },
+    {
+      "id": 539,
+      "from_node_id": 449,
+      "to_node_id": 468,
+      "from_change_id": "fe836aab-b804-4b80-aaeb-413993750734",
+      "to_change_id": "e15c2307-bfef-4387-929f-c9bfc9307019",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "public deploy verified",
+      "created_at": "2026-06-11T11:50:45.094378-04:00"
+    },
+    {
+      "id": 540,
+      "from_node_id": 466,
+      "to_node_id": 469,
+      "from_change_id": "fd7f9763-cc7a-480e-9190-a90b3ae75490",
+      "to_change_id": "d0e5abaf-0aa3-4e1e-9c03-4ab6ae20fa73",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "local verification",
+      "created_at": "2026-06-11T12:04:48.617546-04:00"
+    },
+    {
+      "id": 541,
+      "from_node_id": 466,
+      "to_node_id": 470,
+      "from_change_id": "fd7f9763-cc7a-480e-9190-a90b3ae75490",
+      "to_change_id": "09130306-3bf3-44f7-95a4-24522ee85966",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "live verification after deploy",
+      "created_at": "2026-06-11T12:04:55.484673-04:00"
+    },
+    {
+      "id": 542,
+      "from_node_id": 465,
+      "to_node_id": 471,
+      "from_change_id": "7db198ca-5436-4a94-811f-cd34c3202253",
+      "to_change_id": "23e5c5c5-055e-4996-a6bd-e5fe72f6181e",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "the ship commit",
+      "created_at": "2026-06-11T12:05:23.200394-04:00"
+    },
+    {
+      "id": 543,
+      "from_node_id": 471,
+      "to_node_id": 470,
+      "from_change_id": "23e5c5c5-055e-4996-a6bd-e5fe72f6181e",
+      "to_change_id": "09130306-3bf3-44f7-95a4-24522ee85966",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "verified live post-deploy",
+      "created_at": "2026-06-11T12:05:23.346842-04:00"
     }
   ],
   "documents": [
