@@ -1,5 +1,29 @@
 [
   {
+    "hash": "fcab978f33a16b3c5dd28936ed26ba30a5a4a433",
+    "short_hash": "fcab978",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T11:35:13-04:00",
+    "message": "feat: pocket edition — desk + floor readable on iPhone (goal 445)\n\nThe dashboards were desktop-only: a 14-column board, a 812 MB data.json\nrefetched every 5s, watch links pointing at localhost, and a watcher\nwhose 180s build timeout had been silently killing every rebuild since\nthe corpus crossed 19k datasets (stale site, REBUILD FAILED loop).\n\nMobile (max-width 700px) overlays on both templates:\n- THE FLOOR gets a swipe deck — the phone's games view: one scroll-snap\n  card per fight, series LEADER front and centre, score + arena + top\n  frag + match count, tap to watch; the live series rides the front.\n- The Big Board folds to #/SYM/SCORE/REC (2-4 stats, per the ask);\n  per-match bot tables fold to bot/k/d/kd; analytics charts arrive\n  collapsed and pan sideways at readable scale; pyramid tiers and title\n  bouts become horizontal swipe strips; masthead/banner/hero fold.\n- Grid traps fixed: bare `1fr` collapses used auto minimums, so the\n  widest section stretched the page past the viewport — minmax(0,1fr).\n\nPlumbing the phone actually needed:\n- watch.mjs build timeout 180s -> 20 min (rebuilds take 4-9 min now).\n- data.json local default capped to 150 newest fights (~6 MB, was\n  812 MB); ARENA_DATA_FIGHTS=0 restores the firehose.\n- watch URLs retarget localhost:5173 to the serving host (fixHost) so\n  replays open from a phone on the LAN; client dev now binds --host.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "f0d43cd108419ab3fa6337488395d32f0ed0d61d",
+    "short_hash": "f0d43cd",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T11:19:14-04:00",
+    "message": "feat: TRUE MULTIPLAYER — online 1v1 at /arena/play/?online (goal 450)\n\nNew @soldat/server: a dependency-free game server — hand-rolled RFC 6455\nWebSocket layer, a lobby that pairs visitors two-by-two, and per-match\nauthoritative simulation reusing the headless Game (humanCount: 2,\nbotCount: 0, red vs blue) at 60 Hz with 20 Hz full-sprite snapshots via\n@soldat/netcode. Own-sprite snapshots are stamped with the client's last\napplied input tick — the exact ack PredictionBuffer reconciles against.\n\nGame grows a humanCount option (default 1 = byte-identical classic play;\nspectate replays untouched — 657/657 tests green incl. determinism suites).\n\nClient ?online mode: waiting room, own-sprite prediction/reconciliation,\ndead-reckoned opponent, cosmetic local bullets (hitMultiply 0), team banner,\nkill feed + team score from heartbeats/kill chats, win-on-disconnect.\nMenu gets \"PLAY ONLINE — 1v1 vs a human\". Supervisor gains the game server\nas a 4th child (GAME_SERVER_PORT 8902); wss /arena/ws routes through Caddy.\n\nV1 gaps (deliberate): wildcards never arm (they pick bots; there are none),\njet fuel/reload state not on the wire (mirrored/derived client-side).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 21
+  },
+  {
+    "hash": "417d42882d6c088bc87e9c2dc1fc145ffada1070",
+    "short_hash": "417d428",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T19:24:02-04:00",
+    "message": "feat: three new guns — M79 rocket, Ricochet Carbine, Chainsaw (goal 440)\n\nThree new weapon slots + wildcards on the Barrett-era architecture, each\ninert until armed (stock matches stay byte-identical — verified against\nrecorded chance-era datasets, 5 matches byte-for-byte):\n\nROCKET ('rocket', contract M79 row): 10.7 px/tick arcing rocket, direct\nhit ≈ 16,585 dmg, and the formerly-deferred Bullets.pas explosion AoE —\n250 dmg at the epicentre falling linearly to 0 at 64 px, owner included\nat 0.5x with a 6 px/tick knockback kick (rocket jumping is canon). New\nonBulletExplode observer drives a client blast ring/flash (ExplosionFx).\n\nRICOCHET ('ricochet', new contract row off the Ruger 77, num 24 — unused\nby any Pascal weapon, so the gate is provably inert for old replays):\nPLAIN rounds reflect off map polys across the colliding edge's\nperpendicular, up to 4 bounces at 75% energy, damage persisting (the\ndeferred ricochet impulse). Tracer shifts colour per bounce. Mag 6,\n2 s reload.\n\nCHAINSAW ('chainsaw', contract row as-is): KNIFE-style one-tick blade\nbullets every other tick — ~29 px reach, 400 dmg contact kills, 200\nfuel, 110-tick refuel. Saw + grind sparks drawn from sprite state\n(blade bullets never survive to render).\n\n'chance' mode: arming roll unchanged (shotgun-era hash); the weapon\npick hash now spans all five wildcards — old armed seeds may pick\ndifferently, which is safe because recorded manifests/watch URLs carry\nthe RESOLVED weapon, never the mode. Tab/B cycles all six guns;\n[ROCKET]/[RICOCHET]/[CHAINSAW] kill tags; menu + MANUAL §4 updated.\n633/633 tests (28 new), plain and STRICT_F32.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 17
+  },
+  {
     "hash": "2f5a352176067a3de8be41a9cf6c55c7f81b9562",
     "short_hash": "2f5a352",
     "author": "Robert Grayson",
