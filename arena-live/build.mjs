@@ -1046,12 +1046,16 @@ export function build() {
   }
 
   // How many fights (newest-first, with per-kill timelines) data.json carries.
-  // Locally: all of them (the full file crossed 300 MB — fine on localhost).
-  // The LIVE deploy sets ARENA_DATA_FIGHTS (e.g. 40, matching the publish
-  // snapshot) because the floor polls data.json every 5s over the public
-  // internet and caddy gzips it per request. Board/decay/desk/analytics are
-  // all computed from the FULL corpus above — only the shipped feed is cut.
-  const maxFights = Number(process.env.ARENA_DATA_FIGHTS) || 0;
+  // The local default used to be ALL of them — at 19k datasets that file hit
+  // 812 MB, which the floor refetches every 5s: heavy on a desktop, instantly
+  // fatal on a phone reading the watcher over the LAN. Default 150 keeps the
+  // local feed in single-digit MB (the feed's infinite scroll caps there);
+  // ARENA_DATA_FIGHTS overrides either way (the LIVE deploy ships 40;
+  // ARENA_DATA_FIGHTS=0 restores the uncapped firehose). Board/decay/desk/
+  // analytics are all computed from the FULL corpus above — only the shipped
+  // feed is cut.
+  const rawMax = process.env.ARENA_DATA_FIGHTS;
+  const maxFights = rawMax !== undefined && rawMax !== '' ? Number(rawMax) || 0 : 150;
 
   const data = {
     generatedAt: new Date().toISOString(),

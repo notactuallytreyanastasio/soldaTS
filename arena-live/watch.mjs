@@ -83,7 +83,11 @@ function rebuild(reason) {
   return new Promise((resolve) => {
     execFile(process.execPath, [path.join(HERE, 'build.mjs')], {
       cwd: HERE,
-      timeout: 180_000,
+      // The corpus crossed 19k datasets and a full scan takes 4-9 min — the
+      // old 180s timeout was killing EVERY rebuild (a silent REBUILD FAILED
+      // loop serving a stale site; a 564s rebuild was observed under load).
+      // 20 min keeps the never-die guarantee with real headroom.
+      timeout: 1_200_000,
       maxBuffer: 16 * 1024 * 1024,
     }, (err, stdout, stderr) => {
       if (err) {

@@ -154,7 +154,9 @@
 
   /* ---- rivalries + tonight grid ---------------------------------------------- */
   .row2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; border-bottom: 1px solid var(--line); }
-  @media (max-width: 980px) { .row2 { grid-template-columns: 1fr; } }
+  /* minmax(0,1fr), not bare 1fr — auto minimums let the widest child stretch
+     the page past a phone viewport (see the floor's .wrap note). */
+  @media (max-width: 980px) { .row2 { grid-template-columns: minmax(0, 1fr); } .row2 > .sec { min-width: 0; } }
   .row2 > .sec { border-bottom: none; }
   .row2 > aside.sec { border-left: 1px solid var(--line); padding-left: 22px; }
   @media (max-width: 980px) { .row2 > aside.sec { border-left: none; padding-left: 0; } }
@@ -237,6 +239,50 @@
     border-radius: 6px; padding: 5px 9px; font: 11px/1.5 var(--mono); max-width: 320px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.35); white-space: pre-line;
   }
+
+  /* ---- mobile (iPhone) overlay ---------------------------------------------
+     The pocket edition: the masthead folds, the banner goes 2×2, the pyramid
+     tiers and title bouts become horizontal swipe strips, and the climb chart
+     pans sideways at readable scale instead of shrinking to confetti. */
+  @media (max-width: 700px) {
+    body { font-size: 14px; }
+    .masthead { padding: 10px 12px 8px; }
+    .ears { gap: 8px; }
+    .ear { font-size: 9px; letter-spacing: 1px; }
+    .ear a, .ear button { padding: 3px 8px; font-size: 10px; letter-spacing: 1px; }
+    .mast-title { white-space: normal; letter-spacing: 2px; font-size: clamp(20px, 6.4vw, 28px); }
+    .mast-sub { font-size: 8.5px; letter-spacing: 1px; gap: 6px; }
+    .mast-sub span:first-child, .mast-sub span:last-child { display: none; }
+    .banner { padding: 0 12px; grid-template-columns: 1fr 1fr; }
+    .banner .cell { padding: 7px 10px; }
+    .banner .cell:nth-child(odd) { border-left: 1px solid var(--rule); }
+    .banner .cell:nth-child(1) { border-radius: 8px 0 0 0; }
+    .banner .cell:nth-child(2) { border-radius: 0 8px 0 0; }
+    .banner .cell:nth-child(3) { border-radius: 0 0 0 8px; border-top: none; }
+    .banner .cell:nth-child(4) { border-radius: 0 0 8px 0; border-top: none; }
+    .banner .v { font-size: 15px; }
+    .banner .v .num { font-size: 14px; }
+    .sheet { padding: 4px 12px 24px; }
+    .headline { font-size: clamp(24px, 7.6vw, 34px); }
+    .standfirst { font-size: 15px; }
+    .byline { flex-wrap: wrap; gap: 8px; }
+    .watchlink { padding: 6px 14px; }
+    /* the climb pans sideways at readable scale */
+    #ch-climb { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #ch-climb svg { min-width: 860px; }
+    /* pyramid tiers + title bouts swipe horizontally, one strip per tier */
+    .pyr > div { max-width: 100%; }
+    .pyr-row { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto;
+      -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+      max-width: 100%; padding: 10px 2px 4px; scrollbar-width: none; }
+    .pyr-row::-webkit-scrollbar { display: none; }
+    .pyr-cell { flex: 0 0 auto; scroll-snap-align: center; }
+    .pyr-crown { min-width: 210px; }
+    .rivgrid { grid-template-columns: 1fr; }
+    .gunstrip { grid-template-columns: 1fr; }
+    .livebox .who { font-size: 16px; }
+    .livebox .score { font-size: 21px; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
@@ -294,7 +340,20 @@ function fmtDur(ms) {
   if (h < 48) return h + 'h ' + (m % 60) + 'm';
   return Math.floor(h / 24) + 'd';
 }
-function openUrl(u) { if (u) window.open(u, '_blank'); }
+/** Open a watch URL. Local watch links point at localhost:5173 — when this
+ *  page is being read from ANOTHER device (a phone on the LAN hitting the
+ *  Mac's watcher), localhost is the phone, not the Mac; retarget the link at
+ *  the host that served this page so the replay actually opens. */
+function fixHost(u) {
+  try {
+    const here = location.hostname;
+    if (u && here && here !== 'localhost' && here !== '127.0.0.1') {
+      u = u.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5173/, `http://${here}:5173`);
+    }
+  } catch {}
+  return u;
+}
+function openUrl(u) { if (u) window.open(fixHost(u), '_blank'); }
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-watch]');
   if (!el) return;
@@ -969,6 +1028,10 @@ function render(d) {
   document.getElementById('tonight').innerHTML = tonightHtml(d);
   document.getElementById('gunmeter').innerHTML = gunMeterHtml(d);
   document.getElementById('presses').innerHTML = pressesHtml(d);
+  // Anchors bypass openUrl — retarget any localhost watch hrefs for LAN readers.
+  for (const a of document.querySelectorAll('a[href^="http://localhost:5173"], a[href^="http://127.0.0.1:5173"]')) {
+    a.href = fixHost(a.getAttribute('href'));
+  }
   try { drawClimb(d); } catch (e) {
     const el = document.getElementById('ch-climb');
     if (el) el.innerHTML = `<div class="chartnote">chart failed: ${esc(e.message)}</div>`;
