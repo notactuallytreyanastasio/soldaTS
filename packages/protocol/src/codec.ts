@@ -722,6 +722,7 @@ function writeHandshakeHello(w: Writer, h: HandshakeHello): void {
   w.uvarint(h.team);
   w.uvarint(h.look);
   w.string(h.modChecksum);
+  w.string(h.engine); // v2: requested team bot engine ('' = server default)
 }
 
 function readHandshakeHello(r: Reader): HandshakeHello {
@@ -734,6 +735,9 @@ function readHandshakeHello(r: Reader): HandshakeHello {
   const team = r.uvarint();
   const look = r.uvarint();
   const modChecksum = r.string();
+  // v2 field. A v1 hello ends here — read '' so the message still decodes and
+  // the lobby can reject the stale client with a clean WrongVersion welcome.
+  const engine = r.done ? "" : r.string();
   return {
     kind: "hello",
     protocolVersion,
@@ -745,6 +749,7 @@ function readHandshakeHello(r: Reader): HandshakeHello {
     team,
     look,
     modChecksum,
+    engine,
   };
 }
 

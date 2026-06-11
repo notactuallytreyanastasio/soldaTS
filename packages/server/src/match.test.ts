@@ -1,7 +1,8 @@
-// Authoritative-match tests: welcome/teams, input→step→snapshot round trip
-// (the netcode ack contract), kills, and disconnect handling — all over fake
-// sockets, no timers (the test drives match.tick directly).
-import { describe, it, expect } from 'vitest';
+// Authoritative-match tests: welcome/teams/engines, input→step→snapshot round
+// trip (the netcode ack contract), 3v3 replication, kills, engine fallback,
+// and disconnect handling — all over fake sockets, no timers (the test drives
+// match.tick directly).
+import { describe, it, expect, vi } from 'vitest';
 import {
   HandshakeResult,
   Posture,
@@ -10,10 +11,10 @@ import {
   type Message,
   type SpriteSnapshotFull,
 } from '@soldat/protocol';
-import { Match } from './match';
+import { Match, MATCH_SPRITES, sanitizeEngineChoice } from './match';
 import { FakeSocket } from './lobby.test';
 
-const OPTS = { seed: 7, arenaSeed: 5 };
+const OPTS = { seed: 7, arenaSeed: 5, engines: ['wolf', 'hydra'] as [string, string] };
 const DT = 1 / 60;
 
 function buttons(over: Partial<Buttons> = {}): Buttons {
@@ -70,12 +71,101 @@ describe('Match — pairing handshake', () => {
     expect(welcomes[1]!.result).toBe(HandshakeResult.Ok);
     expect(welcomes[0]!.yourNum).toBe(1);
     expect(welcomes[1]!.yourNum).toBe(2);
-    expect(welcomes[0]!.mapName).toBe('arena=5&seed=7');
+    // Match-start carries BOTH engine choices in the recipe.
+    expect(welcomes[0]!.mapName).toBe('arena=5&seed=7&e1=wolf&e2=hydra');
     expect(welcomes[1]!.mapName).toBe(welcomes[0]!.mapName);
 
     // Red vs blue, by slot.
     expect(match.game.teamOf(1)).toBe(1);
     expect(match.game.teamOf(2)).toBe(2);
+    match.dispose();
+  });
+});
+
+describe('Match — team engines (3v3)', () => {
+  it("arms player A's engine on team 1's bots and player B's on team 2's", () => {
+    const match = new Match(new FakeSocket(), new FakeSocket(), OPTS);
+    // Bots are slots 3..6, alternating red/blue; whole team = one engine.
+    expect(match.game.engineOf(3)).toBe('wolf');
+    expect(match.game.engineOf(4)).toBe('hydra');
+    expect(match.game.engineOf(5)).toBe('wolf');
+    expect(match.game.engineOf(6)).toBe('hydra');
+    expect(match.game.teamOf(3)).toBe(1);
+    expect(match.game.teamOf(4)).toBe(2);
+    expect(match.game.teamOf(5)).toBe(1);
+    expect(match.game.teamOf(6)).toBe(2);
+    match.dispose();
+  });
+
+  it('rolls the chance wildcard per match — bot carriers only, humans keep their slots', () => {
+    // Seed 7 rolls ARMED ('rifle'); the carriers are one bot per team.
+    const armed = new Match(new FakeSocket(), new FakeSocket(), OPTS);
+    const carriers = armed.game.wildcardCarriers();
+    expect(armed.game.wildcard).toBe('rifle');
+    expect(carriers).toHaveLength(2);
+    for (const c of carriers) {
+      expect(c).toBeGreaterThanOrEqual(3); // never a human slot
+      expect(c).toBeLessThanOrEqual(6);
+    }
+    expect(new Set(carriers.map((c) => armed.game.teamOf(c))).size).toBe(2); // one per team
+    armed.dispose();
+
+    // Seed 3 rolls STOCK: nobody carries.
+    const stock = new Match(new FakeSocket(), new FakeSocket(), { ...OPTS, seed: 3 });
+    expect(stock.game.wildcard).toBeUndefined();
+    expect(stock.game.wildcardCarriers()).toHaveLength(0);
+    stock.dispose();
+  });
+
+  it('runs the same engine on both teams when both players pick it', () => {
+    const match = new Match(new FakeSocket(), new FakeSocket(), {
+      ...OPTS,
+      engines: ['wolf', 'wolf'],
+    });
+    for (const num of [3, 4, 5, 6]) expect(match.game.engineOf(num)).toBe('wolf');
+    expect(match.game.teamOf(3)).toBe(1);
+    expect(match.game.teamOf(4)).toBe(2);
+    match.dispose();
+  });
+
+  it("falls back to 'classic' (with a warn) on an unknown or empty choice", () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    expect(sanitizeEngineChoice('not-a-brain')).toBe('classic');
+    expect(warn).toHaveBeenCalledOnce();
+    expect(sanitizeEngineChoice('')).toBe('classic'); // empty = quiet default
+    expect(warn).toHaveBeenCalledOnce();
+    expect(sanitizeEngineChoice('hydra')).toBe('hydra');
+    warn.mockRestore();
+
+    const warn2 = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const match = new Match(new FakeSocket(), new FakeSocket(), {
+      ...OPTS,
+      engines: ['garbage', ''],
+    });
+    expect(match.teamEngines).toEqual(['classic', 'classic']);
+    expect(match.game.engineOf(3)).toBe('classic');
+    expect(match.game.engineOf(4)).toBe('classic');
+    warn2.mockRestore();
+    match.dispose();
+  });
+});
+
+describe('Match — 3v3 snapshot replication', () => {
+  it('streams full snapshots of all six sprites to both clients', () => {
+    const a = new FakeSocket();
+    const b = new FakeSocket();
+    const match = new Match(a, b, OPTS);
+    for (let t = 0; t < 30; t++) match.tick(DT);
+    for (const sock of [a, b]) {
+      for (const num of MATCH_SPRITES) {
+        expect(snapshotsOf(sock, num).length, `sprite ${num}`).toBeGreaterThan(0);
+      }
+    }
+    // Heartbeat rows cover all six sprites with their teams.
+    const hb = [...a.sent].reverse().find((m) => m.kind === 'heartbeat');
+    if (hb?.kind !== 'heartbeat') throw new Error('expected a heartbeat');
+    expect(hb.players.map((p) => p.num)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(hb.players.map((p) => p.team)).toEqual([1, 2, 1, 2, 1, 2]);
     match.dispose();
   });
 });

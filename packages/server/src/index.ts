@@ -1,4 +1,6 @@
-// @soldat/server — the online-1v1 game server (goal node 450).
+// @soldat/server — the online team-vs-team game server (goal node 450).
+// Two humans pair up, each picks the bot engine for their side, and the match
+// runs 3v3: human + 2 bots per team.
 //
 // A single plain-node process: an HTTP listener whose only routes are
 // GET /healthz (200 "ok") and the WebSocket upgrade (any path — in production
@@ -33,10 +35,17 @@ const roll = (max: number): number => 1 + Math.floor(Math.random() * max);
 let liveMatches = 0;
 
 const lobby = new Lobby((a, b) => {
-  const opts = { seed: roll(99999), arenaSeed: roll(999) };
-  const match = new Match(a, b, opts);
+  const opts = {
+    seed: roll(99999),
+    arenaSeed: roll(999),
+    engines: [a.engine, b.engine] as [string, string],
+  };
+  const match = new Match(a.sock, b.sock, opts);
   liveMatches += 1;
-  log(`match start (arena=${opts.arenaSeed} seed=${opts.seed}) — ${liveMatches} live`);
+  log(
+    `match start (arena=${opts.arenaSeed} seed=${opts.seed} ` +
+      `red=${match.teamEngines[0]} blue=${match.teamEngines[1]}) — ${liveMatches} live`,
+  );
   let last = performance.now();
   const interval = setInterval(() => {
     const now = performance.now();

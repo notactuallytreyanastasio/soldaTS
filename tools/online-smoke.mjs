@@ -1,10 +1,13 @@
 #!/usr/bin/env node
-// ONLINE 1v1 smoke test (goal node 450) — drives TWO protocol-speaking
-// clients into the game server and proves the whole loop end to end:
+// ONLINE TEAM-vs-TEAM smoke test (goal node 450) — drives TWO
+// protocol-speaking clients (with DIFFERENT engine choices: wolf vs hydra)
+// into the game server and proves the whole 3v3 loop end to end:
 //
-//   1. both clients pair into one match (welcome, opposite slots 1/2)
-//   2. inputs from client A move A's sprite in the snapshots B receives
-//   3. both crude aimbots converge + fire until a kill registers
+//   1. both clients pair into one match (welcome, opposite slots 1/2) and the
+//      match-start recipe echoes BOTH engine choices (e1/e2 by slot)
+//   2. snapshots replicate ALL SIX sprites (2 humans + 4 bots) to both sides
+//   3. inputs from client A move A's sprite in the snapshots B receives
+//   4. a BOT kill (sprite 3..6 involved) lands in both kill feeds
 //
 // Works against local AND live deployments:
 //   node tools/online-smoke.mjs                      # ws://localhost:8902
@@ -50,20 +53,21 @@ function noButtons() {
   };
 }
 
-function hello() {
+function hello(engine) {
   return {
     kind: 'handshake',
     handshake: {
       kind: 'hello', protocolVersion: PROTOCOL_VERSION, gameVersion: '1',
       haveAntiCheat: false, hardwareId: '', password: '', name: 'smoke',
-      team: 0, look: 0, modChecksum: '',
+      team: 0, look: 0, modChecksum: '', engine,
     },
   };
 }
 
 class SmokeClient {
-  constructor(label) {
+  constructor(label, engine) {
     this.label = label;
+    this.engine = engine;
     this.welcome = null;
     this.snapshots = new Map(); // sprite num -> latest full snapshot
     this.track = new Map(); // sprite num -> [pos.x samples]
@@ -73,7 +77,7 @@ class SmokeClient {
     this.tick = 0;
     this.ws = new WebSocket(URL_ARG);
     this.ws.binaryType = 'arraybuffer';
-    this.ws.addEventListener('open', () => this.ws.send(encodeMessage(hello())));
+    this.ws.addEventListener('open', () => this.ws.send(encodeMessage(hello(this.engine))));
     this.ws.addEventListener('message', (e) => this.onMessage(e.data));
     this.ws.addEventListener('error', () => fail(`${label}: websocket error (server down?)`));
   }
@@ -151,27 +155,51 @@ async function waitFor(cond, what, timeoutMs = 15000) {
   }
 }
 
-log(`dialing ${URL_ARG} with two clients…`);
-const A = new SmokeClient('A');
-const B = new SmokeClient('B');
+log(`dialing ${URL_ARG} with two clients (A=wolf, B=hydra)…`);
+const A = new SmokeClient('A', 'wolf');
+const B = new SmokeClient('B', 'hydra');
 
-// 1. PAIRING — both welcomed, opposite slots, identical match recipe.
+// 1. PAIRING — both welcomed, opposite slots, identical match recipe, and the
+//    recipe ECHOES BOTH ENGINE CHOICES keyed by slot (e1 = slot 1's pick).
 await waitFor(() => A.welcome !== null && B.welcome !== null, 'both welcomes');
 if (A.myNum === B.myNum) fail(`both clients got slot ${A.myNum}`);
 if (![1, 2].includes(A.myNum) || ![1, 2].includes(B.myNum)) fail('bad slot numbers');
 if (A.welcome.mapName !== B.welcome.mapName) fail('clients joined different matches');
 log(`PAIRED OK: A=sprite ${A.myNum}, B=sprite ${B.myNum}, recipe ${A.welcome.mapName}`);
 
-// 2. CROSS-VISIBILITY — A runs right, B idles; B must see sprite A move +x.
+const recipe = new URLSearchParams(A.welcome.mapName);
+const slotEngine = { 1: recipe.get('e1'), 2: recipe.get('e2') };
+if (slotEngine[A.myNum] !== A.engine) {
+  fail(`recipe says slot ${A.myNum} runs ${slotEngine[A.myNum]}, A chose ${A.engine}`);
+}
+if (slotEngine[B.myNum] !== B.engine) {
+  fail(`recipe says slot ${B.myNum} runs ${slotEngine[B.myNum]}, B chose ${B.engine}`);
+}
+log(`ENGINE ECHO OK: e1=${recipe.get('e1')} e2=${recipe.get('e2')} (both choices echoed by slot)`);
+
+// 2. 3v3 REPLICATION — both clients must see snapshots of ALL SIX sprites.
+const idle = setInterval(() => {
+  A.sendInput(noButtons(), { x: 100, y: 0 });
+  B.sendInput(noButtons(), { x: -100, y: 0 });
+}, 16);
+await waitFor(
+  () => [1, 2, 3, 4, 5, 6].every((n) => A.snapshots.has(n) && B.snapshots.has(n)),
+  'snapshots of all 6 sprites on both clients',
+);
+clearInterval(idle);
+log(`3v3 REPLICATION OK: A sees sprites [${[...A.snapshots.keys()].sort().join(',')}], B sees [${[...B.snapshots.keys()].sort().join(',')}]`);
+
+// 3. CROSS-VISIBILITY — A runs right, B idles; B must see sprite A move +x.
 const aNum = A.myNum;
+const trackStart = (B.track.get(aNum) ?? []).length;
 const runRight = setInterval(() => {
   A.sendInput({ ...noButtons(), right: true }, { x: 100, y: 0 });
   B.sendInput(noButtons(), { x: -100, y: 0 });
 }, 16);
-await waitFor(() => (B.track.get(aNum)?.length ?? 0) >= 30, "B's snapshots of A");
+await waitFor(() => (B.track.get(aNum)?.length ?? 0) >= trackStart + 30, "B's snapshots of A");
 await sleep(1500);
 clearInterval(runRight);
-const xs = B.track.get(aNum);
+const xs = B.track.get(aNum).slice(trackStart);
 const dxMoved = xs[xs.length - 1] - xs[0];
 if (!(dxMoved > 10)) fail(`A's sprite did not move right in B's view (dx=${dxMoved.toFixed(1)})`);
 log(`CROSS-VISIBILITY OK: A moved ${dxMoved.toFixed(1)}px (+x) in B's snapshots over ${xs.length} frames`);
@@ -179,23 +207,29 @@ if (A.heartbeats === 0 || B.heartbeats === 0) fail('no heartbeats seen');
 const teams = (A.lastHeartbeat?.players ?? []).map((p) => `${p.num}:t${p.team}`).join(' ');
 log(`HEARTBEAT OK: teams ${teams}`);
 
-// 3. THE KILL — both aimbots converge and fire until somebody dies.
-log('fighting until a kill registers…');
+// 4. THE BOT KILL — the four bots brawl on their own; keep the humans pinging
+//    inputs and wait until a kill INVOLVING A BOT (sprite 3..6) reaches both
+//    feeds. (Human kills may land too — also logged.)
+log('waiting for a bot kill to land in both feeds…');
+const isBotKill = (text) => {
+  const [, killer, victim] = text.split(':');
+  return Number(killer) >= 3 || Number(victim) >= 3;
+};
 const fight = setInterval(() => {
   A.fightTick();
   B.fightTick();
 }, 16);
 await waitFor(
-  () => A.kills.length > 0 && B.kills.length > 0,
-  'a kill chat on both clients',
+  () => A.kills.some(isBotKill) && B.kills.some(isBotKill),
+  'a bot kill chat on both clients',
   KILL_TIMEOUT_MS,
 );
 clearInterval(fight);
-log(`KILL OK: ${A.kills[0]}`);
+log(`BOT KILL OK: ${A.kills.find(isBotKill)} (A saw ${A.kills.length} kills, B saw ${B.kills.length})`);
 const hb = A.lastHeartbeat;
 log(`final heartbeat: teamScore=[${hb.teamScore.join(',')}]`);
 
 A.ws.close();
 B.ws.close();
-log('SMOKE PASSED: pairing + cross-visibility + kill all verified');
+log('SMOKE PASSED: pairing + engine echo + 3v3 replication + cross-visibility + bot kill all verified');
 process.exit(0);

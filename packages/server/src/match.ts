@@ -1,29 +1,42 @@
-// One authoritative 1v1 MATCH (goal node 450).
+// One authoritative TEAM-vs-TEAM MATCH (goal node 450, team upgrade).
 //
-// The server runs the SAME headless Game the browser runs (humanCount: 2,
-// botCount: 0, red vs blue) on a generated arena, stepping at the fixed 60 Hz
-// the Game's own accumulator enforces. Clients stream sequence-numbered
-// InputFrames; the match applies at most a couple per sim tick (jitter
-// buffer), and every 3rd tick (20 Hz) captures FULL sprite snapshots via
-// @soldat/netcode and sends both sprites to both clients.
+// The server runs the SAME headless Game the browser runs — now 3v3:
+// humanCount: 2 (slots 1 red / 2 blue) + botCount: 4 (slots 3..6, alternating
+// red/blue), teams on, combat on (bots perceive and fight). Each human's
+// CHOSEN ENGINE drives their team's bots via Game's per-team engine rule:
+// aiEngine 'e1,e2' assigns group 0 (player A's pick) to team 1 and group 1
+// (player B's pick) to team 2. Unknown/empty choices fall back to 'classic'
+// (with a warn). The chance wildcard rolls per match exactly like local play —
+// bot carriers exist now, so online matches can open with a SPAS/Barrett/M79/
+// ricochet/chainsaw carrier per team; humans always keep their own stock slots.
+//
+// The match steps at the fixed 60 Hz the Game's accumulator enforces. Clients
+// stream sequence-numbered InputFrames; the match applies at most a couple per
+// sim tick (jitter buffer), and every 3rd tick (20 Hz) captures FULL sprite
+// snapshots via @soldat/netcode for ALL SIX sprites and sends them to both
+// clients.
 //
 // ACK CONTRACT (what makes client prediction work): the serverTick stamped on
 // YOUR OWN sprite's snapshot is the clientTick of the LAST INPUT OF YOURS the
 // server applied — exactly the number @soldat/netcode's PredictionBuffer
-// needs to drop acknowledged inputs and replay the rest. The opponent
-// sprite's snapshot carries the opponent's ack (the client only dead-reckons
-// from it, so its tick domain never matters there).
+// needs to drop acknowledged inputs and replay the rest. Every other sprite
+// (the opposing human, all four bots) is dead-reckoned client-side, so its
+// snapshot's tick domain never matters; those carry the human owner's ack or
+// the sim tick respectively.
 //
-// Scoreboard rides Heartbeat (teamScore [red, blue] + per-player rows) every
-// 30 ticks and immediately after every kill; kills also emit a structured
-// server chat `kill:<killer>:<victim>:<weapon>` for the client's feed.
-// Disconnect = the opponent wins: `end:disconnect:<winnerNum>` then close.
+// MATCH START: the welcome's mapName recipe carries the deterministic arena
+// AND both engine choices — `arena=<A>&seed=<S>&e1=<idA>&e2=<idB>` — so each
+// client can label teams ('YOU + WOLF vs STRANGER + HYDRA') without a new
+// message type.
 //
-// V1 GAPS (documented, deliberate — see the goal node): weapon-swap and
-// reload-state are server-authoritative but only ammo travels (snapshot
-// ammoCount); the chance wildcard arms BOT carriers only, so with zero bots
-// every 1v1 starts stock AK74 (players can still cycle weapons — the
-// changeWeapon button rides the wire and the server swaps authoritatively).
+// Scoreboard rides Heartbeat (teamScore [red, blue] summed across each team +
+// per-sprite rows, bots included) every 30 ticks and immediately after every
+// kill; kills also emit a structured server chat `kill:<killer>:<victim>:
+// <weapon>` for the client's feed (bot nums 3..6 — the client attributes them
+// to engine names).
+//
+// V1 GAPS that REMAIN (documented, deliberate): weapon-swap and reload-state
+// are server-authoritative but only ammo travels (snapshot ammoCount).
 
 import {
   ChatChannel,
@@ -36,7 +49,7 @@ import {
   type ScoreboardEntry,
 } from '@soldat/protocol';
 import { applyInputToSprite, captureSpriteSnapshotOne } from '@soldat/netcode';
-import { Game, generateArena } from '@soldat/client/headless';
+import { Game, generateArena, engineIds, resolveWildcard } from '@soldat/client/headless';
 import type { GameSocket } from './ws.js';
 
 /** Sim ticks between snapshot batches: 3 -> 20 Hz at the 60 Hz sim rate. */
@@ -47,12 +60,32 @@ const HEARTBEAT_EVERY_TICKS = 30;
 const QUEUE_CATCHUP_DEPTH = 5;
 /** Hard cap on a client's queued inputs (a stalled tab can't grow memory). */
 const QUEUE_MAX = 240;
+/** Bots per match (2 per team): 3v3 = 1 human + 2 bots a side. */
+export const MATCH_BOT_COUNT = 4;
+/** All sprite slots in a match: humans 1..2, bots 3..6. */
+export const MATCH_SPRITES = [1, 2, 3, 4, 5, 6] as const;
 
 export interface MatchOptions {
   /** Deterministic world seed (random per match in production). */
   seed: number;
   /** Generated-arena seed (random per match in production). */
   arenaSeed: number;
+  /** Raw engine choices from the hellos: [player A's, player B's]. */
+  engines: [string, string];
+}
+
+/**
+ * Sanitise one hello engine choice: a registered id passes through, anything
+ * else ('' included) falls back to 'classic'. Warns on a real unknown so a
+ * client bug is visible in the server log without poisoning the match.
+ */
+export function sanitizeEngineChoice(raw: string): string {
+  const id = raw.trim();
+  if ((engineIds() as readonly string[]).includes(id)) return id;
+  if (id !== '') {
+    console.warn(`[match] unknown engine choice '${id}' — falling back to 'classic'`);
+  }
+  return 'classic';
 }
 
 interface PlayerSlot {
@@ -68,6 +101,8 @@ interface PlayerSlot {
 export class Match {
   readonly game: Game;
   readonly options: MatchOptions;
+  /** Sanitised per-team engine ids: [team 1 (red), team 2 (blue)]. */
+  readonly teamEngines: [string, string];
   /** Fires once when the match ends (disconnect); production clears timers. */
   onEnd: (() => void) | null = null;
 
@@ -78,13 +113,24 @@ export class Match {
 
   constructor(a: GameSocket, b: GameSocket, opts: MatchOptions) {
     this.options = opts;
+    this.teamEngines = [
+      sanitizeEngineChoice(opts.engines[0]),
+      sanitizeEngineChoice(opts.engines[1]),
+    ];
     const arena = generateArena(opts.arenaSeed);
     this.game = new Game({
       seed: opts.seed,
       spawns: arena.spawns,
-      botCount: 0,
+      botCount: MATCH_BOT_COUNT,
       humanCount: 2,
       teams: true,
+      combat: true,
+      // Per-team engine rule: group 0 → team 1 (player A), group 1 → team 2
+      // (player B). Identical picks collapse to one group; teams alternate.
+      aiEngine: `${this.teamEngines[0]},${this.teamEngines[1]}`,
+      // Same seeded chance roll local play uses — bot carriers exist online
+      // now, so a lucky seed arms one wildcard carrier per team.
+      wildcard: resolveWildcard('chance', opts.seed),
     });
     this.game.loadMap(arena.map);
 
@@ -94,9 +140,9 @@ export class Match {
     ];
 
     // Input application seam: onBrainsTicked fires once per SIM tick, after
-    // (zero) brains and before firing/physics — the exact point the netcode
-    // prediction tests apply inputs at, so server and client trajectories
-    // match tick-for-tick.
+    // the four bot brains and before firing/physics — the exact point the
+    // netcode prediction tests apply inputs at, so server and client
+    // trajectories match tick-for-tick.
     this.game.onBrainsTicked = (): void => this.applyQueuedInputs();
 
     this.game.onKill = (killer, victim): void => {
@@ -110,9 +156,12 @@ export class Match {
       p.sock.onClose(() => this.onDisconnect(p));
     }
 
-    // MATCH START: each player learns its slot (1 = red, 2 = blue) and the
-    // deterministic map recipe via the welcome's mapName.
-    const mapName = `arena=${opts.arenaSeed}&seed=${opts.seed}`;
+    // MATCH START: each player learns its slot (1 = red, 2 = blue), the
+    // deterministic map recipe, and BOTH teams' engines via the welcome's
+    // mapName.
+    const mapName =
+      `arena=${opts.arenaSeed}&seed=${opts.seed}` +
+      `&e1=${encodeURIComponent(this.teamEngines[0])}&e2=${encodeURIComponent(this.teamEngines[1])}`;
     for (const p of this.players) {
       p.sock.send(
         encodeMessage({
@@ -216,36 +265,50 @@ export class Match {
     if (parts === null) return;
     // Wire ammo is the Game's per-slot magazine (sprite.bulletCount is an
     // unused Pascal mirror otherwise) — copy it in so the HUD can show it.
-    for (const p of this.players) {
-      const s = world.sprites[p.num];
-      if (s !== undefined) s.bulletCount = this.game.ammoOf(p.num);
+    for (const num of MATCH_SPRITES) {
+      const s = world.sprites[num];
+      if (s !== undefined) s.bulletCount = this.game.ammoOf(num);
     }
+    const simTick = world.mainTickCounter;
     for (const recipient of this.players) {
       if (!recipient.connected) continue;
-      for (const subject of this.players) {
-        const sprite = world.sprites[subject.num];
+      for (const num of MATCH_SPRITES) {
+        const sprite = world.sprites[num];
         if (sprite === undefined || !sprite.active) continue;
-        const snap = captureSpriteSnapshotOne(sprite, parts, subject.acked);
+        // Humans carry THEIR ack (the recipient's own one is the prediction
+        // contract; the opponent's is dead-reckoned, domain irrelevant).
+        // Bots carry the sim tick — also dead-reckoned, also irrelevant.
+        const human = this.players.find((p) => p.num === num);
+        const tickStamp = human !== undefined ? human.acked : simTick;
+        const snap = captureSpriteSnapshotOne(sprite, parts, tickStamp);
         recipient.sock.send(encodeMessage({ kind: 'spriteSnapshot', snapshot: snap }));
       }
     }
   }
 
   private sendHeartbeat(): void {
-    const rows: ScoreboardEntry[] = this.players.map((p) => ({
-      num: p.num,
-      active: p.connected,
-      team: this.game.teamOf(p.num),
-      kills: this.game.killsOf(p.num),
-      deaths: this.game.deathsOf(p.num),
-      caps: 0,
-      ping: 0,
-      realPing: 0,
-      connectionQuality: 0,
-      flags: 0,
-    }));
-    const red = rows.find((r) => r.team === 1)?.kills ?? 0;
-    const blue = rows.find((r) => r.team === 2)?.kills ?? 0;
+    const rows: ScoreboardEntry[] = MATCH_SPRITES.map((num) => {
+      const human = this.players.find((p) => p.num === num);
+      return {
+        num,
+        active: human !== undefined ? human.connected : true,
+        team: this.game.teamOf(num),
+        kills: this.game.killsOf(num),
+        deaths: this.game.deathsOf(num),
+        caps: 0,
+        ping: 0,
+        realPing: 0,
+        connectionQuality: 0,
+        flags: 0,
+      };
+    });
+    // TEAM score = the SUM of each side's kills (humans + their bots).
+    let red = 0;
+    let blue = 0;
+    for (const r of rows) {
+      if (r.team === 1) red += r.kills;
+      else if (r.team === 2) blue += r.kills;
+    }
     this.broadcast({
       kind: 'heartbeat',
       mapId: this.options.arenaSeed,

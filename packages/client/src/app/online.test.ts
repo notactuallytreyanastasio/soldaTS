@@ -1,4 +1,4 @@
-// Pure-logic tests for the online 1v1 net client (goal node 450).
+// Pure-logic tests for the online team-vs-team net client (goal node 450).
 import { describe, it, expect } from 'vitest';
 import { Posture } from '@soldat/protocol';
 import type { Control } from '@soldat/sim';
@@ -7,6 +7,8 @@ import {
   deriveWsUrl,
   parseMatchRecipe,
   parseServerChat,
+  spriteLabel,
+  spriteTeam,
 } from './online';
 
 describe('deriveWsUrl', () => {
@@ -57,11 +59,31 @@ describe('controlToInputFrame', () => {
 });
 
 describe('parseMatchRecipe', () => {
-  it('extracts arena + seed from the welcome mapName', () => {
-    expect(parseMatchRecipe('arena=512&seed=90210')).toEqual({ arenaSeed: 512, seed: 90210 });
+  it('extracts arena + seed + both team engines from the welcome mapName', () => {
+    expect(parseMatchRecipe('arena=512&seed=90210&e1=wolf&e2=hydra')).toEqual({
+      arenaSeed: 512,
+      seed: 90210,
+      e1: 'wolf',
+      e2: 'hydra',
+    });
   });
-  it('falls back to 1/1 on garbage', () => {
-    expect(parseMatchRecipe('')).toEqual({ arenaSeed: 1, seed: 1 });
+  it("falls back to 1/1 + 'classic' engines on garbage", () => {
+    expect(parseMatchRecipe('')).toEqual({ arenaSeed: 1, seed: 1, e1: 'classic', e2: 'classic' });
+  });
+});
+
+describe('spriteTeam / spriteLabel (the server slot contract)', () => {
+  it('maps humans 1/2 to red/blue and bots 3..6 alternating', () => {
+    expect([1, 2, 3, 4, 5, 6].map(spriteTeam)).toEqual([1, 2, 1, 2, 1, 2]);
+  });
+  it('labels self, the opposing human, and bots by their team engine', () => {
+    expect(spriteLabel(1, 1, 'wolf', 'hydra')).toBe('You');
+    expect(spriteLabel(2, 1, 'wolf', 'hydra')).toBe('Stranger');
+    expect(spriteLabel(1, 2, 'wolf', 'hydra')).toBe('Stranger');
+    expect(spriteLabel(3, 1, 'wolf', 'hydra')).toBe('WOLF');
+    expect(spriteLabel(4, 1, 'wolf', 'hydra')).toBe('HYDRA');
+    expect(spriteLabel(5, 2, 'wolf', 'hydra')).toBe('WOLF');
+    expect(spriteLabel(6, 2, 'wolf', 'hydra')).toBe('HYDRA');
   });
 });
 

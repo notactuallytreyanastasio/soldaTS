@@ -46,8 +46,9 @@ export function isBareUrl(
   return MODE_PARAMS.every((p) => !params.has(p));
 }
 
-/** The two learned (trained-from-replay-data) models get a badge + alias. */
-const LEARNED_MODELS: Record<string, string> = {
+/** The two learned (trained-from-replay-data) models get a badge + alias.
+ *  Exported: the online brain-picker (online.ts) reuses the same badging. */
+export const LEARNED_MODELS: Record<string, string> = {
   neural: 'MIMIC',
   disciple: 'DISCIPLE',
 };
@@ -194,11 +195,11 @@ export function showMenuScreen(): void {
     column.appendChild(row);
   }
 
-  // --- Play online: 1v1 vs another human (goal node 450) -------------------
+  // --- Play online: team-vs-team vs another human (goal node 450) ----------
   const onlineBtn = document.createElement('button');
   onlineBtn.style.cssText =
     ROW_STYLE + ';justify-content:center;border-color:#7a4a4a;margin-top:10px;color:#ffd1d1';
-  onlineBtn.textContent = '⚔ PLAY ONLINE — 1v1 vs a human';
+  onlineBtn.textContent = '⚔ PLAY ONLINE — 3v3 vs a human: you each pick your bot squad';
   onlineBtn.addEventListener('mouseenter', () => (onlineBtn.style.borderColor = '#d23c3c'));
   onlineBtn.addEventListener('mouseleave', () => (onlineBtn.style.borderColor = '#7a4a4a'));
   onlineBtn.addEventListener('click', () => {

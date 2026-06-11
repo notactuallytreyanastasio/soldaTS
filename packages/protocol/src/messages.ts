@@ -43,7 +43,7 @@ export interface Vec2 {
  * game build, and rides inside every envelope so peers can reject mismatches
  * during the handshake.
  */
-export const PROTOCOL_VERSION = 1 as const;
+export const PROTOCOL_VERSION = 2 as const; // v2: hello carries `engine` (team-vs-team online)
 
 // ---------------------------------------------------------------------------
 // Shared enums / small value types
@@ -316,6 +316,14 @@ export interface HandshakeHello {
   look: number;
   /** PORT: GameModChecksum: TSHA1Digest — 20 raw bytes as hex. */
   modChecksum: string;
+  /**
+   * v2 (team-vs-team online): the bot-AI engine id this player wants their
+   * TEAM's bots to run (e.g. 'wolf'). '' = no preference (server default).
+   * Unknown ids are sanitised server-side to 'classic'. Absent on the wire in
+   * v1 hellos — the codec reads it as '' so the lobby can still send a clean
+   * WrongVersion reject instead of a hard decode failure.
+   */
+  engine: string;
 }
 
 /**

@@ -400,6 +400,14 @@ export interface GameOptions {
    */
   spectate?: boolean;
   /**
+   * Combat mode (goal node 450, team-vs-team online): bots get the spectate
+   * treatment — opaque sprites (perception sees them) and engine sustainment —
+   * WITHOUT removing the human slots. The online match server sets this so
+   * each player's bot teammates actually fight. Default false: every existing
+   * mode (play/spectate/arena/replay) is byte-for-byte unaffected.
+   */
+  combat?: boolean | undefined;
+  /**
    * Bot-AI engine id ('classic' | 'pilot' | any registered engine). Unknown
    * ids fall back to classic. Default 'classic'. (`| undefined` so callers
    * can pass a parsed-from-URL value under exactOptionalPropertyTypes.)
@@ -531,6 +539,8 @@ export class Game {
 
   private accumulator = 0;
   private readonly spectate: boolean;
+  /** Combat mode (online team-vs-team): opaque sprites + engine sustainment. */
+  private readonly combat: boolean;
   private readonly spawns: readonly { x: number; y: number }[];
   private readonly bots: BotEntry[] = [];
   /** Bot navigation graph; rebuilt from real map waypoints in spectate mode. */
@@ -599,6 +609,7 @@ export class Game {
     initSimWorld(this.world, opts.seed !== undefined ? { seed: opts.seed } : undefined);
 
     this.spectate = opts.spectate ?? false;
+    this.combat = opts.combat ?? false;
     this.spawns = opts.spawns ?? [{ x: 0, y: 0 }];
     // No waypoints in the sandbox arena → an empty graph. Bots still perceive,
     // aim and fire at the nearest enemy; navigation is a no-op (they hold
@@ -624,7 +635,10 @@ export class Game {
         return self.graph;
       },
       spawns: this.spawns,
-      spectate: this.spectate,
+      // Engines treat combat matches like spectate ones: full sustainment
+      // (wander/patrol fallbacks, corrected aim) — there IS a human, but the
+      // bots must hold their own end of a 3v3 without babysitting.
+      spectate: this.spectate || this.combat,
       ammoOf: (i: number): number => this.ammoOf(i),
       reloadingOf: (i: number): boolean => this.reloadingOf(i),
       magSize: this.tuning.magSize,
@@ -835,8 +849,10 @@ export class Game {
     // this, bots never acquire ANY target and a bot-vs-bot match never fires
     // a shot. Gated on spectate to keep normal play byte-for-byte unchanged
     // (where, NOTE, bots are currently pacifists for exactly this reason —
-    // promoting `s.alpha = 255` to both modes is the one-line fix).
-    if (this.spectate) {
+    // promoting `s.alpha = 255` to both modes is the one-line fix). Combat
+    // mode (online team-vs-team) takes the same promotion: every sprite —
+    // bots AND humans — is opaque, so the 3v3 actually shoots.
+    if (this.spectate || this.combat) {
       s.alpha = 255;
     }
     s.deadMeat = false;

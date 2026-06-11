@@ -157,6 +157,7 @@ const cases: Record<string, Message> = {
       team: 1,
       look: 0b10010110,
       modChecksum: "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+      engine: "hydra",
     },
   },
   handshakeWelcomeOk: {

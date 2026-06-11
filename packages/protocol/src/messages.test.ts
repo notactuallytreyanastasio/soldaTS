@@ -42,11 +42,11 @@ const noButtons: Buttons = {
 const v = (x: number, y: number): Vec2 => ({ x, y });
 
 describe("PROTOCOL_VERSION", () => {
-  it("is the literal 1", () => {
-    expect(PROTOCOL_VERSION).toBe(1);
-    // Type-level: PROTOCOL_VERSION is the literal type `1`.
-    const _check: 1 = PROTOCOL_VERSION;
-    expect(_check).toBe(1);
+  it("is the literal 2 (v2: hello carries the engine choice)", () => {
+    expect(PROTOCOL_VERSION).toBe(2);
+    // Type-level: PROTOCOL_VERSION is the literal type `2`.
+    const _check: 2 = PROTOCOL_VERSION;
+    expect(_check).toBe(2);
   });
 });
 
@@ -151,6 +151,7 @@ const helloMsg: Message = {
     team: 1,
     look: 0,
     modChecksum: "0".repeat(40),
+    engine: "wolf",
   },
 };
 

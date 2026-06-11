@@ -1,27 +1,34 @@
-// ONLINE 1v1 (goal node 450) — the `?online` boot mode: connect to the game
-// server, get paired against another human, fight red vs blue.
+// ONLINE TEAM-vs-TEAM (goal node 450) — the `?online` boot mode: pick the
+// bot engine for YOUR side, connect to the game server, get paired against
+// another human, fight 3v3 red vs blue (each side = 1 human + 2 bots running
+// that side's chosen brain).
 //
-// THE MODEL (decision node 455):
+// THE MODEL (decision node 455, extended by node 465):
 //   * The SERVER is authoritative: it runs the same headless Game
-//     (humanCount: 2, botCount: 0) and streams FULL sprite snapshots at 20 Hz.
+//     (humanCount: 2, botCount: 4, combat on) and streams FULL sprite
+//     snapshots for ALL SIX sprites at 20 Hz.
 //   * YOUR sprite is client-side predicted with @soldat/netcode's
 //     PredictionBuffer over a bare sim World: every sim tick records your
 //     InputFrame (stepping the local world once for instant response) and
 //     sends it to the server; each own-sprite snapshot arrives stamped with
 //     the clientTick the server last applied, so the buffer snaps to the
 //     authoritative state and replays only the unacknowledged inputs.
-//   * The OPPONENT is dead-reckoned: every render frame their sprite is
-//     pinned to (latest snapshot position + velocity × ticks-since), so the
-//     local physics steps in between never accumulate drift.
+//   * EVERY OTHER sprite (the opposing human AND all four bots) is
+//     dead-reckoned: every render frame it is pinned to (latest snapshot
+//     position + velocity × ticks-since), so the local physics steps in
+//     between never accumulate drift.
 //   * BULLETS are cosmetic client-side (spawned from each sprite's live fire
 //     button with hitMultiply 0 — they render and collide with the map but
 //     deal no local damage); hits, health, kills, and respawns are all
 //     server truth carried by snapshots, heartbeats, and kill chats.
+//   * ENGINE CHOICES ride the wire twice: the hello's v2 `engine` field
+//     carries yours up, and the welcome's mapName recipe
+//     (`arena=A&seed=S&e1=..&e2=..`) carries both back down, so the banner
+//     and kill feed can say 'YOU + WOLF vs STRANGER + HYDRA'.
 //
-// V1 GAPS (shipped loudly, not silently): ammo/reload state rides only the
-// snapshot's ammoCount, jet fuel is mirrored locally (not on the wire), and
-// the chance wildcard never arms anyone (it arms BOTS; there are none) — both
-// players start AK74 and may cycle weapons with Tab as usual.
+// GAPS that REMAIN (shipped loudly, not silently): ammo/reload state rides
+// only the snapshot's ammoCount and jet fuel is mirrored locally (not on the
+// wire). The chance wildcard DOES arm online now — bot carriers exist.
 
 import type { Control } from '@soldat/sim';
 import {
@@ -53,6 +60,8 @@ import { BloodFx, Crosshair } from '../render/fx';
 import { buildTexturedMap } from '../render/mapTextured';
 import { InputController } from '../input/input';
 import { Hud, type HudState } from '../ui/hud';
+import { LEARNED_MODELS } from '../ui/menuScreen';
+import { engineIds, createEngine } from '../ai';
 import { shouldShowControls, showControlsScreen } from '../ui/controlsScreen';
 import { START_HEALTH } from '../ui/helpers';
 import { applyKill, type KillBoard } from './director';
@@ -118,15 +127,50 @@ export function controlToInputFrame(clientTick: number, c: Control): InputFrame 
   };
 }
 
-/** Parse the welcome's mapName recipe (`arena=<A>&seed=<S>`). */
-export function parseMatchRecipe(mapName: string): { arenaSeed: number; seed: number } {
+/** All sprite slots in an online match: humans 1..2, bots 3..6 (server contract). */
+export const ONLINE_SPRITES = [1, 2, 3, 4, 5, 6] as const;
+
+/**
+ * Parse the welcome's mapName recipe (`arena=<A>&seed=<S>&e1=<id>&e2=<id>`).
+ * e1/e2 are the sanitised per-team engine ids (red/blue); pre-team servers
+ * (no e1/e2) read as 'classic' so nothing renders blank.
+ */
+export function parseMatchRecipe(mapName: string): {
+  arenaSeed: number;
+  seed: number;
+  e1: string;
+  e2: string;
+} {
   const p = new URLSearchParams(mapName);
   const arenaSeed = parseInt(p.get('arena') ?? '', 10);
   const seed = parseInt(p.get('seed') ?? '', 10);
+  const e1 = p.get('e1') ?? '';
+  const e2 = p.get('e2') ?? '';
   return {
     arenaSeed: Number.isFinite(arenaSeed) ? arenaSeed : 1,
     seed: Number.isFinite(seed) ? seed : 1,
+    e1: e1 !== '' ? e1 : 'classic',
+    e2: e2 !== '' ? e2 : 'classic',
   };
+}
+
+/**
+ * Team of sprite `num` under the server's slot contract: humans 1/2 are red/
+ * blue; bots 3..6 alternate red/blue (Game assigns bot slot b team (b%2)+1,
+ * and bots start at slot 3).
+ */
+export function spriteTeam(num: number): number {
+  return num <= 2 ? num : ((num - 3) % 2) + 1;
+}
+
+/**
+ * Kill-feed/banner label for sprite `num`: 'You', 'Stranger', or the engine
+ * name (uppercased) driving that bot's team.
+ */
+export function spriteLabel(num: number, myNum: number, e1: string, e2: string): string {
+  if (num === myNum) return 'You';
+  if (num <= 2) return 'Stranger';
+  return (spriteTeam(num) === 1 ? e1 : e2).toUpperCase();
 }
 
 /** Structured server chat lines (`kill:..`, `end:..`, `queue:waiting`). */
@@ -241,13 +285,120 @@ function makeOverlay(): { set(html: string, color?: string): void; hide(): void 
   };
 }
 
-function showTeamBanner(myTeam: number): void {
+/**
+ * The brain picker (goal node 450, team upgrade): a small overlay listing
+ * every registered engine — LEARNED badges included, menuScreen style — that
+ * resolves to the chosen id. 'RANDOM' (the default, Enter/Escape) resolves to
+ * a concrete random id client-side so the server only ever sees real choices.
+ */
+function pickEngineOverlay(): Promise<string> {
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.style.cssText = [
+      'position:fixed',
+      'inset:0',
+      'z-index:1001',
+      'display:flex',
+      'flex-direction:column',
+      'align-items:center',
+      'background:rgba(10,12,16,0.96)',
+      'color:#e8e4d8',
+      'font-family:ui-monospace,Menlo,monospace',
+      'overflow-y:auto',
+      'padding:32px 16px',
+      'box-sizing:border-box',
+      'user-select:none',
+    ].join(';');
+    const title = document.createElement('div');
+    title.textContent = 'PICK YOUR SQUAD';
+    title.style.cssText =
+      'font-size:22px;font-weight:bold;letter-spacing:0.4em;color:#fff;margin-bottom:4px';
+    const sub = document.createElement('div');
+    sub.textContent = 'two bots fight at your side — choose the brain they run';
+    sub.style.cssText = 'font-size:12px;letter-spacing:0.2em;color:#9aa3b2;margin-bottom:18px';
+    el.append(title, sub);
+
+    const column = document.createElement('div');
+    column.style.cssText = 'display:flex;flex-direction:column;gap:6px;width:min(680px,94vw)';
+    el.appendChild(column);
+
+    const done = (id: string): void => {
+      window.removeEventListener('keydown', onKey);
+      el.remove();
+      resolve(id);
+    };
+    const randomPick = (): string => {
+      const ids = engineIds();
+      return ids[Math.floor(Math.random() * ids.length)] ?? 'classic';
+    };
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === 'Enter' || e.key === 'Escape') done(randomPick());
+    };
+    window.addEventListener('keydown', onKey);
+
+    const rowStyle = [
+      'display:flex',
+      'align-items:baseline',
+      'gap:10px',
+      'width:100%',
+      'text-align:left',
+      'background:#141821',
+      'color:#e8e4d8',
+      'border:1px solid #2a2f3a',
+      'border-radius:6px',
+      'padding:7px 14px',
+      'cursor:pointer',
+      'font-family:inherit',
+      'font-size:13px',
+    ].join(';');
+
+    // RANDOM — the default — leads the list.
+    const rnd = document.createElement('button');
+    rnd.style.cssText = rowStyle + ';border-color:#3a4154;justify-content:center';
+    rnd.textContent = '🎲 RANDOM SQUAD (default — Enter)';
+    rnd.addEventListener('click', () => done(randomPick()));
+    column.appendChild(rnd);
+
+    for (const id of engineIds()) {
+      const engine = createEngine(id);
+      const row = document.createElement('button');
+      row.style.cssText = rowStyle;
+      row.addEventListener('mouseenter', () => (row.style.borderColor = '#ffd75e'));
+      row.addEventListener('mouseleave', () => (row.style.borderColor = '#2a2f3a'));
+      const name = document.createElement('span');
+      const alias = LEARNED_MODELS[id];
+      name.textContent =
+        alias !== undefined && alias !== id.toUpperCase()
+          ? `${id.toUpperCase()} “${alias}”`
+          : id.toUpperCase();
+      name.style.cssText = 'font-weight:bold;font-size:14px;color:#fff;white-space:nowrap';
+      row.appendChild(name);
+      if (alias !== undefined) {
+        const badge = document.createElement('span');
+        badge.textContent = 'LEARNED';
+        badge.style.cssText =
+          'font-size:9px;font-weight:bold;letter-spacing:0.15em;color:#0a0c10;background:#9be07f;border-radius:3px;padding:1px 6px;white-space:nowrap';
+        row.appendChild(badge);
+      }
+      const blurb = document.createElement('span');
+      blurb.textContent = engine.strategy;
+      blurb.style.cssText =
+        'color:#9aa3b2;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1';
+      row.appendChild(blurb);
+      row.addEventListener('click', () => done(id));
+      column.appendChild(row);
+    }
+    document.body.appendChild(el);
+  });
+}
+
+function showTeamBanner(myTeam: number, myEngine: string, oppEngine: string): void {
   const el = document.createElement('div');
   const opp = myTeam === 1 ? 2 : 1;
   el.innerHTML =
-    `<span style="color:${TEAM_CSS[myTeam]};font-weight:bold">${TEAM_NAMES[myTeam]} YOU</span>` +
+    `<span style="color:${TEAM_CSS[myTeam]};font-weight:bold">YOU + ${myEngine.toUpperCase()}</span>` +
     `<span style="color:#9aa3b2"> vs </span>` +
-    `<span style="color:${TEAM_CSS[opp]};font-weight:bold">${TEAM_NAMES[opp]} STRANGER</span>`;
+    `<span style="color:${TEAM_CSS[opp]};font-weight:bold">STRANGER + ${oppEngine.toUpperCase()}</span>`;
   el.style.cssText = [
     'position:fixed',
     'top:10px',
@@ -269,6 +420,9 @@ function showTeamBanner(myTeam: number): void {
 // ---------------------------------------------------------------------------
 
 export async function onlineMain(): Promise<void> {
+  // Brain picker FIRST — the hello must carry the choice.
+  const myEnginePick = await pickEngineOverlay();
+
   const overlay = makeOverlay();
   overlay.set('CONNECTING…');
 
@@ -279,7 +433,11 @@ export async function onlineMain(): Promise<void> {
   let matchOver = false;
 
   ws.addEventListener('open', () => {
-    overlay.set('FINDING AN OPPONENT…<br><span style="font-size:13px;color:#9aa3b2">first to arrive waits — send a friend to /arena/play/?online</span>');
+    overlay.set(
+      `WAITING FOR AN OPPONENT…<br>` +
+        `<span style="font-size:13px;color:#9aa3b2">your squad: ${myEnginePick.toUpperCase()} — ` +
+        `first to arrive waits; send a friend to /arena/play/?online</span>`,
+    );
     ws.send(
       encodeMessage({
         kind: 'handshake',
@@ -294,6 +452,7 @@ export async function onlineMain(): Promise<void> {
           team: 0,
           look: 0,
           modChecksum: '',
+          engine: myEnginePick,
         },
       }),
     );
@@ -337,9 +496,10 @@ export async function onlineMain(): Promise<void> {
   // --- The match ------------------------------------------------------------
 
   async function bootMatch(myNum: number, mapName: string): Promise<void> {
-    const { arenaSeed, seed } = parseMatchRecipe(mapName);
-    const oppNum = myNum === 1 ? 2 : 1;
+    const { arenaSeed, seed, e1, e2 } = parseMatchRecipe(mapName);
     const myTeam = myNum; // slot 1 = red, slot 2 = blue (server contract)
+    const myEngine = myTeam === 1 ? e1 : e2;
+    const oppEngine = myTeam === 1 ? e2 : e1;
 
     const mount = document.getElementById('app');
     if (mount === null) throw new Error('#app element not found');
@@ -356,13 +516,16 @@ export async function onlineMain(): Promise<void> {
       /* flat colours are fine */
     }
 
-    // Local predicted world: both sprites spawned exactly where the server
-    // spawned them (same generateArena recipe, same spawn cycling).
+    // Local predicted world: all SIX sprites spawned exactly where the server
+    // spawned them (same generateArena recipe, same spawn cycling — humans
+    // h=0,1 take spawnFor(h), bots take spawnFor(index); see Game's ctor).
     const world = createWorld();
     initSimWorld(world, { seed });
     world.map = buildPolyMap(map);
-    spawnOnlineSprite(world, 1, spawns[0] ?? { x: 0, y: 0 }, 1);
-    spawnOnlineSprite(world, 2, spawns[1 % spawns.length] ?? { x: 0, y: 0 }, 2);
+    for (const num of ONLINE_SPRITES) {
+      const spawnIdx = (num <= 2 ? num - 1 : num) % spawns.length;
+      spawnOnlineSprite(world, num, spawns[spawnIdx] ?? { x: 0, y: 0 }, spriteTeam(num));
+    }
     const buffer = new PredictionBuffer(world, myNum);
 
     const entityRenderer = new EntityRenderer();
@@ -390,16 +553,16 @@ export async function onlineMain(): Promise<void> {
     if (canvas === undefined) throw new Error('renderer canvas missing after init()');
     const input = new InputController(canvas);
     if (shouldShowControls()) showControlsScreen();
-    showTeamBanner(myTeam);
+    showTeamBanner(myTeam, myEngine, oppEngine);
     overlay.hide();
 
     // --- Net state ---------------------------------------------------------
-    const nameOf = (i: number): string => (i === myNum ? 'You' : 'Stranger');
+    const nameOf = (i: number): string => spriteLabel(i, myNum, e1, e2);
     const board: KillBoard = { kills: new Map(), feed: [] };
     let teamScore: [number, number] = [0, 0];
     let ownAmmo = 30;
-    let oppSnap: SpriteSnapshotFull | null = null;
-    let oppSnapAtTick = 0;
+    /** Latest snapshot per REMOTE sprite (opposing human + all four bots). */
+    const remoteSnaps = new Map<number, { snap: SpriteSnapshotFull; atTick: number }>();
     let clientTick = 0;
 
     const markVitals = (num: number, health: number): void => {
@@ -425,8 +588,7 @@ export async function onlineMain(): Promise<void> {
           });
           markVitals(myNum, snap.health);
         } else {
-          oppSnap = snap;
-          oppSnapAtTick = clientTick;
+          remoteSnaps.set(snap.num, { snap, atTick: clientTick });
           applySpriteSnapshot(world, snap);
           markVitals(snap.num, snap.health);
         }
@@ -455,7 +617,7 @@ export async function onlineMain(): Promise<void> {
     });
 
     // --- Cosmetic fire (visual bullets; hitMultiply 0 = zero local damage) --
-    const nextCosmeticFire: number[] = [0, 0, 0];
+    const nextCosmeticFire: number[] = [0, 0, 0, 0, 0, 0, 0];
     const cosmeticFire = (num: number): void => {
       const s = world.sprites[num];
       const parts = world.spriteParts;
@@ -500,20 +662,21 @@ export async function onlineMain(): Promise<void> {
       }
     };
 
-    /** Pin the opponent to (latest snapshot + velocity × elapsed ticks). */
-    const deadReckonOpponent = (): void => {
-      if (oppSnap === null) return;
+    /** Pin every REMOTE sprite to (latest snapshot + velocity × elapsed ticks). */
+    const deadReckonRemotes = (): void => {
       const parts = world.spriteParts;
       if (parts === null) return;
-      const dt = Math.min(clientTick - oppSnapAtTick, EXTRAPOLATE_MAX_TICKS);
-      const px = oppSnap.pos.x + oppSnap.velocity.x * dt;
-      const py = oppSnap.pos.y + oppSnap.velocity.y * dt;
-      parts.posX[oppNum] = px;
-      parts.posY[oppNum] = py;
-      parts.oldX[oppNum] = px - oppSnap.velocity.x;
-      parts.oldY[oppNum] = py - oppSnap.velocity.y;
-      parts.velocityX[oppNum] = oppSnap.velocity.x;
-      parts.velocityY[oppNum] = oppSnap.velocity.y;
+      for (const [num, { snap, atTick }] of remoteSnaps) {
+        const dt = Math.min(clientTick - atTick, EXTRAPOLATE_MAX_TICKS);
+        const px = snap.pos.x + snap.velocity.x * dt;
+        const py = snap.pos.y + snap.velocity.y * dt;
+        parts.posX[num] = px;
+        parts.posY[num] = py;
+        parts.oldX[num] = px - snap.velocity.x;
+        parts.oldY[num] = py - snap.velocity.y;
+        parts.velocityX[num] = snap.velocity.x;
+        parts.velocityY[num] = snap.velocity.y;
+      }
     };
 
     // --- Camera --------------------------------------------------------------
@@ -565,10 +728,13 @@ export async function onlineMain(): Promise<void> {
         let ran = 0;
         while (accumulator >= TICK_DT && ran < MAX_TICKS_PER_FRAME) {
           clientTick += 1;
-          // Cosmetic muzzle output for both sides BEFORE the predicted step
-          // moves the world (the opponent fires from their last-known state).
+          // Cosmetic muzzle output for every remote sprite BEFORE the
+          // predicted step moves the world (they fire from their last-known
+          // state — fire buttons arrive inside their snapshots).
           const myFrame = controlToInputFrame(clientTick, control);
-          cosmeticFire(oppNum);
+          for (const num of ONLINE_SPRITES) {
+            if (num !== myNum) cosmeticFire(num);
+          }
           // Record + predict (applies control to my sprite, steps the world).
           buffer.recordInput(clientTick, myFrame);
           cosmeticFire(myNum);
@@ -580,7 +746,7 @@ export async function onlineMain(): Promise<void> {
         if (accumulator > TICK_DT) accumulator = 0;
       }
 
-      deadReckonOpponent();
+      deadReckonRemotes();
       entityRenderer.render(world, accumulator / TICK_DT);
       blood.update(dt);
       blood.draw();
@@ -593,7 +759,7 @@ export async function onlineMain(): Promise<void> {
         maxJet: DEFAULT_TUNING.jetFuelMax,
         ammo: ownAmmo,
         weaponName:
-          `${TEAM_NAMES[myTeam]} YOU · ` +
+          `${TEAM_NAMES[myTeam]} YOU + ${myEngine.toUpperCase()} · ` +
           (WEAPON_LABEL_BY_INDEX[mySprite.selWeapon] ?? 'AK74'),
         scores: {
           alpha: teamScore[0],
