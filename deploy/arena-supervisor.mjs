@@ -50,6 +50,11 @@ const CHILDREN = [
   { tag: 'watch', script: path.join(LIVE, 'watch.mjs') },
   { tag: 'commissioner', script: path.join(LIVE, 'commissioner.mjs') },
   { tag: 'league', script: path.join(LIVE, 'league.mjs') },
+  // The online-1v1 game server (goal node 450): packages/server via its
+  // plain-node launcher (which re-execs the package's tsx so the TS import
+  // chain resolves). GAME_SERVER_PORT default 8902; Caddy routes
+  // bobbby.online/arena/ws -> soldat:8902.
+  { tag: 'game', script: path.join(ROOT, 'packages', 'server', 'server.mjs') },
 ];
 
 let shuttingDown = false;

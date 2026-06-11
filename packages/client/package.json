@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "type": "module",
   "exports": { "./headless": "./src/headless.ts" },
-  "scripts": { "dev": "vite", "build": "vite build" },
+  "scripts": { "dev": "vite --host", "build": "vite build" },
   "dependencies": {
     "@soldat/sim": "workspace:*",
     "@soldat/assets": "workspace:*",
     "@soldat/protocol": "workspace:*",
+    "@soldat/netcode": "workspace:*",
     "pixi.js": "^8.5.0"
   },
   "devDependencies": { "vite": "^5.4.0" }

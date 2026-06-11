@@ -22,6 +22,7 @@ import { engineIds, createEngine } from '../ai';
  */
 const MODE_PARAMS = [
   'play',
+  'online',
   'spectate',
   'duel',
   'tournament',
@@ -192,6 +193,18 @@ export function showMenuScreen(): void {
     row.addEventListener('click', () => startGame(id, wildcardSelect.value));
     column.appendChild(row);
   }
+
+  // --- Play online: 1v1 vs another human (goal node 450) -------------------
+  const onlineBtn = document.createElement('button');
+  onlineBtn.style.cssText =
+    ROW_STYLE + ';justify-content:center;border-color:#7a4a4a;margin-top:10px;color:#ffd1d1';
+  onlineBtn.textContent = '⚔ PLAY ONLINE — 1v1 vs a human';
+  onlineBtn.addEventListener('mouseenter', () => (onlineBtn.style.borderColor = '#d23c3c'));
+  onlineBtn.addEventListener('mouseleave', () => (onlineBtn.style.borderColor = '#7a4a4a'));
+  onlineBtn.addEventListener('click', () => {
+    window.location.href = `${window.location.pathname}?online`;
+  });
+  column.appendChild(onlineBtn);
 
   // --- Random opponent ----------------------------------------------------
   const randomBtn = document.createElement('button');

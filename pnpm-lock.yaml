@@ -42,6 +42,9 @@ importers:
       '@soldat/assets':
         specifier: workspace:*
         version: link:../assets
+      '@soldat/netcode':
+        specifier: workspace:*
+        version: link:../netcode
       '@soldat/protocol':
         specifier: workspace:*
         version: link:../protocol
@@ -72,6 +75,25 @@ importers:
         version: link:../sim
 
   packages/protocol: {}
+
+  packages/server:
+    dependencies:
+      '@soldat/client':
+        specifier: workspace:*
+        version: link:../client
+      '@soldat/netcode':
+        specifier: workspace:*
+        version: link:../netcode
+      '@soldat/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@soldat/sim':
+        specifier: workspace:*
+        version: link:../sim
+    devDependencies:
+      tsx:
+        specifier: ^4.19.0
+        version: 4.22.4
 
   packages/sim: {}
 

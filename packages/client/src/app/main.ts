@@ -540,6 +540,13 @@ async function main(): Promise<void> {
     showMenuScreen();
     return;
   }
+  // ONLINE 1v1 (goal node 450): `?online` hands the page to the net client —
+  // connect to the game server, wait for a human opponent, red vs blue.
+  if (new URLSearchParams(window.location.search).has('online')) {
+    const { onlineMain } = await import('./online');
+    await onlineMain();
+    return;
+  }
   // Duel mode: hand the page over to two side-by-side matches and stop —
   // each iframe boots its own full game through this same entry point.
   const duel = parseDuel();

@@ -3,13 +3,13 @@
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "./dist",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+    "types": ["node"]
   },
   "include": ["src/**/*.ts"],
   "references": [
     { "path": "../sim" },
-    { "path": "../assets" },
     { "path": "../protocol" },
-    { "path": "../netcode" }
+    { "path": "../netcode" },
+    { "path": "../client" }
   ]
 }

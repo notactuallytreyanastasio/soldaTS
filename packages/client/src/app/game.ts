@@ -382,6 +382,16 @@ export interface GameOptions {
   /** Number of bots to spawn (default 3). */
   botCount?: number;
   /**
+   * Number of HUMAN-controlled sprites (goal node 450 — true multiplayer).
+   * Default 1 (the classic local player at slot 1). With 2+, sprites at
+   * playerIndex..playerIndex+humanCount-1 are all brainless human slots: the
+   * caller writes their `control` each tick (locally from the keyboard, or
+   * server-side from network input frames). Humans alternate teams red/blue
+   * when `teams` is on. Bots start after the last human slot. Ignored in
+   * spectate mode (no human sprites at all).
+   */
+  humanCount?: number | undefined;
+  /**
    * Spectate mode: the local player sprite is never spawned (slot 1 stays
    * inactive — invisible to bot perception, bullets, and the renderer) and the
    * bots get spectate-only sustainment (real-waypoint navigation, wander
@@ -488,6 +498,13 @@ export type GameSoundHook = (
 export class Game {
   readonly world: World;
   readonly playerIndex = 1;
+  /**
+   * All human sprite indices (playerIndex..playerIndex+humanCount-1). The
+   * default single-player game is exactly [playerIndex]; spectate is [].
+   */
+  readonly humanIndices: readonly number[];
+  /** Same set, for the per-shot aim-assist gate (humans only, never bots). */
+  private readonly humanSet: ReadonlySet<number>;
   framePercent = 0;
 
   /** Optional sound hook — invoked on fire / reload / death (world coords). */
@@ -614,22 +631,40 @@ export class Game {
       weaponOf: (i: number): string => this.weaponNameOf(i),
     };
 
-    // Player. In spectate mode slot 1 is never spawned: an inactive sprite is
-    // skipped by bot perception (findTarget), bullet collision, and the
-    // renderer, so the human is truly absent rather than a dormant target.
-    if (!this.spectate) {
-      this.spawnSprite(this.playerIndex, this.spawnFor(0));
-    }
-
-    // Bots. `aiEngine` may be one id ('pilot') or a comma list
-    // ('classic,pilot') — a list splits the bots round-robin into a MIXED
-    // match where the engines fight each other in the same arena.
+    // Engines/teams resolve FIRST (humans need their team assignment when
+    // teams are on). Neither consumes world.rng, so spawn order — and replay
+    // byte-identity — is untouched.
     this.engineTweaks = opts.engineTweaks ?? {};
     this.engines = Game.resolveEngines(opts.aiEngine, this.engineTweaks);
     this.teamsEnabled = opts.teams ?? this.engineGroups().length > 1;
+
+    // Humans (goal node 450). In spectate mode NO human slot is ever spawned:
+    // an inactive sprite is skipped by bot perception (findTarget), bullet
+    // collision, and the renderer, so the human is truly absent rather than a
+    // dormant target. With humanCount 2+ (online 1v1), humans alternate teams
+    // red/blue when teams are on; the classic single human stays teamless.
+    const humanCount = this.spectate ? 0 : Math.max(1, opts.humanCount ?? 1);
+    const humans: number[] = [];
+    for (let h = 0; h < humanCount; h++) {
+      const index = this.playerIndex + h;
+      humans.push(index);
+      if (this.teamsEnabled && humanCount >= 2) {
+        this.botTeam.set(index, (h % 2) + 1);
+      }
+      this.spawnSprite(index, this.spawnFor(h));
+    }
+    this.humanIndices = humans;
+    this.humanSet = new Set(humans);
+
+    // Bots. `aiEngine` may be one id ('pilot') or a comma list
+    // ('classic,pilot') — a list splits the bots round-robin into a MIXED
+    // match where the engines fight each other in the same arena. Bots start
+    // after the last human slot (spectate keeps the historical base of 2 so
+    // every recorded match replays byte-identically).
+    const botBase = this.playerIndex + Math.max(humanCount, 1);
     const botCount = opts.botCount ?? 3;
     for (let b = 0; b < botCount; b++) {
-      const index = this.playerIndex + 1 + b;
+      const index = botBase + b;
       const engine = this.engineForSlot(b);
       this.botEngine.set(index, engine.id);
       if (this.teamsEnabled) this.botTeam.set(index, this.teamFor(b, engine.id));
@@ -967,11 +1002,11 @@ export class Game {
     // never raise the flag, so this is player-only in practice — and a pure
     // function of controls, so spectate/headless determinism is untouched.
     const clock = this.world.mainTickCounter;
-    this.weaponSwapUpkeep(this.playerIndex);
+    for (const human of this.humanIndices) this.weaponSwapUpkeep(human);
     for (const bot of this.bots) this.weaponSwapUpkeep(bot.index);
 
     // Firing: anyone holding fire whose weapon is off cooldown spawns a bullet.
-    this.tryFire(this.playerIndex, clock);
+    for (const human of this.humanIndices) this.tryFire(human, clock);
     for (const bot of this.bots) this.tryFire(bot.index, clock);
 
     // Physics + bullets + things.
@@ -1124,10 +1159,11 @@ export class Game {
       ay /= len;
     }
 
-    // Aim assist: player shots near a live enemy bend the last few degrees
-    // onto it (player ONLY — assisted bots are aimbots). Applied before
+    // Aim assist: HUMAN shots near a live enemy bend the last few degrees
+    // onto it (humans ONLY — assisted bots are aimbots; in online 1v1 both
+    // humans get it, so the magnetism stays symmetric). Applied before
     // spread so spray bloom still punishes held fire.
-    if (index === this.playerIndex) {
+    if (this.humanSet.has(index)) {
       const targets: { x: number; y: number }[] = [];
       for (const other of this.world.sprites) {
         if (!other.active || other.deadMeat || other.num === index) continue;
@@ -1194,12 +1230,11 @@ export class Game {
 
   /** Start respawn timers for the freshly dead; respawn when they elapse. */
   private respawnUpkeep(): void {
-    // In spectate mode the player slot is never spawned and MUST stay out of
-    // this list: a never-spawned sprite has health 0, which the freshly-dead
-    // check below reads as a death — it would "respawn" the player ~3 s in.
-    const all = this.spectate
-      ? this.bots.map((b) => b.index)
-      : [this.playerIndex, ...this.bots.map((b) => b.index)];
+    // In spectate mode no human slot is ever spawned and they MUST stay out
+    // of this list: a never-spawned sprite has health 0, which the freshly-
+    // dead check below reads as a death — it would "respawn" the player ~3 s
+    // in. humanIndices is already [] in spectate.
+    const all = [...this.humanIndices, ...this.bots.map((b) => b.index)];
     for (const index of all) {
       const s = this.world.sprites[index];
       if (s === undefined) continue;
