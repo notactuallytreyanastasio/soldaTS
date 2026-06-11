@@ -46,11 +46,12 @@ export function isBareUrl(
   return MODE_PARAMS.every((p) => !params.has(p));
 }
 
-/** The two learned (trained-from-replay-data) models get a badge + alias.
+/** The learned (trained-from-replay-data) models get a badge + alias.
  *  Exported: the online brain-picker (online.ts) reuses the same badging. */
 export const LEARNED_MODELS: Record<string, string> = {
   neural: 'MIMIC',
   disciple: 'DISCIPLE',
+  prodigy: 'PRODIGY',
 };
 
 /** Random int in [1, max] — fine here: menu picks are never recorded. */
