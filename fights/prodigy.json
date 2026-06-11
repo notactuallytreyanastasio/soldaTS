@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "PRODIGY",
+  "engine": "prodigy",
+  "tweaks": {},
+  "rationale": "Third student: trained on the pooled two-machine corpus with features v2 (bullet threats, reload states, weapons, one tick of memory) and an aim head taught only by shots that landed. Honest caveat on the card: training-time bullet threats were reconstructed from fire events, runtime ones are exact — the transfer gap is under investigation."
+}

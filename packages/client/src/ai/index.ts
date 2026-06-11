@@ -17,6 +17,7 @@ import { createOrcaEngine } from './orca';
 import { createNeuralEngine } from './neural';
 import { createAnglerEngine } from './angler';
 import { createDiscipleEngine } from './disciple';
+import { createProdigyEngine } from './prodigy';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -32,6 +33,7 @@ registerEngine('orca', createOrcaEngine);
 registerEngine('neural', createNeuralEngine);
 registerEngine('angler', createAnglerEngine);
 registerEngine('disciple', createDiscipleEngine);
+registerEngine('prodigy', createProdigyEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -55,3 +57,4 @@ export {
 } from './neural';
 export { ANGLER_DEFAULTS, type AnglerConfig } from './angler';
 export { DISCIPLE_DEFAULTS, type DiscipleConfig } from './disciple';
+export { PRODIGY_DEFAULTS, type ProdigyConfig } from './prodigy';

@@ -23,6 +23,7 @@ describe('engine registry', () => {
     expect(engineIds()).toContain('neural');
     expect(engineIds()).toContain('angler');
     expect(engineIds()).toContain('disciple');
+    expect(engineIds()).toContain('prodigy');
   });
 
   it('resolves engines by id and falls back to classic on unknown ids', () => {
@@ -48,6 +49,7 @@ describe.each([
   'neural',
   'angler',
   'disciple',
+  'prodigy',
 ] as const)(
   'spectate match under the %s engine',
   (engine) => {
