@@ -102,7 +102,7 @@ const resize = () => { W = cv.width = innerWidth * devicePixelRatio; H = cv.heig
 addEventListener('resize', resize);
 resize();
 
-const TEAM = ['#ff5d5d', '#5da9ff'];
+const TEAM = ['#b3362a', '#1f5fa8'];
 const rand = (a, b) => a + Math.random() * (b - a);
 const fighters = Array.from({ length: 6 }, (_, i) => ({
   x: rand(0.1, 0.9) * W, y: rand(0.15, 0.7) * H,
@@ -158,7 +158,7 @@ function step() {
     const p = trails[i];
     p.a -= 0.02; p.y += 0.6 * devicePixelRatio;
     if (p.a <= 0) { trails.splice(i, 1); continue; }
-    cx.fillStyle = `rgba(245,197,66,${p.a * 0.5})`;
+    cx.fillStyle = `rgba(143,110,14,${p.a * 0.5})`;
     cx.fillRect(p.x, p.y, 2 * devicePixelRatio, 2 * devicePixelRatio);
   }
 
@@ -166,7 +166,7 @@ function step() {
     const b = tracers[i];
     b.x += b.vx; b.y += b.vy; b.vy += g * 0.5; b.a -= 0.012;
     if (b.a <= 0 || b.x < 0 || b.x > W || b.y > H) { tracers.splice(i, 1); continue; }
-    cx.strokeStyle = `rgba(232,228,218,${b.a * 0.8})`;
+    cx.strokeStyle = `rgba(43,39,34,${b.a * 0.65})`;
     cx.lineWidth = devicePixelRatio;
     cx.beginPath();
     cx.moveTo(b.x, b.y);
