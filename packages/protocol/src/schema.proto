@@ -236,7 +236,8 @@ message Handshake {
 
 // WebRTC voice signaling, relayed verbatim to the opposite match player.
 message Voice {
-  string data = 1; // opaque JSON: SDP offer/answer or ICE candidate
+  uint32 peer = 1; // mesh peer id (target on send; sender on forward)
+  string data = 2; // opaque JSON: SDP offer/answer or ICE candidate
 }
 
 // PORT: modern replacement for the 8-bit TMsgHeader.ID switch.

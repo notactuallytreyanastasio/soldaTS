@@ -17,8 +17,8 @@
 
 import http from 'node:http';
 import type { Socket } from 'node:net';
-import { Lobby } from './lobby.js';
-import { Match } from './match.js';
+import { Arena } from './arena.js';
+import type { Match } from './match.js';
 import { upgradeToWs } from './ws.js';
 
 const PORT = Number(process.env.GAME_SERVER_PORT ?? 8902);
@@ -32,31 +32,33 @@ const log = (...a: unknown[]): void => {
 /** Random int in [1, max] — seeds only (the sim itself uses world.rng). */
 const roll = (max: number): number => 1 + Math.floor(Math.random() * max);
 
-let liveMatches = 0;
+// One global stage (goal node 551): two players, everyone else spectates and
+// queues. The Arena owns participants; here we only drive each match's clock.
+const drivers = new Map<Match, ReturnType<typeof setInterval>>();
 
-const lobby = new Lobby((a, b) => {
-  const opts = {
-    seed: roll(99999),
-    arenaSeed: roll(999),
-    engines: [a.engine, b.engine] as [string, string],
-  };
-  const match = new Match(a.sock, b.sock, opts);
-  liveMatches += 1;
-  log(
-    `match start (arena=${opts.arenaSeed} seed=${opts.seed} ` +
-      `red=${match.teamEngines[0]} blue=${match.teamEngines[1]}) — ${liveMatches} live`,
-  );
-  let last = performance.now();
-  const interval = setInterval(() => {
-    const now = performance.now();
-    match.tick((now - last) / 1000);
-    last = now;
-  }, TICK_INTERVAL_MS);
-  match.onEnd = (): void => {
-    clearInterval(interval);
-    liveMatches -= 1;
-    log(`match end (arena=${opts.arenaSeed}) — ${liveMatches} live`);
-  };
+const arena = new Arena({
+  rollSeeds: () => ({ seed: roll(99999), arenaSeed: roll(999) }),
+  onMatchStart: (match) => {
+    let last = performance.now();
+    const interval = setInterval(() => {
+      const now = performance.now();
+      match.tick((now - last) / 1000);
+      last = now;
+    }, TICK_INTERVAL_MS);
+    drivers.set(match, interval);
+    log(
+      `match start (red=${match.teamEngines[0]} blue=${match.teamEngines[1]}) — ` +
+        `${arena.playerCount} players, ${arena.spectatorCount} watching`,
+    );
+  },
+  onMatchEnd: (match) => {
+    const interval = drivers.get(match);
+    if (interval !== undefined) {
+      clearInterval(interval);
+      drivers.delete(match);
+    }
+    log(`match end — ${arena.spectatorCount} in queue`);
+  },
 });
 
 const server = http.createServer((req, res) => {
@@ -71,7 +73,7 @@ const server = http.createServer((req, res) => {
 
 server.on('upgrade', (req, socket: Socket) => {
   const conn = upgradeToWs(req, socket);
-  if (conn !== null) lobby.add(conn);
+  if (conn !== null) arena.add(conn);
 });
 
 server.listen(PORT, () => {

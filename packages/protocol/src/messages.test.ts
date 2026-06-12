@@ -141,6 +141,7 @@ const chatMsg: Message = {
 
 const voiceMsg: Message = {
   kind: "voice",
+  peer: 3,
   data: '{"candidate":{"candidate":"candidate:1 1 udp 2122260223 192.0.2.1 54400 typ host"}}',
 };
 

@@ -173,6 +173,7 @@ const cases: Record<string, Message> = {
   },
   voice: {
     kind: "voice",
+    peer: 2,
     data: '{"sdp":{"type":"offer","sdp":"v=0 o=- 46117 2 IN IP4 127.0.0.1"}}',
   },
   handshakeWelcomeReject: {

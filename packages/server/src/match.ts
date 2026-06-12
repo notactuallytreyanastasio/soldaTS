@@ -14,7 +14,7 @@
 // stream sequence-numbered InputFrames; the match applies at most a couple per
 // sim tick (jitter buffer), and every 3rd tick (20 Hz) captures FULL sprite
 // snapshots via @soldat/netcode for ALL SIX sprites and sends them to both
-// clients.
+// clients AND to any spectators watching the stage (goal node 551).
 //
 // ACK CONTRACT (what makes client prediction work): the serverTick stamped on
 // YOUR OWN sprite's snapshot is the clientTick of the LAST INPUT OF YOURS the
@@ -22,25 +22,21 @@
 // needs to drop acknowledged inputs and replay the rest. Every other sprite
 // (the opposing human, all four bots) is dead-reckoned client-side, so its
 // snapshot's tick domain never matters; those carry the human owner's ack or
-// the sim tick respectively.
+// the sim tick respectively. Spectators dead-reckon ALL six, so every sprite
+// they receive carries the sim tick.
 //
 // MATCH START: the welcome's mapName recipe carries the deterministic arena
 // AND both engine choices — `arena=<A>&seed=<S>&e1=<idA>&e2=<idB>` — so each
 // client can label teams ('YOU + WOLF vs STRANGER + HYDRA') without a new
-// message type.
+// message type. The Arena reuses the same recipe to boot spectators.
 //
-// Scoreboard rides Heartbeat (teamScore [red, blue] summed across each team +
-// per-sprite rows, bots included) every 30 ticks and immediately after every
-// kill; kills also emit a structured server chat `kill:<killer>:<victim>:
-// <weapon>` for the client's feed (bot nums 3..6 — the client attributes them
-// to engine names).
-//
-// V1 GAPS that REMAIN (documented, deliberate): weapon-swap and reload-state
-// are server-authoritative but only ammo travels (snapshot ammoCount).
+// LIFECYCLE: the Match never owns socket message/close wiring and never closes
+// a socket. The Arena (arena.ts) owns every participant socket, routes player
+// inputs in via feedInput(), and disposes the match when a seat opens so the
+// survivor's socket can roll straight into the next round.
 
 import {
   ChatChannel,
-  decodeMessage,
   encodeMessage,
   HandshakeResult,
   PROTOCOL_VERSION,
@@ -74,6 +70,13 @@ export interface MatchOptions {
   engines: [string, string];
 }
 
+/** A player handed to the match: their socket plus their arena participant id. */
+export interface MatchPlayer {
+  readonly sock: GameSocket;
+  /** Stable arena participant id (for the welcome's yourId / voice mesh). */
+  readonly id: number;
+}
+
 /**
  * Sanitise one hello engine choice: a registered id passes through, anything
  * else ('' included) falls back to 'classic'. Warns on a real unknown so a
@@ -90,6 +93,7 @@ export function sanitizeEngineChoice(raw: string): string {
 
 interface PlayerSlot {
   readonly sock: GameSocket;
+  readonly id: number;
   /** Sprite index: 1 (red) or 2 (blue). */
   readonly num: number;
   readonly queue: InputFrame[];
@@ -103,15 +107,19 @@ export class Match {
   readonly options: MatchOptions;
   /** Sanitised per-team engine ids: [team 1 (red), team 2 (blue)]. */
   readonly teamEngines: [string, string];
-  /** Fires once when the match ends (disconnect); production clears timers. */
+  /** The deterministic map recipe; the Arena boots spectators with it. */
+  readonly recipe: string;
+  /** Fires once when the match ends; production clears timers, Arena cycles. */
   onEnd: (() => void) | null = null;
 
   private readonly players: [PlayerSlot, PlayerSlot];
+  /** Read-only spectator sockets that also receive snapshots/heartbeat/kills. */
+  private readonly observers = new Set<GameSocket>();
   private lastSnapshotTick = 0;
   private lastHeartbeatTick = 0;
   private ended = false;
 
-  constructor(a: GameSocket, b: GameSocket, opts: MatchOptions) {
+  constructor(a: MatchPlayer, b: MatchPlayer, opts: MatchOptions) {
     this.options = opts;
     this.teamEngines = [
       sanitizeEngineChoice(opts.engines[0]),
@@ -135,8 +143,8 @@ export class Match {
     this.game.loadMap(arena.map);
 
     this.players = [
-      { sock: a, num: 1, queue: [], acked: -1, connected: true },
-      { sock: b, num: 2, queue: [], acked: -1, connected: true },
+      { sock: a.sock, id: a.id, num: 1, queue: [], acked: -1, connected: true },
+      { sock: b.sock, id: b.id, num: 2, queue: [], acked: -1, connected: true },
     ];
 
     // Input application seam: onBrainsTicked fires once per SIM tick, after
@@ -151,15 +159,9 @@ export class Match {
       this.sendHeartbeat();
     };
 
-    for (const p of this.players) {
-      p.sock.onMessage((data) => this.onClientMessage(p, data));
-      p.sock.onClose(() => this.onDisconnect(p));
-    }
-
     // MATCH START: each player learns its slot (1 = red, 2 = blue), the
-    // deterministic map recipe, and BOTH teams' engines via the welcome's
-    // mapName.
-    const mapName =
+    // deterministic map recipe, both teams' engines, and its own participant id.
+    this.recipe =
       `arena=${opts.arenaSeed}&seed=${opts.seed}` +
       `&e1=${encodeURIComponent(this.teamEngines[0])}&e2=${encodeURIComponent(this.teamEngines[1])}`;
     for (const p of this.players) {
@@ -171,7 +173,8 @@ export class Match {
             result: HandshakeResult.Ok,
             protocolVersion: PROTOCOL_VERSION,
             yourNum: p.num,
-            mapName,
+            yourId: p.id,
+            mapName: this.recipe,
             serverTick: 0,
           },
         }),
@@ -195,41 +198,57 @@ export class Match {
     }
   }
 
-  /** Tear the match down (both sockets closed; timers are the caller's). */
+  /** Stop the match and fire onEnd. Does NOT close sockets (the Arena owns them). */
   dispose(): void {
     if (this.ended) return;
     this.ended = true;
-    for (const p of this.players) p.sock.close();
     this.onEnd?.();
   }
 
-  // --- inbound ---------------------------------------------------------------
+  get isOver(): boolean {
+    return this.ended;
+  }
 
-  private onClientMessage(p: PlayerSlot, data: ArrayBuffer): void {
+  // --- player wiring (driven by the Arena) -----------------------------------
+
+  /** The sprite slot (1 or 2) of the player with this participant id, or null. */
+  slotOfId(id: number): number | null {
+    const p = this.players.find((p) => p.id === id);
+    return p ? p.num : null;
+  }
+
+  /** Feed one validated input frame from the player in `num`. */
+  feedInput(num: number, frame: InputFrame): void {
     if (this.ended) return;
-    let msg: Message;
-    try {
-      msg = decodeMessage(data);
-    } catch {
-      return; // a malformed frame is dropped, not fatal
-    }
-    if (msg.kind === 'inputFrame') {
-      const last = p.queue[p.queue.length - 1];
-      // Monotonic guard mirrors PredictionBuffer: stale/duplicate ticks drop.
-      if (msg.clientTick <= (last?.clientTick ?? p.acked)) return;
-      if (p.queue.length >= QUEUE_MAX) p.queue.shift();
-      p.queue.push(msg);
-      return;
-    }
-    if (msg.kind === 'voice') {
-      // Voice-chat signaling (goal node 522): relay the already-validated
-      // frame VERBATIM to the opposite player. The server never inspects the
-      // SDP/ICE payload and the audio itself flows peer-to-peer.
-      const other = this.players[p.num === 1 ? 1 : 0]!;
-      if (other.connected) other.sock.send(data);
-      return;
-    }
-    // Anything else (late hello, chat) is ignored in v1.
+    const p = this.players.find((p) => p.num === num);
+    if (p === undefined || !p.connected) return;
+    const last = p.queue[p.queue.length - 1];
+    // Monotonic guard mirrors PredictionBuffer: stale/duplicate ticks drop.
+    if (frame.clientTick <= (last?.clientTick ?? p.acked)) return;
+    if (p.queue.length >= QUEUE_MAX) p.queue.shift();
+    p.queue.push(frame);
+  }
+
+  /** Mark a player's socket gone (the Arena cycles a new round after this). */
+  markGone(num: number): void {
+    const p = this.players.find((p) => p.num === num);
+    if (p !== undefined) p.connected = false;
+  }
+
+  /** The other player's participant id (for a 1v1 voice fallback), or null. */
+  otherPlayerId(num: number): number | null {
+    const other = this.players[num === 1 ? 1 : 0];
+    return other ? other.id : null;
+  }
+
+  // --- spectators ------------------------------------------------------------
+
+  addObserver(sock: GameSocket): void {
+    this.observers.add(sock);
+  }
+
+  removeObserver(sock: GameSocket): void {
+    this.observers.delete(sock);
   }
 
   /** Per sim tick: apply 1 queued input per player (2 when backlogged). */
@@ -245,27 +264,19 @@ export class Match {
     }
   }
 
-  private onDisconnect(p: PlayerSlot): void {
-    if (this.ended || !p.connected) return;
-    p.connected = false;
-    const other = this.players[p.num === 1 ? 1 : 0]!;
-    if (other.connected) {
-      other.sock.send(encodeMessage(this.chat(`end:disconnect:${other.num}`)));
-    }
-    this.dispose();
-  }
-
-  // --- outbound ----------------------------------------------------------------
+  // --- outbound --------------------------------------------------------------
 
   private chat(text: string): Message {
     return { kind: 'chat', senderNum: 255, channel: ChatChannel.Public, text };
   }
 
+  /** Send to both connected players and every spectator. */
   private broadcast(msg: Message): void {
     const buf = encodeMessage(msg);
     for (const p of this.players) {
       if (p.connected) p.sock.send(buf);
     }
+    for (const sock of this.observers) sock.send(buf);
   }
 
   private sendSnapshots(): void {
@@ -279,18 +290,30 @@ export class Match {
       if (s !== undefined) s.bulletCount = this.game.ammoOf(num);
     }
     const simTick = world.mainTickCounter;
+    // Players: their OWN sprite carries their ack (the prediction contract);
+    // everything else carries the sim tick (dead-reckoned).
     for (const recipient of this.players) {
       if (!recipient.connected) continue;
       for (const num of MATCH_SPRITES) {
         const sprite = world.sprites[num];
         if (sprite === undefined || !sprite.active) continue;
-        // Humans carry THEIR ack (the recipient's own one is the prediction
-        // contract; the opponent's is dead-reckoned, domain irrelevant).
-        // Bots carry the sim tick — also dead-reckoned, also irrelevant.
         const human = this.players.find((p) => p.num === num);
         const tickStamp = human !== undefined ? human.acked : simTick;
         const snap = captureSpriteSnapshotOne(sprite, parts, tickStamp);
         recipient.sock.send(encodeMessage({ kind: 'spriteSnapshot', snapshot: snap }));
+      }
+    }
+    // Spectators dead-reckon every sprite, so all six carry the sim tick. One
+    // capture per sprite, shared across all observers.
+    if (this.observers.size > 0) {
+      for (const num of MATCH_SPRITES) {
+        const sprite = world.sprites[num];
+        if (sprite === undefined || !sprite.active) continue;
+        const buf = encodeMessage({
+          kind: 'spriteSnapshot',
+          snapshot: captureSpriteSnapshotOne(sprite, parts, simTick),
+        });
+        for (const sock of this.observers) sock.send(buf);
       }
     }
   }

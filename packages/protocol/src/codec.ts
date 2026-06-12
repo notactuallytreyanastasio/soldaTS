@@ -715,11 +715,13 @@ function readChat(r: Reader): Chat {
 
 // --- Voice (WebRTC signaling relay) ---
 function writeVoice(w: Writer, v: Voice): void {
+  w.uvarint(v.peer);
   w.string(v.data);
 }
 
 function readVoice(r: Reader): Voice {
-  return { data: r.string() };
+  const peer = r.uvarint();
+  return { peer, data: r.string() };
 }
 
 // --- Handshake (hello | welcome) ---
@@ -765,7 +767,7 @@ function readHandshakeHello(r: Reader): HandshakeHello {
 }
 
 // Welcome presence bitmask (u8):
-//   0x1 yourNum, 0x2 mapName, 0x4 serverTick, 0x8 reason.
+//   0x1 yourNum, 0x2 mapName, 0x4 serverTick, 0x8 reason, 0x10 spectator, 0x20 yourId.
 function writeHandshakeWelcome(w: Writer, h: HandshakeWelcome): void {
   w.uvarint(h.result);
   w.uvarint(h.protocolVersion);
@@ -774,11 +776,14 @@ function writeHandshakeWelcome(w: Writer, h: HandshakeWelcome): void {
   if (h.mapName !== undefined) mask |= 0x2;
   if (h.serverTick !== undefined) mask |= 0x4;
   if (h.reason !== undefined) mask |= 0x8;
+  if (h.spectator) mask |= 0x10;
+  if (h.yourId !== undefined) mask |= 0x20;
   w.u8(mask);
   if (h.yourNum !== undefined) w.uvarint(h.yourNum);
   if (h.mapName !== undefined) w.string(h.mapName);
   if (h.serverTick !== undefined) w.svarint(h.serverTick);
   if (h.reason !== undefined) w.string(h.reason);
+  if (h.yourId !== undefined) w.uvarint(h.yourId);
 }
 
 function readHandshakeWelcome(r: Reader): HandshakeWelcome {
@@ -790,6 +795,8 @@ function readHandshakeWelcome(r: Reader): HandshakeWelcome {
   if (mask & 0x2) out.mapName = r.string();
   if (mask & 0x4) out.serverTick = r.svarint();
   if (mask & 0x8) out.reason = r.string();
+  if (mask & 0x10) out.spectator = true;
+  if (mask & 0x20) out.yourId = r.uvarint();
   return out;
 }
 

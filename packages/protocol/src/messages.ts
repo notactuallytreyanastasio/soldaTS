@@ -299,6 +299,12 @@ export interface Chat {
  * possible sender. Audio itself never touches the server (peer-to-peer RTP).
  */
 export interface Voice {
+  /**
+   * Mesh peer id. On a client->server frame it is the TARGET participant; the
+   * server rewrites it to the SENDER's id before forwarding, so the receiver
+   * learns who it came from. (1v1 and group voice both use this.)
+   */
+  peer: number;
   /** JSON-encoded signaling payload ({sdp} or {candidate}); opaque to the server. */
   data: string;
 }
@@ -360,6 +366,14 @@ export interface HandshakeWelcome {
   serverTick?: number;
   /** PORT: Text: array[0..0] of char — human-readable reject reason. */
   reason?: string;
+  /**
+   * Arena spectator role (goal node 551): true = this client WATCHES the live
+   * match (no sprite, renders from snapshots) rather than playing. Absent/false
+   * = a player in slot `yourNum`.
+   */
+  spectator?: boolean;
+  /** This client's stable participant id, used to address voice-mesh peers. */
+  yourId?: number;
 }
 
 /** Discriminated union over the two handshake phases. */
