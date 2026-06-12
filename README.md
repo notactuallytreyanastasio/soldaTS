@@ -1143,6 +1143,105 @@ positions. The ticker is for the coaches; the desk is for everyone who just
 wants to know what happened in the arena today, which, increasingly, is a
 question with a real answer.
 
+## Part 27: Two strangers, one match
+
+The whole thing had been a spectator sport — bots fighting bots while I watched.
+The obvious missing piece was *me*, or anyone, actually in it. So I made it
+multiplayer.
+
+The trick was that the server already existed. I'd been running the exact same
+headless `Game` the browser runs to grind out the training corpus, tens of
+thousands of times over. Going online just meant letting two browsers drive two
+of its sprites instead of handing every sprite to the bots. A small WebSocket
+server (`packages/server`) pairs the first two visitors who connect, each one
+picking the bot engine their *team* will run, and starts a 3v3: one human plus
+two of their chosen bots a side, red versus blue. Same deterministic sim,
+stepped at a fixed 60 Hz, authoritative on the server.
+
+Making it feel right over a network meant client prediction, which is where the
+determinism I'd been protecting since Part 2 paid off twice. The browser runs
+its own copy of the sim and predicts its own sprite the instant you press a key,
+then reconciles when the server's snapshot lands — and because client and server
+run byte-identical TypeScript, that reconciliation is usually a no-op. Every 20
+Hz the server ships a full snapshot of all six sprites: your own carries the tick
+of the last input it applied, so the prediction buffer knows what to drop and
+what to replay, and everyone else is dead-reckoned. The opponent's bullets are
+cosmetic on your screen, drawn for feel with zero local damage, because the
+server owns every hit.
+
+I tested the whole loop without a browser. `tools/online-smoke.mjs` speaks the
+real binary protocol as two fake clients, pairs them, drives inputs, and asserts
+the snapshots replicate all six sprites and the kill feed flows — the same trick
+the bot trainers use, a headless driver standing in for a human. In production
+Caddy routes `bobbby.online/arena/ws` to the game server on :8902, and the play
+client dials it when you add `?online`. Pick a brain, get matched with a
+stranger, and the sport finally has a seat for you. (Goal node 450.)
+
+## Part 28: A voice on the other end
+
+Two strangers in a deathmatch want to talk. The match already had a reliable,
+low-latency channel between exactly the two of them — the WebSocket carrying
+their inputs — so I used it to introduce them and then got out of the way.
+
+Voice is WebRTC, peer-to-peer: the audio never touches my server. What does go
+through the match is *signaling* — the SDP offers and ICE candidates two
+browsers trade to find each other — which I relay as opaque `voice` frames the
+server forwards verbatim to the other player without ever looking inside. The
+negotiation is the WHATWG "perfect negotiation" pattern: slot 2 (blue) is the
+polite peer and rolls back on a collision, slot 1 (red) is impolite and ignores
+it, so the two never deadlock trying to offer at once.
+
+The product call was open mic with a mute pill, not push-to-talk — you're
+already holding WASD and the mouse, and reaching for a third key mid-fight is
+how you die. The mic comes up with echo cancellation and noise suppression on
+(both players are usually on speakers next to gunfire), and a click-to-mute pill
+sits in the bottom-left. Deny the mic and you still *hear* your opponent: the
+connection negotiates a one-way downlink and the pill tells you why you can't
+talk back. It's STUN-only, no relay, so a pair behind two hard symmetric NATs
+stays silent rather than routing audio through me — for a personal site that's
+the right trade. (Goal node 522.)
+
+The one scar from shipping it lives in the decision graph. I deployed from what
+I thought was a clean checkout of HEAD, but HEAD was *inconsistent* — a committed
+recorder change depended on a companion that was still uncommitted — and the
+live commissioner crash-looped on a missing function until I redeployed from the
+working tree, which is what the deploy script intended all along. The lesson went
+straight into the graph next to everything else: this repo deploys from the
+working tree on purpose.
+
+## Part 29: The spectacle guns, and the bots that all wore blue
+
+A few things needed fixing once people were actually watching.
+
+The wildcard guns were too rare. A match arms a carrier 35% of the time, and
+when it did it picked evenly across all five — so the loud ones, the M79 rocket
+and the ricochet carbine and the chainsaw, each turned up in about seven percent
+of matches. I wanted them out front. The arming roll I left exactly alone,
+because there's an invariant (and a test) that every old seed must arm
+identically for replays to stay byte-stable; but *which* gun an armed match gets
+is documented as safe to change, so I weighted the pick — the three spectacle
+guns are now drawn three times as often as the shotgun and rifle. They show up in
+roughly thirty percent of matches now instead of twenty-one. And the desk's gun
+meter, hard-coded to show only the AK, SPAS, and Barrett, now renders all six;
+the per-weapon kill data was already there, the front page just wasn't asking
+for it.
+
+Then the colors. Someone pointed out that in some matches every bot was blue. It
+was a real bug, and an old one: the renderer's free-for-all fallback colored the
+human red and *every* bot blue, which is fine when a human is in the match but
+wrong for a spectated bot-versus-bot fight with no real teams — they all fell
+through to blue. Now free-for-all bots split red and blue by slot, so no match
+renders as one color, and the landing page's "watch a live match" button points
+at a genuine two-engine team fight (orca versus cuadrilla, the belt rivalry)
+where the teams are real and the chevrons above each soldier's head keep red and
+blue legible even zoomed out.
+
+What's being built now is the natural next step: one shared stage instead of
+invisible parallel duels. Two play, everyone else watches and chats — text and
+voice — from a queue, and when a seat opens the next person in line cycles
+straight in without a reload. The server and protocol for that are done and
+tested; the spectator's-eye view is the last piece. (Goal node 551.)
+
 ## Closing
 
 Twenty-year-old games survive on feel, and feel doesn't live in any single
