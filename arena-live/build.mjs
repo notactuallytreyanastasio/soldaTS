@@ -918,6 +918,158 @@ function computeBeltLineage(ladderMd, fights) {
   return out;
 }
 
+// --- the brain-cam ----------------------------------------------------------
+// Per-engine slim aggregation for site/brain.html ("hone in on just one brain
+// and watch its output/stats live"). Keyed by engine id, shipped in
+// desk-data.json so the page can poll it every 5s. Everything best-effort.
+
+const EVAL_LEDGER = path.join(TS_ROOT, 'tools', 'eval-ledger.jsonl');
+
+/** Comment-header lines of a file (same convention as loadDoctrines). */
+function headerLines(src) {
+  const lines = [];
+  for (const line of String(src).split('\n')) {
+    const t = line.trim();
+    if (t.startsWith('//')) lines.push(t.replace(/^\/\/ ?/, ''));
+    else if (t === '') { if (lines.length > 0) lines.push(''); }
+    else break;
+  }
+  while (lines.length && lines[lines.length - 1] === '') lines.pop();
+  return lines;
+}
+
+/** Training provenance for a LEARNED engine, parsed from the generated
+ *  <engine>Weights.ts header (training date, teacher, sample count, val
+ *  metrics / shipping gate). Returns null when the engine has no weights
+ *  module — i.e. it was written, not trained. */
+function loadWeightsProvenance(engine) {
+  const file = `${engine}Weights.ts`;
+  const src = readText(path.join(AI_DIR, file));
+  if (src === null) return null;
+  const lines = headerLines(src);
+  const head = lines.join('\n');
+  const iso = /(?:Written|Trained)\s+(\d{4}-\d{2}-\d{2}T[\d:.]+Z)/.exec(head);
+  const teacher = /Teacher:\s*([\w-]+)/.exec(head);
+  const samples = /on\s+([\d,]+)\s+(?:samples|replay rows)/.exec(head);
+  const gen = /generation\s+(\d+)/.exec(head);
+  const gate = /Shipping gate:\s*(.+)/.exec(head);
+  // Validation block: from the "Validation (...)" line to the next blank line.
+  const val = [];
+  let inVal = false;
+  for (const l of lines) {
+    if (!inVal && /^Validation\b/i.test(l)) { inVal = true; val.push(l.trim()); continue; }
+    if (inVal) {
+      if (l === '' || /^Layout:/i.test(l) || val.length >= 12) break;
+      val.push(l.trim());
+    }
+  }
+  return {
+    file: `packages/client/src/ai/${file}`,
+    trainedAt: iso ? iso[1] : null,
+    teacher: teacher ? teacher[1] : null,
+    samples: samples ? Number(samples[1].replace(/,/g, '')) : null,
+    generation: gen ? Number(gen[1]) : null,
+    gate: gate ? gate[1].trim() : null,
+    val,
+    header: head,
+  };
+}
+
+/** tools/eval-ledger.jsonl → { engine: [last 3 gauntlet entries] }. */
+function loadEvalLedger() {
+  const out = {};
+  const txt = readText(EVAL_LEDGER);
+  if (!txt) return out;
+  for (const line of txt.split('\n')) {
+    const t = line.trim();
+    if (!t) continue;
+    let e;
+    try { e = JSON.parse(t); } catch { continue; }
+    const eng = e?.candidate?.engine;
+    if (!eng) continue;
+    (out[eng] ??= []).push({
+      ts: e.ts ?? null,
+      quick: !!e.quick,
+      score: e.score ?? null,
+      ci: Array.isArray(e.ci) ? e.ci : null,
+      baseline: e.baseline ? { coach: e.baseline.coach ?? null, engine: e.baseline.engine ?? null } : null,
+      matches: e.results?.overall?.matches ?? null,
+      winRate: e.results?.overall?.winRate ?? null,
+      kd: e.results?.overall?.kd ?? null,
+      hitPct: e.results?.overall?.hitPct ?? null,
+    });
+  }
+  for (const k of Object.keys(out)) out[k] = out[k].slice(-3); // newest last
+  return out;
+}
+
+/**
+ * Per-engine brain feed: coaches, doctrine header, recent fights (slim),
+ * kill tape (last ~30 kills/deaths from the newest timelines), per-gun kill
+ * splits, learned-bot provenance + eval-ledger entries.
+ */
+function computeBrains(fights, doctrines, cards, engineGuns) {
+  const brains = {};
+  const ledger = loadEvalLedger();
+  const TAPE_CAP = 30, FIGHTS_CAP = 15;
+  for (const doc of doctrines) {
+    if (!doc.isEngine) continue;
+    const id = doc.engine;
+    const coaches = new Set();
+    for (const c of cards) if (c.engine === id && c.coach) coaches.add(c.coach);
+    const recent = [];
+    const tape = [];
+    for (const f of fights) { // already newest first
+      if (!f.sides.some((s) => s.engine === id)) continue;
+      for (const s of f.sides) if (s.engine === id && s.coachKnown !== false && s.coach) coaches.add(s.coach);
+      if (recent.length < FIGHTS_CAP) {
+        recent.push({
+          dirName: f.dirName,
+          createdAt: f.createdAt ?? tsFromDirName(f.dirName),
+          arenaSeed: f.arenaSeed,
+          sides: f.sides.map((s) => ({ coach: s.coach, engine: s.engine })),
+          standings: f.standings,
+          watchUrl: f.matches[0] ? f.matches[0].watchUrl : '',
+        });
+      }
+      if (tape.length < TAPE_CAP) {
+        // newest first inside the fight too: matches and kills reversed
+        for (let mi = f.matches.length - 1; mi >= 0 && tape.length < TAPE_CAP; mi--) {
+          const m = f.matches[mi];
+          if (!m.timeline) continue;
+          for (let ki = m.timeline.length - 1; ki >= 0 && tape.length < TAPE_CAP; ki--) {
+            const k = m.timeline[ki];
+            if (k.killerEngine !== id && k.victimEngine !== id) continue;
+            tape.push({
+              clock: k.clock,
+              weapon: k.weapon ?? 'AK74',
+              killer: k.killer, killerCoach: k.killerCoach, killerEngine: k.killerEngine,
+              victim: k.victim, victimCoach: k.victimCoach, victimEngine: k.victimEngine,
+              score: k.score, matchN: m.n,
+              watchUrl: m.watchUrl,
+              fightAt: f.createdAt ?? tsFromDirName(f.dirName),
+            });
+          }
+        }
+      }
+    }
+    const prov = loadWeightsProvenance(id);
+    brains[id] = {
+      engine: id,
+      tagline: doc.tagline ?? null,
+      strategy: doc.strategy ?? null,
+      doctrine: doc.doctrine ?? null,
+      file: doc.file ?? null,
+      coaches: [...coaches].sort(),
+      guns: (engineGuns && engineGuns[id]) ?? null,
+      recentFights: recent,
+      killTape: tape,
+      learned: prov ? { ...prov, evals: ledger[id] ?? [] } : null,
+    };
+  }
+  return brains;
+}
+
 // --- decision graph ----------------------------------------------------------
 
 function loadDecisionGraph() {
@@ -1001,14 +1153,19 @@ export function build() {
   // Wildcard-era kills carry [AK74]/[SPAS12]/[BARRETT]; stock-era kill
   // events are untagged and are AK by construction (one-gun matches).
   let gunBoards = null;
+  let engineGuns = null; // engine -> weapon -> {k, d} (feeds the brain-cam)
   try {
     const tally = new Map(); // weapon -> Map(coach|engine -> kills)
     let totalKills = 0;
+    engineGuns = {};
+    const eg = (engine, w) => ((engineGuns[engine] ??= {})[w] ??= { k: 0, d: 0 });
     for (const f of fights) {
       for (const m of f.matches) {
         if (!m.timeline) continue;
         for (const k of m.timeline) {
           const w = k.weapon ?? 'AK74';
+          if (k.killerEngine) eg(k.killerEngine, w).k += 1;
+          if (k.victimEngine) eg(k.victimEngine, w).d += 1;
           if (!tally.has(w)) tally.set(w, new Map());
           const key = `${k.killerCoach}\u0000${k.killerEngine}`;
           const t = tally.get(w);
@@ -1043,6 +1200,15 @@ export function build() {
     desk = computeDesk(fights, doctrines, ladderMarkdown);
   } catch (e) {
     warn(`desk data failed: ${e.message}`);
+  }
+
+  // THE BRAIN-CAM feed (site/brain.html): per-engine kill tape, recent
+  // fights, gun splits, weights provenance + eval ledger. Never fatal.
+  let brains = null;
+  try {
+    brains = computeBrains(fights, doctrines, cards, engineGuns);
+  } catch (e) {
+    warn(`brain-cam data failed: ${e.message}`);
   }
 
   // How many fights (newest-first, with per-kill timelines) data.json carries.
@@ -1118,6 +1284,14 @@ export function build() {
   } catch (e) {
     warn(`desk.html emit failed: ${e.message}`);
   }
+  // THE BRAIN-CAM (site/brain.html?engine=<id>): one brain, watched live.
+  try {
+    const brHtml = readText(path.join(HERE, 'brain.template.html'));
+    if (brHtml != null) fs.writeFileSync(path.join(SITE_DIR, 'brain.html'), liveFooter(brHtml));
+    else warn('brain.template.html missing — brain.html not emitted');
+  } catch (e) {
+    warn(`brain.html emit failed: ${e.message}`);
+  }
   // The autopilot config screen. The page is plain static and safe to publish:
   // its controls only work over watch.mjs's localhost-only API (the page
   // locks itself out when the API answers 403 — e.g. the public deployment).
@@ -1160,6 +1334,7 @@ export function build() {
               ? { total: v.total, rows: v.rows.slice(0, 1), lastUrl: gunLastUrl[k] ?? null } : v]))
         : null,
       desk,
+      brains, // the brain-cam: per-engine kill tape / recent fights / provenance
       warnings: data.warnings,
       // fights without timelines/bots: just enough for the upset scanner,
       // rivalry latest-meeting lookups, and click-to-watch links. On the

@@ -87,6 +87,9 @@
   .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
   .cred { color: var(--red); } .cblue { color: var(--blue); }
   .dim { color: var(--dim); }
+  /* engine names are doors into the BRAIN-CAM (brain.html?engine=…) */
+  .brainlink { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .brainlink:hover { color: var(--gold); text-decoration: none; border-bottom-color: var(--gold); }
 
   header {
     display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
@@ -109,6 +112,12 @@
     border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; letter-spacing: 1px;
   }
   #deskLink:hover { border-color: var(--gold); text-decoration: none; }
+  /* BRAIN-CAM nav chip (per-brain live page) — same dress as the desk link */
+  #brainNavLink {
+    background: var(--panel2); color: var(--gold); border: 1px solid var(--line);
+    border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; letter-spacing: 1px;
+  }
+  #brainNavLink:hover { border-color: var(--gold); text-decoration: none; }
   /* the autopilot config gear — shown on localhost only (its API refuses
      everyone else anyway; no point advertising it on the public deployment) */
   #cfgLink {
@@ -421,6 +430,7 @@
   <h1>⚔ ARENA LIVE</h1>
   <span class="live">● LIVE</span>
   <a id="deskLink" href="desk.html" title="THE DESK — the story-first front page">📰 DESK</a>
+  <a id="brainNavLink" href="brain.html" title="BRAIN-CAM — one brain, watched live">🧠 BRAIN</a>
   <a id="cfgLink" href="config.html" title="AUTOPILOT — boot service + training config (localhost only)" style="display:none">⚙</a>
   <button id="themeBtn" title="toggle light/dark">☀ / 🌙</button>
   <span class="meta" id="meta">loading…</span>
@@ -500,6 +510,13 @@ const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyV
 if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
   document.getElementById('cfgLink').style.display = '';
 }
+
+// Every engine name is a door into the BRAIN-CAM — the per-brain live page.
+// The click-to-watch delegation already ignores anchors, so these links can
+// live inside data-watch zones without stealing the replay click.
+const brainLink = (e, txt) => e
+  ? `<a class="brainlink" href="brain.html?engine=${attr(encodeURIComponent(e))}" title="BRAIN-CAM: ${attr(e)}">${esc(txt ?? e)}</a>`
+  : '';
 
 // Ticker symbol: first letter + consonants (then vowels) of the rest, 5 chars.
 function sym(name) {
@@ -630,9 +647,9 @@ function heroHtml(d) {
     ${tag}
     <span class="watchbtn">${running ? '▶ WATCH LIVE' : '▶ REPLAY'}</span>
     <div class="row">
-      <span class="side cred">${esc(lv.red.coach)} <span class="eng">${esc(sym(lv.red.coach))} · ${esc(lv.red.engine)}</span></span>
+      <span class="side cred">${esc(lv.red.coach)} <span class="eng">${esc(sym(lv.red.coach))} · ${brainLink(lv.red.engine)}</span></span>
       <span class="score" data-fk="hero:score">${s.red} — ${s.blue}${s.draws ? `<span class="dim" style="font-size:14px"> (${s.draws}d)</span>` : ''}</span>
-      <span class="side cblue">${esc(lv.blue.coach)} <span class="eng">${esc(sym(lv.blue.coach))} · ${esc(lv.blue.engine)}</span></span>
+      <span class="side cblue">${esc(lv.blue.coach)} <span class="eng">${esc(sym(lv.blue.coach))} · ${brainLink(lv.blue.engine)}</span></span>
     </div>
     <div class="mchips">${mchips || '<span class="dim">first match under way…</span>'}</div>
   </div>`;
@@ -644,9 +661,9 @@ function heroFromFight(f) {
     <span class="tag dim">LATEST SERIES — FINAL · ARENA #${esc(f.arenaSeed)} · ${ago(f.createdAt)}</span>
     <span class="watchbtn">▶ REPLAY</span>
     <div class="row">
-      <span class="side cred">${esc(a.coach)} <span class="eng">${esc(sym(a.coach))} · ${esc(a.engine)}</span></span>
+      <span class="side cred">${esc(a.coach)} <span class="eng">${esc(sym(a.coach))} · ${brainLink(a.engine)}</span></span>
       <span class="score" data-fk="hero:score">${st ? `${st.red.wins} — ${st.blue.wins}` : '?'}</span>
-      <span class="side cblue">${esc(b.coach)} <span class="eng">${esc(sym(b.coach))} · ${esc(b.engine)}</span></span>
+      <span class="side cblue">${esc(b.coach)} <span class="eng">${esc(sym(b.coach))} · ${brainLink(b.engine)}</span></span>
     </div>
   </div>`;
 }
@@ -678,7 +695,7 @@ function swipeCardOfFight(f, live) {
       <span class="who cblue" style="text-align:right">${esc(sym(b.coach))}</span>
     </div>
     <div class="sc-leader">${leadSide
-      ? `LEADER <b class="${leadCls}">${esc(sym(leadSide.coach))}</b> <span class="dim">${esc(leadSide.engine)}</span>`
+      ? `LEADER <b class="${leadCls}">${esc(sym(leadSide.coach))}</b> <span class="dim">${brainLink(leadSide.engine)}</span>`
       : `<b class="flat">ALL SQUARE</b>`}</div>
     <div class="sc-stats">${stats}</div>
   </div>`;
@@ -698,7 +715,7 @@ function swipeDeckHtml(d) {
         <span class="who cblue" style="text-align:right">${esc(sym(lv.blue.coach))}</span>
       </div>
       <div class="sc-leader">${leadSide
-        ? `LEADER <b class="${leadCls}">${esc(sym(leadSide.coach))}</b> <span class="dim">${esc(leadSide.engine)}</span>`
+        ? `LEADER <b class="${leadCls}">${esc(sym(leadSide.coach))}</b> <span class="dim">${brainLink(leadSide.engine)}</span>`
         : `<b class="flat">ALL SQUARE</b>`}</div>
       <div class="sc-stats"><span class="sc-stat">arena <b>#${esc(lv.arenaSeed)}</b></span>
         <span class="sc-stat">match <b>${(lv.matches ? lv.matches.length + 1 : 1)}</b>/${esc(lv.matchesPlanned ?? '?')}</span></div>
@@ -795,7 +812,7 @@ function boardRowHtml(r, hl, champ, beltGivenRef, oneshot) {
   return `<tr class="r${oneshot ? ' oneshot' : ''}" data-watch="${attr(r.lastUrl)}" title="open latest replay">` +
     `<td class="dim" ${fk('rank')}>#${r.rank}</td>` +
     `<td class="sym ${isChamp ? 'belt' : ''}">${isChamp ? '🏆 ' : ''}${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:11px"> ${esc(r.coach)}</span>${sigTag}</td>` +
-    `<td>${esc(r.engine)}</td>` +
+    `<td>${brainLink(r.engine)}</td>` +
     `<td class="${scoreCls}" ${fk('score')} title="decayed W−L (half-life ${hl}h) — the ranking driver"><b>${score.toFixed(2)}</b></td>` +
     `<td title="last 5 series, newest first">${formDots(r.form)}</td>` +
     `<td ${fk('kd')}><b>${last.toFixed(2)}</b></td>` +
@@ -984,7 +1001,7 @@ function gunBoardsHtml(d) {
     const b = g[w];
     const rows = b.rows.map((r, i) =>
       `<tr><td class="dim">#${i + 1}</td>` +
-      `<td class="sym">${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:10px"> ${esc(r.engine)}</span></td>` +
+      `<td class="sym">${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:10px"> ${brainLink(r.engine)}</span></td>` +
       `<td data-fk="gun-${esc(w)}-${esc(r.coach)}-${esc(r.engine)}"><b>${r.kills}</b></td>` +
       `<td class="dim">${((r.kills / Math.max(1, b.total)) * 100).toFixed(1)}%</td></tr>`).join('');
     return `<div class="gunboard">
@@ -1001,7 +1018,7 @@ function gunBoardsHtml(d) {
 function coachBlock(s) {
   const cls = s.team === 1 ? 'cred' : 'cblue';
   return `<div class="coach">
-    <div class="who ${cls}">${esc(sym(s.coach))} <span class="dim">${esc(s.coach)} / ${esc(s.engine)}${s.coachKnown ? '' : ' (inferred)'}</span></div>
+    <div class="who ${cls}">${esc(sym(s.coach))} <span class="dim">${esc(s.coach)} / ${brainLink(s.engine)}${s.coachKnown ? '' : ' (inferred)'}</span></div>
     ${s.rationale ? `<div class="rationale">“${esc(s.rationale)}”</div>` : ''}
     <div>${tweakStr(s.tweaks)}</div>
     <details class="resolved"><summary>resolved config</summary>${tweakStr(s.resolvedTweaks)}</details>
@@ -1061,7 +1078,7 @@ function fightBlock(f) {
   const fresh = f.createdAt && (Date.now() - new Date(f.createdAt).getTime() < FRESH_MS);
   return `<div class="fight"${fresh ? ' style="border-color:var(--gold)"' : ''}>
     <div class="fight-head" data-watch="${attr(headUrl)}">
-      <span class="vs"><span class="cred">${esc(sym(a.coach))}</span> <span class="dim">${esc(a.engine)}</span> × <span class="cblue">${esc(sym(b.coach))}</span> <span class="dim">${esc(b.engine)}</span></span>
+      <span class="vs"><span class="cred">${esc(sym(a.coach))}</span> <span class="dim">${brainLink(a.engine)}</span> × <span class="cblue">${esc(sym(b.coach))}</span> <span class="dim">${brainLink(b.engine)}</span></span>
       <span class="arena">arena #${esc(f.arenaSeed)} · ${esc(f.roundSecs)}s rounds</span>
       <span class="when" title="${esc(f.createdAt)}">${fresh ? '<span class="flat">● new</span> ' : ''}${ago(f.createdAt)}</span>
       <span class="series ${seriesCls}" data-fk="fs:${attr(f.dirName)}">${series}</span>
@@ -1496,7 +1513,7 @@ function brainCardHtml(doc, stats, champEngine) {
   const knobRows = (doc.knobs || []).map((k) =>
     `<tr><td class="k">${esc(k.key)}</td><td class="v">${k.value}</td><td class="doc">${esc(k.doc)}</td></tr>`).join('');
   return `<div class="braincard">
-    <div class="bc-head"><span class="bc-name">${esc(doc.engine)}</span>` +
+    <div class="bc-head"><span class="bc-name">${doc.isEngine ? brainLink(doc.engine) + ` <a class="brainlink" href="brain.html?engine=${attr(encodeURIComponent(doc.engine))}" title="open the BRAIN-CAM" style="border:none;font-size:11px">🎥</a>` : esc(doc.engine)}</span>` +
     (doc.engine === champEngine ? '<span class="bc-belt">🏆 reigning</span>' : '') +
     (doc.isEngine ? '' : '<span class="bc-helper">helper module</span>') +
     (doc.tagline ? `<span class="bc-tag">${esc(doc.tagline)}</span>` : '') + `</div>` +
