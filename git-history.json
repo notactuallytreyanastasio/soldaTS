@@ -1,0 +1,610 @@
+[
+  {
+    "hash": "b4ae7e63da20d3c0a23cd0a96401d93327376ab5",
+    "short_hash": "b4ae7e6",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T21:50:43-04:00",
+    "message": "docs: graph export (nodes 504-520 — BUTTSTEIN era)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "6c7fb20ff6e3ff6ebd765d122e9a074cedd30fa7",
+    "short_hash": "6c7fb20",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T21:50:01-04:00",
+    "message": "feat: BUTTSTEIN card carries the full verdict — factory 0.2 sustains, card 0.15 calibrates\n\nFull paired gauntlet (clean tree): BUTTSTEIN - DISCIPLE = -3.78/match,\n95% CI [-4.61, -2.98] at card FIRE_THRESH 0.15; factory 0.2 measured\n-5.28 [-6.09, -4.51] but is the only threshold that sustained kills on\nall 5 probed seeds (0.25 zeroed seed 7, 0.15 zeroed seed 42) — the\ndisciple card pattern. Teacher gap -43.25 quick [-45.61, -40.83]\n(prodigy was -47.03). MANUAL: schema-v2 row docs + learned-engine rows.\nCaveat on the card: hit% 2.94 vs disciple 17.4 — survives by\nexact-threat dodging; hit rate is the next student's assignment.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "05ff75e6431a30d186b1e77597d74c4bbd900f45",
+    "short_hash": "05ff75e",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T20:25:30-04:00",
+    "message": "fix: offload abort threshold is rate-based (25+ AND >5%) — sparse network transients retry next run, only systematic failure aborts\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "5ab86d05f91ba15d47257d2e5df3346af1a1e543",
+    "short_hash": "5ab86d0",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T20:14:40-04:00",
+    "message": "feat: BRAIN-CAM — per-brain live detail page (brain.html?engine=<id>)\n\nOne brain under glass: live vitals strip (rank/score/form/streak/HELD,\nflash-on-change, red LIVE banner when the subject is in the running\nfight), rank-over-time with the field ghosted, W-L win-bars by opponent\n(click → latest meeting), per-gun kills dealt/taken, last-15 fights\ntable, and a 30-deep kill tape — every number a door (data-watch).\n\nbuild.mjs grows a brains{engine} slim aggregation in desk-data.json\n(kill tape, recent fights, gun splits, coaches, doctrine header) plus\nlearned-bot provenance parsed from *Weights.ts headers (training date,\nteacher, samples, val metrics) and the last eval-ledger gauntlet\nentries. Engine names on the floor and the desk (big board, hero, gun\nboards, prospectus, swipe deck, pyramid, rivalries, tonight's card) are\nnow dotted-underline links into the brain-cam; both pages grew a 🧠 nav\nchip. Both themes, ≤700px pocket edition, 5s poll with in-flight guard.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "34b979775922097e8da418bcf5ad758be3ca3865",
+    "short_hash": "34b9797",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T20:03:00-04:00",
+    "message": "feat: replay-blob offload to Hetzner Object Storage — disk rescue + bounded corpus\n\n- tools/s3.mjs: zero-dep SigV4 client (PUT/HEAD/GET/LIST/DELETE, path-style,\n  keep-alive, retries) for fsn1.your-objectstorage.com / bobbby-media\n- tools/offload-replays.mjs: move match-*.replay.jsonl.gz from datasets >24h\n  old; per file upload -> size+MD5 verify -> append datasets/OFFLOADED.jsonl\n  -> only then delete. Resumable, concurrency 8, never touches manifests/\n  summaries/events/telemetry. Aborts after 25 failures; no unverified deletes.\n- tools/fetch-replays.mjs: restore any dataset's replays from the bucket\n  (lists the prefix, size-verified downloads)\n- autopilot.mjs: offload step (a2) each training cycle, after the data pull\n- Makefile: `make offload`; MANUAL.md §5: where the replay blobs live\n- .gitignore: explicit datasets/OFFLOADED.jsonl entry\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "972b54fe35b9c45905f22088c18271976ba4fa49",
+    "short_hash": "972b54f",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T19:52:26-04:00",
+    "message": "feat: prodigy card carries the full verdict + PRODIGY menu badge\n\nCard now states the whole experiment truthfully: pooled census (22,640\ndatasets / 56k matches), the exposure-bias lesson (prev-aim history\nself-confirmation, fixed with 50% training dropout), the bullet-threat\nreconstruction caveat, and THE VERDICT — gauntlet -34.51, paired vs\nDISCIPLE -7.82/match CI [-8.51,-7.12], teacher gap -47.03 (quick).\nPost-mortem: better aim (24.5° vs 42.8° live) lost to lost trigger\ndiscipline (hit% 5.4 vs 17.4 — spray heat is unobservable in rows).\nLedger gains the quick PRODIGY-vs-BELMONTE teacher-gap line; the menu\nbadges the third student. 670/670 tests, typecheck clean.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "d8ad2fc87f6f3f3cc635a9b1d6b10c32e499ee22",
+    "short_hash": "d8ad2fc",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T12:05:09-04:00",
+    "message": "feat: ONLINE GOES TEAM-vs-TEAM — 3v3 with player-picked bot squads (goal 450)\n\nNot 1v1 anymore: each human brings two bots running the brain THEY chose.\n\nProtocol v2: the hello carries an `engine` field (the codec reads '' from a\nv1 frame and the lobby maps the stale envelope onto a clean WrongVersion\nreject). The lobby stores the choice per waiter and hands LobbyPlayers to\nonPair.\n\nMatch is now humanCount 2 + botCount 4, teams on: bots 3..6 alternate\nred/blue via Game's per-team engine rule (aiEngine 'e1,e2'), so team 1's\nbots run player A's pick and team 2's run player B's; unknown/empty choices\nfall back to 'classic' (warned). The welcome's mapName recipe gains\ne1/e2 so the match start echoes both choices. Snapshots now replicate ALL\nSIX sprites; heartbeats carry six rows and SUM team kills. The chance\nwildcard rolls per match — bot carriers exist online now (one per team,\nhumans never carry).\n\nGame grows a `combat` flag: spectate's alpha-255 + engine sustainment\nWITHOUT removing human slots — online bots actually perceive and fight.\nDefault off; every existing mode byte-identical (replay suites green).\n\nClient: brain-picker overlay (engine list + LEARNED badges, random default)\nbefore queueing; banner/HUD read 'YOU + WOLF vs STRANGER + HYDRA'\nteam-colored; all five remote sprites dead-reckoned + cosmetic fire; kill\nfeed attributes bot kills to engine names, humans stay You/Stranger.\n\nSmoke harness: two clients hello wolf-vs-hydra, assert the recipe echo,\n6-sprite replication, and a bot kill in both feeds. PASSED locally and\nagainst wss://bobbby.online/arena/ws after deploy (kill:4:3 + kill:4:1 —\na hydra bot dropped both a wolf bot and the human). 668/668 tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 14
+  },
+  {
+    "hash": "fcab978f33a16b3c5dd28936ed26ba30a5a4a433",
+    "short_hash": "fcab978",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T11:35:13-04:00",
+    "message": "feat: pocket edition — desk + floor readable on iPhone (goal 445)\n\nThe dashboards were desktop-only: a 14-column board, a 812 MB data.json\nrefetched every 5s, watch links pointing at localhost, and a watcher\nwhose 180s build timeout had been silently killing every rebuild since\nthe corpus crossed 19k datasets (stale site, REBUILD FAILED loop).\n\nMobile (max-width 700px) overlays on both templates:\n- THE FLOOR gets a swipe deck — the phone's games view: one scroll-snap\n  card per fight, series LEADER front and centre, score + arena + top\n  frag + match count, tap to watch; the live series rides the front.\n- The Big Board folds to #/SYM/SCORE/REC (2-4 stats, per the ask);\n  per-match bot tables fold to bot/k/d/kd; analytics charts arrive\n  collapsed and pan sideways at readable scale; pyramid tiers and title\n  bouts become horizontal swipe strips; masthead/banner/hero fold.\n- Grid traps fixed: bare `1fr` collapses used auto minimums, so the\n  widest section stretched the page past the viewport — minmax(0,1fr).\n\nPlumbing the phone actually needed:\n- watch.mjs build timeout 180s -> 20 min (rebuilds take 4-9 min now).\n- data.json local default capped to 150 newest fights (~6 MB, was\n  812 MB); ARENA_DATA_FIGHTS=0 restores the firehose.\n- watch URLs retarget localhost:5173 to the serving host (fixHost) so\n  replays open from a phone on the LAN; client dev now binds --host.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "f0d43cd108419ab3fa6337488395d32f0ed0d61d",
+    "short_hash": "f0d43cd",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T11:19:14-04:00",
+    "message": "feat: TRUE MULTIPLAYER — online 1v1 at /arena/play/?online (goal 450)\n\nNew @soldat/server: a dependency-free game server — hand-rolled RFC 6455\nWebSocket layer, a lobby that pairs visitors two-by-two, and per-match\nauthoritative simulation reusing the headless Game (humanCount: 2,\nbotCount: 0, red vs blue) at 60 Hz with 20 Hz full-sprite snapshots via\n@soldat/netcode. Own-sprite snapshots are stamped with the client's last\napplied input tick — the exact ack PredictionBuffer reconciles against.\n\nGame grows a humanCount option (default 1 = byte-identical classic play;\nspectate replays untouched — 657/657 tests green incl. determinism suites).\n\nClient ?online mode: waiting room, own-sprite prediction/reconciliation,\ndead-reckoned opponent, cosmetic local bullets (hitMultiply 0), team banner,\nkill feed + team score from heartbeats/kill chats, win-on-disconnect.\nMenu gets \"PLAY ONLINE — 1v1 vs a human\". Supervisor gains the game server\nas a 4th child (GAME_SERVER_PORT 8902); wss /arena/ws routes through Caddy.\n\nV1 gaps (deliberate): wildcards never arm (they pick bots; there are none),\njet fuel/reload state not on the wire (mirrored/derived client-side).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 21
+  },
+  {
+    "hash": "417d42882d6c088bc87e9c2dc1fc145ffada1070",
+    "short_hash": "417d428",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T19:24:02-04:00",
+    "message": "feat: three new guns — M79 rocket, Ricochet Carbine, Chainsaw (goal 440)\n\nThree new weapon slots + wildcards on the Barrett-era architecture, each\ninert until armed (stock matches stay byte-identical — verified against\nrecorded chance-era datasets, 5 matches byte-for-byte):\n\nROCKET ('rocket', contract M79 row): 10.7 px/tick arcing rocket, direct\nhit ≈ 16,585 dmg, and the formerly-deferred Bullets.pas explosion AoE —\n250 dmg at the epicentre falling linearly to 0 at 64 px, owner included\nat 0.5x with a 6 px/tick knockback kick (rocket jumping is canon). New\nonBulletExplode observer drives a client blast ring/flash (ExplosionFx).\n\nRICOCHET ('ricochet', new contract row off the Ruger 77, num 24 — unused\nby any Pascal weapon, so the gate is provably inert for old replays):\nPLAIN rounds reflect off map polys across the colliding edge's\nperpendicular, up to 4 bounces at 75% energy, damage persisting (the\ndeferred ricochet impulse). Tracer shifts colour per bounce. Mag 6,\n2 s reload.\n\nCHAINSAW ('chainsaw', contract row as-is): KNIFE-style one-tick blade\nbullets every other tick — ~29 px reach, 400 dmg contact kills, 200\nfuel, 110-tick refuel. Saw + grind sparks drawn from sprite state\n(blade bullets never survive to render).\n\n'chance' mode: arming roll unchanged (shotgun-era hash); the weapon\npick hash now spans all five wildcards — old armed seeds may pick\ndifferently, which is safe because recorded manifests/watch URLs carry\nthe RESOLVED weapon, never the mode. Tab/B cycles all six guns;\n[ROCKET]/[RICOCHET]/[CHAINSAW] kill tags; menu + MANUAL §4 updated.\n633/633 tests (28 new), plain and STRICT_F32.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 17
+  },
+  {
+    "hash": "2f5a352176067a3de8be41a9cf6c55c7f81b9562",
+    "short_hash": "2f5a352",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T18:26:19-04:00",
+    "message": "feat: THE AUTOPILOT — boot-persistent keeper, config-gated, trains at all times (goal 428)\n\ntools/autopilot.mjs: zero-dep launchd-run keeper. Reads arena-live/autopilot.json\nevery 60s; when enabled it keeps the 4 daemons alive (started exactly as make up\ndoes, exponential backoff 30s-5min), and every intervalHours runs a serialized\ntraining cycle: rsync server datasets (additive) -> train-disciple (teacher auto\n= top hand-written board engine) -> GATE -> evolve --resume (own ship-gate) ->\ntools/autopilot-ledger.jsonl + a deciduous outcome node. The gate prefers the\nEVAL_SPEC_V1 gauntlet (two CRN-paired --quick runs, weights swapped between\nthem; TODO: single --baseline run + CI>0 once evaluate.mjs grows a disciple\nweights seam) and falls back to a paired 5-match head-to-head via\ntools/autopilot-gate.mjs. Ship = commit+push the weights; reject = revert.\n\nBoot persistence: deploy/com.soldat.autopilot.plist (RunAtLoad+KeepAlive,\nasdf-shimmed node, absolute paths) + make autopilot-install/uninstall/status.\n\nConfig screen: GET /config.html + GET/POST /api/autopilot + /api/autopilot-log\nin watch.mjs — every autopilot endpoint is LOCALHOST-ONLY so the public Hetzner\ndeployment of the same watch.mjs cannot be reconfigured by visitors; the ticker\nheader gains a gear link that only shows on localhost.\n\nAlso: build.mjs data.json writer now streams the fights array — the corpus\ncrossed V8's max string length tonight (516MB) and JSON.stringify started\nthrowing RangeError, killing every rebuild.\n\nVerified end to end: 605 tests green; killed grinder revived by the keeper;\none abbreviated cycle pull->train(77s)->gate(REJECT, reverted)->evolve(10\ngens)->ledger with 0 errors; launchd job installed, kickstarted, ENABLED.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 16
+  },
+  {
+    "hash": "4392cf9697645edc12b0bfdd3c62c1998f22b721",
+    "short_hash": "4392cf9",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T18:08:28-04:00",
+    "message": "feat: the evaluation gauntlet — EVAL_SPEC_V1, the program's measurement foundation\n\nOne standardized, variance-controlled, HELD-OUT benchmark for every\ntraining experiment (goal 427), replacing ad-hoc 3-match spars (the\nin-sample trap the ladder already exposed).\n\n- packages/arena/src/evaluate.ts: pinned EVAL_SPEC_V1 (12 hand-written\n  opponents at factory defaults × {stock, shotgun, rifle} × reserved\n  arenas [101,202,303,404,505] × 2 matches on reserved seeds 90000+),\n  cell enumeration with seeds as a pure function of cell coordinates\n  (common random numbers), alias-engine fighter registration (cards or\n  unshipped weight checkpoints via the registerNeuralNet seam), paired\n  delta stats (exact sign test + seeded bootstrap 95% CI), ledger line.\n- tools/evaluate.mjs: zero-dep driver on the evolve.mjs child-worker\n  pattern; full gauntlet 360 matches in ~63 s on 8 workers (--quick:\n  72 in ~13 s); --baseline runs the identical seeds and reports paired\n  per-cell kill-diff deltas; appends to tools/eval-ledger.jsonl (the\n  append-only experiment registry). In-memory only — no datasets, the\n  corpus and public board never see gauntlet matches.\n- evaluate.test.ts: spec constants pinned, 360/72-cell enumeration and\n  seed uniqueness, sign-test/bootstrap math on synthetic data, ledger\n  shape, runCell determinism (14 tests; suite 605 green).\n- MANUAL.md §5: Evaluation subsection — the reserved-seed rule, the\n  paired protocol, the ledger.\n\nFirst baselines (the score to beat): BELMONTE +12.04 (343-12-5,\n95.3%); DISCIPLE −26.69; MIMIC −38.12. Paired demo: DISCIPLE − MIMIC\n= +11.43 kills/match, 95% CI [10.79, 12.07], sign test +349/−11/=0,\np ≈ 2.5e-88 — common random numbers make the gap unmistakable in one\nrun. Reserved-seed audit: nothing in tools/, trainers, dataset\nmanifests, or the ladder uses the eval arenas or the 90000+ block.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "7087f0119f1f68de97960b25ce5bb8a66cbb3a5f",
+    "short_hash": "7087f01",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T16:35:24-04:00",
+    "message": "fix: cap the live site's shipped fight feeds (ARENA_DATA_FIGHTS)\n\nThe full data.json hit 348 MB on the VPS and the floor polls it every 5s —\ncaddy was gzipping a third of a gig per request. With ARENA_DATA_FIGHTS=40\n(live deploy only; local default untouched) data.json is ~5 MB and\ndesk-data.json ~2 MB (slim feed capped at 10x). Board/decay/desk/analytics\nstill compute from the full corpus — only the shipped feed is cut, exactly\nlike the publish snapshot.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "afe3ffef4887132e4a97f53d97007f2b8f56a682",
+    "short_hash": "afe3ffe",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T16:17:22-04:00",
+    "message": "feat: the arena goes LIVE on the VPS — supervisor, dockerfile, env watch base\n\n- build.mjs: watch URLs base from ARENA_WATCH_BASE (default localhost:5173\n  unchanged); footer copy auto-fixes when overridden (live deploy)\n- watch.mjs: PORT env overrides the 8901 default (docker)\n- deploy/arena-supervisor.mjs: pid-1 of the soldat container — pnpm install\n  into the bind-mounted tree, run watch+commissioner+league with prefixed\n  logs, 5s-backoff restarts, SIGTERM-clean\n- deploy/arena-live.Dockerfile: node:22-slim + corepack pnpm, repo bind-mounted\n  at /app so redeploys are rsync+restart, no rebuild\n- deploy/deploy-arena-live.sh: rsync to /opt/soldat (no replay blobs; protect\n  server-grown datasets; server owns its state; story ledgers seed once),\n  then compose build/up/restart soldat\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "5b9b4cba1c29ccb787b14dac0f3b11f71fd24b15",
+    "short_hash": "5b9b4cb",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T15:31:28-04:00",
+    "message": "feat: the arena goes public — publisher, subpath-safe client, and THE PYRAMID\n\nhttps://bobbby.online/arena/ now serves both dashboards AND working\nreplays, LLM-free: the brains are deterministic TypeScript, a watch URL\nre-simulates its match from the seed in the query string, no server\ncompute, no model calls.\n\n- packages/client: assetUrl() routes every public-asset fetch (maps,\n  textures, gostek sprites, sounds) through Vite's BASE_URL so a\n  --base=./ build runs under any subpath (verified at /arena/play/);\n  dev behavior unchanged.\n- arena-live/publish.mjs: builds a static snapshot (40-fight public\n  ticker feed, slim desk feed, watch URLs rewritten localhost:5173 ->\n  play/, 60s polling, footers updated) plus the built client, and\n  rsyncs it to the blog VPS (/opt/arena, served by Caddy under\n  bobbby.online/arena/). --dry / --no-client / --loop N.\n- desk.template.html: THE PYRAMID — live tournament hierarchy: the\n  belt (champion or vacancy + strongest claim), the last title bouts\n  at the gates, contender tiers off the decay board, learned bots\n  outlined, the grinder as the base. Re-renders on every poll.\n- README: public URL + pyramid in the intro bullet.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
+    "hash": "d32b4bb6a17f1fb92829b7836f50fa7d400faaf4",
+    "short_hash": "d32b4bb",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T14:56:07-04:00",
+    "message": "fix(arena-live): the desk renders again — slim feed + child-process builds; README/MANUAL get the desk\n\nThe desk launched against the full data.json, which had crossed 100 MB\n(per-kill timelines x a grinder fight every 30s) — and the watcher ran\nits 10s synchronous rebuild on the same event loop that serves HTTP, so\na poll could wait 15s+ and the page rendered empty.\n\n- build.mjs emits site/desk-data.json (~2 MB: board, rankHistory, h2h,\n  crucibles, beltLineage, slim gunBoards with per-gun lastUrl, desk\n  stats, fights w/ watchUrl but no timelines); the desk polls that,\n  with an in-flight guard, and falls back gracefully on either shape.\n- watch.mjs runs the build in a child process: the server never blocks\n  (fetch went 15s -> 4ms) and the builder always loads fresh code; also\n  watches desk.template.html + season/league state.\n- README Part 26 (The Desk — stories, not prices) + both theme\n  screenshots (img/16, img/17); intro bullet and screenshot footnote\n  updated; MANUAL live-ops table documents the desk + slim feed.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "d3a5d9aaf4c73842ffb33e53f61684db2325dea4",
+    "short_hash": "d3a5d9a",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T14:42:51-04:00",
+    "message": "feat(arena-live): THE SKYREACH DESK — story-first second dashboard at /desk.html\n\nAn alternative front page to the stock ticker, built around the day's\nfinding that the stories beat the prices: masthead with season bell\ncountdown + belt/claim status, an auto-editorial lead story (priority:\nseason end > title bout > belt change > 2h upset > live win streak,\ntemplated headlines), THE CLIMB (learned bots' rank-over-time vs the\nghosted written field, evolve weight-ship pins), rivalry cards from the\nh2h matrix, tonight's card (LIVE + commissioner + grinder pass), gun\nmeter with gun-of-the-hour, and a presses strip of corpus stats.\n\nbuild.mjs: emits site/desk.html from desk.template.html; data.json gains\ndesk{seasonState,lastSeason,corpus,league,evolveShips,gunHour} plus\nboard-row streaks — all guarded so the watcher never dies. The ticker\nheader gains a DESK link; the desk masthead links back to THE FLOOR.\nBoth pages share the theme via localStorage + ?theme= override. Also\ncarries the concurrent gzip-aware readJson() (datasets compress now).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "f030135be20b32eaea482ce22b5c943c51f79f27",
+    "short_hash": "f030135",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T14:32:35-04:00",
+    "message": "feat: gzip dataset telemetry — 29% of corpus bytes were raw JSON\n\nmatch-N.telemetry.json -> .json.gz in store.ts (writer + manifest names),\n~8:1 on this shape. analyze-match.mjs sniffs the gzip magic so both forms\nwork; datasets/README.md + the watcher's readJson (both gitignored/local)\nupdated to resolve stale-manifest naming in either direction. Existing\nseason-2 corpus retro-compressed: 2.1G -> 1.6G across 1,911 files.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "94122df5930227d4f0650d480f50658a9d3c8778",
+    "short_hash": "94122df",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T14:20:22-04:00",
+    "message": "feat: season lifecycle for the commissioner + fresh-clone Makefile\n\nCommissioner (arena-live/commissioner.mjs):\n- season-state.json: fixed SEASON_HOURS=3 windows, initialized from the\n  LADDER heading on first run, rolled automatically at the bell\n- VACANT belt (parsed from fights/LADDER.md \"Current champion\"): each\n  cycle stages a TITLE BOUT — top two carded board configs, best of 3,\n  fresh seed — appended to crucibles.jsonl as kind:'title-bout'. The\n  daemon never edits LADDER.md; the dataset is the coaches' evidence\n- season end: winner (belt holder, or board #1 if vacant) APPENDED to\n  fights/SEASONS.md with the window, top-5 board, and season totals\n- rides along: the 30s cycle cadence + second-resolution arena seeds\n  already in the working tree\n\nFresh clone (Makefile): help/setup/up/down/status/test/league/train/\nevolve/fight. `make up` starts client + watcher + commissioner detached\nwith health-checked URLs (:5173, :8901). .gitignore: build.* no longer\nswallows arena-live/build.mjs (now tracked); stale soldat-ts/ negation\ndropped.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "699e0771b14f3762e91f1575ed2a1ca4a1dc9c56",
+    "short_hash": "699e077",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T14:16:32-04:00",
+    "message": "feat: league daemon — the perpetual grinder\n\nOne round-robin pairing every 30s under live rules (~120 matches/hr,\n~3.7M training rows/hr floor). Roster re-read each pass so new engines\njoin automatically; seeds advance from 50000 (clear of coach-picked\nranges) so no fight repeats; arena rotation; datasets land like any\nfight so the board/trainers need no wiring. Nothing pruned — replays\nare the corpus; logs disk usage and shouts past 8 GB.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "7fe8e677b991cc2f8d1fe5092166ad67027ca0e5",
+    "short_hash": "7fe8e67",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T14:15:34-04:00",
+    "message": "feat: the sparring department — turn the data faucet to 11\n\nNew arena-live/sparring.mjs daemon: 3 parallel workers running continuous\nrandom-pairing best-of-3s across all fight cards (distinct engines only,\nper-worker PRNG, second-fresh arena seeds) for training-data volume and\nmatchup diversity — ~40 series/min observed vs the commissioner's one per\ncycle. Disk-floor guard pauses production below 12GiB free so a runaway\ncorpus can't wedge the machine. Commissioner cadence 10min -> 30s rides\nalong in commissioner.mjs (left uncommitted here — the other session is\nmid-edit adding seasons; they'll land it).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "32f7438684e50773d5c634db75bf3f29bf5d1fc6",
+    "short_hash": "32f7438",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T13:39:22-04:00",
+    "message": "feat(ticker): Gun Boards — per-weapon kill leaderboards\n\nThree breakdown tables (AK-74 / SPAS-12 / Barrett) under the Big\nBoard: kills + share per coach, from event weapon tags (stock-era\nuntagged kills are AK by construction). Builder aggregation lives in\nthe gitignored build.mjs (applied locally; flagged the build.*\ngitignore pattern earlier).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "4fd1f68463388b475c212751e4261a9235b17d9f",
+    "short_hash": "4fd1f68",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T13:36:26-04:00",
+    "message": "feat: Barrett M82A1 — the third gun (one-shot rifle wildcard)\n\nFrom the shared Pascal contract: 55 px/tick rounds, OHK at any range\n(55 * 4.45 * chest = 244.75 vs 150 hp; degradation exemption wired\nper Bullets.pas:638-665 for BARRETT/M79/KNIFE/LAW by weapon num),\n19-tick charge-up with release-to-cancel, 3-round mag, 3.5 s reload,\n2.25 s cadence. --wildcard rifle arms one carrier per team; chance\nmode picks shotgun/rifle 50/50 from a separate seeded hash — old\nchance-era replays verified byte-identical against recorded datasets.\nTab/B cycles all three guns; [BARRETT] kill tags; ice-bright tracer.\n591/591 tests (28 new). MANUAL §4 now covers both wildcard guns.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 15
+  },
+  {
+    "hash": "145800e8711df84459042f8024f9139ab6539a31",
+    "short_hash": "145800e",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T12:57:31-04:00",
+    "message": "docs: README is now the build diary (parts 1-25, desloped, edited)\n\nThe blog post — recovered after the move dropped parts 19-23 and the\nimages, extended with part 24 (shotgun paradox, four belts in an\nafternoon, the self-running sport) and part 25 (the machines start\nlearning), then given a full editorial pass: AI-pattern removal (199\nem dashes to zero in prose), ~8% brevity cut with continuous\nstorytelling bridges, first-person voice. The operator's manual moved\nto MANUAL.md with a nav link each way; blog images restored to img/.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 18
+  },
+  {
+    "hash": "6e82419f05cafd6fb15a68f3da0b6167c5373440",
+    "short_hash": "6e82419",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T12:53:40-04:00",
+    "message": "feat: season 2 — archive season 1, zero the stats, opening league\n\nSeason 1 (1.0 GB: all datasets, ticker history, cards, training\ncheckpoints) archived to ../arena-backups/season1-20260610.tar.gz (5,898\nentries). Datasets, ticker history/crucibles, and commissioner memory\nzeroed; daemons restarted clean. Belt VACATED — first official challenge\ntakes it. Opening full-roster league (14 engines, 91 pairings x2) sets\nthe form guide: angler 24-1-1 wins it, wolf 23-5-1, cuadrilla 22-2-2;\nESCA's angler stands as the presumptive target.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "4d5479d7f8d7647322abdac8026a01889a0cd02c",
+    "short_hash": "4d5479d",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T12:01:33-04:00",
+    "message": "docs: soldat-ts README — the operator's manual\n\nFull lifecycle guide: run/watch/play (URLs, weapon swap, wildcard\nmodes), the live ops stack (monitor + commissioner), arena CLI +\ncards + ladder protocol + dataset anatomy, making a brain (contract,\nrecipe, 14-engine roster with doctrines, meta-lessons), the SPAS-12\nwildcard, and training (replay data, imitation + disciple trainers,\nES self-play with the ship-gate, next-run levers). Also: disciple\ncard ships FIRE_THRESH 0.25 (the base-rate fix — a 12%-trigger\nteacher makes a 0.5-threshold clone underfire its own aim).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "6011033617b7aaaefef5b776823fae9e4a468fbc",
+    "short_hash": "6011033",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T11:56:43-04:00",
+    "message": "feat: angler takes the belt — the lure that fishes the meta (13th doctrine)\n\nESCA (angler, factory defaults) defeats BELMONTE (cuadrilla v2) 2-0\n(31-28, 33-33 draw, 37-34) on arena 157, scanned from 16 fresh arenas at\nthe official condition. The lure holds a 4-round mag forever — a permanent\n'open' window to every mag-keyed selector — kites the committed pass\ntoward two planted EMA-1 guns, and WEIGH-THE-CATCH (an in-match A/B over\nlure-on/off windows scored by net damage) self-converts it to a third\nhunter against doctrines that don't bite. Probes: 8-1 AKELA, 9-0 LERNA,\n6-1 FALCONER-shrike. Engine itself landed in 898b24e (rival session kept\nthe registry coherent); this lands the ladder + final card.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "898b24e7d7bab3a1323c50d0760fdd1310bc0f10",
+    "short_hash": "898b24e",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T11:52:13-04:00",
+    "message": "feat: the learning era — ES self-play (3 gates shipped) + single-teacher disciple\n\nPhase 2: tools/evolve.mjs — zero-dep evolution strategies over the\nneural weights, antithetic pairs + rank shaping, fitness vs rotating\nchampion pool + past selves on the headless runner (8 workers,\n~8s/generation). Gates at gen 40/50/60 ALL beat the imitation\nbaseline head-to-head and shipped; checkpoints + log committed for\n--resume. Weights-injection seam in neural.ts (inert in normal play).\n\nV2 imitation: disciple — single-teacher clone of the championship\ncuadrilla (1.6M samples, 24-bin aim classification): fire acc 88.5%,\ncrushes multi-teacher MIMIC 3-0 (25-29% hit vs 7-9%), loses to its\nmaster 0-3 as a student should. Includes the rival session's angler\nengine + cards so the registry stays coherent. 100/100 ai+arena tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 22
+  },
+  {
+    "hash": "892e81f4d83e58c0e13406f5770b82cd06dffd47",
+    "short_hash": "892e81f",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T11:45:25-04:00",
+    "message": "feat: brain browser on the ticker — The Prospectus\n\nNew full-width section on Arena Live cataloging every registered engine:\nfilter (name/doctrine/knob) + sort (wins, win rate, K/D, tweakability,\nname), and a card per brain with its tagline, banner strategy, career\nseries record + K/D aggregated from the tape, coach chips, the full knob\nsheet (defaults + the source's own inline comments, parsed at build time),\nthe doctrine header, and a link to its freshest recorded fight. Reigning\nchampion's engine wears the belt badge; helper modules (neural weights/\nfeatures) are flagged and trail the grid. New engines appear with zero\nconfig — anything in ai/ with a doctrine header and a createBrain factory\nis on offer (angler and disciple showed up mid-rollout, unprompted).\n\nbuild.mjs: loadDoctrines now extracts isEngine, tagline, strategy line,\nand parses <NAME>_DEFAULTS into {key, value, doc} knob rows. Also lands\nbuild.mjs itself for the first time — the repo-root 'build.*' ignore rule\n(for the old native build dirs) had silently kept the site builder out of\ngit; added a negation.\n\nwatch.mjs: hot-reload build.mjs on mtime change — the static import pinned\nthe module-cache version from watcher startup, so builder edits rebuilt\nwith stale code forever (this rollout hit exactly that: the running\nwatcher overwrote enriched data.json with un-enriched output). Verified\nby CDP screenshot in both themes.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "abbe33f317986d5140a14dd762be329114ea73c8",
+    "short_hash": "abbe33f",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T11:17:01-04:00",
+    "message": "feat: neural engine — the imitation seed (ARENA.md roadmap, phase 1)\n\nBehavior-cloned policy net trained on 1.44M obs->action rows joined\nfrom 64 recorded runs (11 engines balanced): zero-dep streaming\ntrainer (hand-rolled 25-64-64-9 MLP + Adam, 120s train), shared\nfeature contract module so trainer and runtime cannot drift, weights\nshipped as generated TS, forward pass in the BotBrain adapter like\nevery hand-written brain. Val: aim cosine 0.786, buttons 79-99%.\nSustains 6000-tick matches with the genuine net; spars 0-3 vs the\nchampions at 12-16% hit rate — a losing-but-functional clone, which\nis the phase-1 win. Coach MIMIC card filed. 548/548 tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 8
+  },
+  {
+    "hash": "696f30bd875047e3ce2f04a6b882cf0afc424344",
+    "short_hash": "696f30b",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:59:39-04:00",
+    "message": "feat: cuadrilla v2 reclaims the belt — read the rival's tree, concede the juke\n\nCounter-intel from the shared decision graph: orca's title win keyed on\ninstantaneous lead (my own published sweep), planted band gunnery, and\nper-tick window convergence. v2 answers structurally: slots PLANT and bob\n(JUKE_MIN_TICKS 0 default — the juke pays spread and dodges nothing once\neveryone leads instantaneous), WINDOW_AUTO 360 (arrive WITH the mag),\nPASS_REACH gates the crew dash against forged-mag bait, SPAS bulls are\nonly open while actually reloading, FAN_GIVE respects armed fans.\n\nProbes falsified my own v2 reload-retreat theory (3-5 worse): the winning\ndoctrine is reload RARELY (SELF_RELOAD_AT 5) and IMMEDIATELY in place —\nthe fleeing reloader lures the orca wave through planted crossfire.\n\nOfficial challenge: BELMONTE 3-0 BLACKFISH (32-30, 30-29, 32-30) on\narena 97, picked by a 16-arena scan at the official condition. Probe\nrecord: 7-2/6-2 vs orca (arenas 61/89), 8-1 AKELA, 9-0 LERNA.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "0abd420cdc0cbd9452db5b34d1da713929f69696",
+    "short_hash": "0abd420",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:40:11-04:00",
+    "message": "feat: orca takes the belt — the pod hunts the gap\n\nEleventh doctrine, BLACKFISH coaching. Mag-window pack punish re-read\nevery tick, planted band gunnery, weapon-aware both ways (fan respect +\ncarrier window dives), anchor refusal, all-gun reload safety. Title\nfight: 3-0 over BELMONTE (cuadrilla) on arena 211 with the champion's\nown EMA_ALPHA=1 sweep finding turned against it.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "172ce8721831dbed65cce3a6f3fca612982d1a1b",
+    "short_hash": "172ce87",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:33:05-04:00",
+    "message": "docs: graph export — backfill + audit (nodes 310-322, mislink repairs)\n\nCaught the graph up: league-mode arc, rank-history arc, ticker layout\nfollow-ups, the shotgun-paradox experiment chain rewired through its\naction nodes (A/B -> verdict -> v3 fix -> belt), blood-FX commit node,\nthroughput observation, and the BELMONTE belt loss. Removed 7 edges\nmislinked during concurrent-session ID drift. Zero non-goal orphans\nin the day's range.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "52247e262118d1e1ca9c8deace09bea3f1c95ab4",
+    "short_hash": "52247e2",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:31:14-04:00",
+    "message": "feat: cuadrilla takes the belt — the bullfighter's crew\n\nBELMONTE (cuadrilla, EMA_ALPHA 1) beat FALCONER (shrike v3) 2-0 with one\ndraw (34-27, 33-26, 36-36) in the official best-of-3 on arena 137 under\nchance-wildcard rules. Tenth doctrine: one bull picked by mag state,\ncrossfire bearings while its mag is hot, the whole crew dashes to\npoint-blank the moment it reloads; the wounded torero holds the long\nreserve and the crew never chases withdrawn anchors. Spars en route:\n9-0 LERNA, 8-1 AKELA (two arenas), 7-1 VERONICA, 8-1 BLACKFISH,\n9-0 FALCONER. EMA sweep (0.15/0.4/0.7/1): instantaneous lead wins\nevery matchup.\n\nAlso lands BLACKFISH's orca (pod mag-window hunter, by the rival coach\nsharing this tree) whose registration is entangled in index.ts — both\nninth-generation brains register together so HEAD stays green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "36eb59342f122b1605f7b02e5f763f7590aec238",
+    "short_hash": "36eb593",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T10:22:15-04:00",
+    "message": "feat: shrike v3 takes the belt — the shotgun paradox was a doctrine bug\n\nControlled A/B (same seeds/arena, wildcard forced on/off, kestrel as\ncontrol) dissolved the analytics-desk paradox: the SPAS helps every\nengine including shrike; the confound was opponent mix. The real\ndisease: shrike ran shared-focus targeting even with no breacher on\nthe field — the exact rule hydra's rotation starves. Roles are now\nhardware-gated (no SPAS -> pure kestrel dueling; ESCORT_FOCUS knob,\ndefault off). v3 A/B: hydra 3-1 both modes, wolf 2-1 under live fire.\nOfficial challenge: FALCONER 3-0 LERNA (28-22 x3, arena 73) — ninth\ndoctrine wears the belt. 37/37 ai tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "9c6d3b050ed75ba5557ed53849b173261a853d69",
+    "short_hash": "9c6d3b0",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T09:47:16-04:00",
+    "message": "feat: bare 'pnpm arena' runs the full-roster LEAGUE\n\nThe no-args default was a hardcoded pilot-vs-reaper pairing from\nbefore seven more brains joined the registry. parseTeams now returns\nnull when no teams are asked for and the CLI round-robins ALL\nregistered engines (36 pairings x 2 matches, --matches overrides;\nchance wildcard applies). First league completed: wolf 8-0-1 on\npairings, matador second, classic winless. 45/45 arena tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "10f3d3b350e9cbe2d4eede5bc3d491f6e4e0369d",
+    "short_hash": "10f3d3b",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T09:22:38-04:00",
+    "message": "feat: wildcard 'chance' mode — every game can roll shotgun play\n\nNew wildcardChance module: a pure seeded roll (35%) resolves the\nwildcard per match. Arena CLI and fresh ?play sessions now DEFAULT to\n'chance' (--wildcard shotgun|none|chance to override); spectate URLs\nwithout the param stay stock so every recorded watch link replays\nbyte-identically. Manifests record the requested mode at run level\nand the RESOLVED wildcard per match; watch URLs carry the resolved\nstate. 544/544 tests incl. new chance-determinism suite.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
+    "hash": "0064c8106b4aee90a82a8122731edfe8123e4e14",
+    "short_hash": "0064c81",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T09:06:29-04:00",
+    "message": "feat: blood on bullet hits (client-side FX, replay-safe)\n\nNew World.onBulletHit observer (null by default, notification-only,\nzero rng) fired from applyBulletDamage with the exact hit point,\nbullet velocity, damage, and the fatal edge. Client BloodFx layer\nspawns damage-scaled droplet bursts (~2.2x on kill) biased along the\nbullet's travel with backsplash, gravity-falling, alpha-fading,\n900-particle cap. Headless/arena runs never set the hook — existing\ndatasets and the determinism suites stay byte-identical. 537/537.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "af5f2269ad22848abd621c602dd97823fee7733a",
+    "short_hash": "af5f226",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T08:58:43-04:00",
+    "message": "feat: shrike — the first weapon-aware doctrine (shotgun breacher + overwatch)\n\nBotEngineContext gains optional weaponOf() (Game wires it to\nweaponNameOf) so brains can read their hardware. The shrike's SPAS\ncarrier breaches: silent high approach, gravity dive, shells only\ninside the fan's kill envelope, dashes timed to enemy reload windows\n— posted a 79.7% hit rate in its first wildcard spar, the highest of\nany bot on record. AK teammates play planted overwatch escorting the\nbreach. Spars: 1-2 vs hydra, 0-3 vs wolf (the pack's focus arithmetic\nstill rules stock play). 36/36 ai tests, 228/228 client.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "654439ecf9a2b586d4447b1b6b676c5f41d4f471",
+    "short_hash": "654439e",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T02:42:24-04:00",
+    "message": "docs: blog part 23 (the hydra's rotation; the shotgun era)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "4f9d74b281474d8c7f0bbde2ae5d3f967bae72c6",
+    "short_hash": "4f9d74b",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T02:30:54-04:00",
+    "message": "feat: SPAS-12 shotgun wildcard + Tab/B weapon swap\n\nPer-sprite weapon slots off the shared contract (guns.ts SPAS12,\nrebalanced by the same ratios the AK got); 6-pellet fan per trigger\npull, all spread via world.rng. Opt-in: ?wildcard=shotgun / --wildcard\nshotgun arms one carrier per team deterministically from the seed —\nwildcard-off consumes zero rng and stays byte-identical (pinned by\ntests). Player swaps AK74/SPAS12 any time on Tab or B (per-weapon\nammo, swap cancels reload, HUD + [SPAS12] kill feed). 526/526 green.\n\nBuilt by the shotgun-wildcard workflow (5 readers, 1 implementer,\n3 verifiers — tests, double-run determinism, adversarial review).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 14
+  },
+  {
+    "hash": "6ba8de7211e8a909860f28f570e07e84fafedefa",
+    "short_hash": "6ba8de7",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T02:22:06-04:00",
+    "message": "feat: hydra doctrine takes the belt — LERNA 2-1 AKELA (arena 53)\n\nEighth doctrine: cut one head, the others bite. Health-rank rotation\n(withdraw at 55hp, beyond the wolf's published prey radius + fire max),\nleft/right bearing slots, shared lowest-health focus, kestrel fire kit.\nSwept: no top slot (1-7), no juke (plant+bob+dodge), tap 6/1, dodge\nessential. Spars: 5-4 vs AKELA wolf, 6-3 vs FALCONER plover official\ncard, 0-3 vs matador (accepted anti-pack specialization). Official\nchallenge won 2-1 on fresh arena #53; ladder updated.\n\nFair-play note: doctrine derived only from public sources (wolf.ts on\nmain, ladder records, published spar datasets) — no rival WIP was used.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "7c4839336f160fd3ef6ea1b4d42c6941fc91f058",
+    "short_hash": "7c48393",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:48:46-04:00",
+    "message": "feat: wolf doctrine takes the belt — AKELA 2-1 VERONICA (arena 89)\n\nThe sixth doctrine attacks the axis no brain had touched: TEAMWORK.\nEvery duel-optimized engine plays three independent 1v1s; the wolf pack\nplays one 3v1. All wolves deterministically agree on a single prey\n(lowest health among enemies visible to ANY packmate — shared eyes, no\ncommunication channel, agreement by convention on a shared retarget\nclock), take crossfire bearings (left/right/above by position and\nindex), and regroup when isolated.\n\nLessons paid for in sparring: a wolf parked on its bearing is target\npractice (juke in the slot); a wolf that ignores its attacker while\nwalking to the slot donates free damage (the gun goes opportunistic\nwhen the prey is out of reach); wounded prey beyond PREY_RADIUS must\nnot drag the pack past healthy guns.\n\nOfficial: 36-34, 43-39, 35-38 on arena #89.\nDataset: 20260610-054754-AKELA-wolf-vs-VERONICA-matador\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "b27efd2725d4587a5bf77653b661caf6d2bb4fce",
+    "short_hash": "b27efd2",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:33:59-04:00",
+    "message": "feat: matador doctrine takes the belt — VERONICA 3-0 FALCONER (arena 67)\n\nThe fourth doctrine, upgraded through five sparring rounds: hunt the\nDISARMED enemy (target selection by mag state, not distance), true\n0.135 bullet drop (BulletParts gravity, Cvar.pas:228-231), taps locked\nto the 6-tick fire cooldown. EMA-lead pillar refuted by spar data and\ndemoted to a knob.\n\nAlso bakes the play-by-play into the arena runtime: every fight/teams\nrun maintains datasets/LIVE.json (schema soldat-arena-live/1, atomic\nwrites, best-effort) — the broadcast watcher polls datasets/, so series\nappear on the site as they run.\n\nOfficial: 47-34, 41-35, 41-29 on arena #67.\nDataset: 20260610-053208-VERONICA-matador-vs-FALCONER-kestrel\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "c73db99eeb7c557cf96b8650e603cd33e2f9a403",
+    "short_hash": "c73db99",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:27:49-04:00",
+    "message": "feat: kestrel doctrine takes the belt — FALCONER 2-0 VEGA (arena 31)\n\nFifth doctrine, derived from the fire model itself: plant to shoot\n(movement spread is a tax), bob in the untaxed vertical axis, dodge\nonly bullets whose closest approach threatens, EMA lead + true 0.135\ndrop. Includes VERONICA's matador (tempo counter-puncher) so the\ncommitted registry stays coherent — both engines green, 28/28 tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 8
+  },
+  {
+    "hash": "d55ac54e16686446f5dbe626286c7320fd088d5c",
+    "short_hash": "d55ac54",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:02:58-04:00",
+    "message": "docs: graph export (nodes 191-192)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "47ad18eacb44361d3368e87f9345053c1888f860",
+    "short_hash": "47ad18e",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:02:57-04:00",
+    "message": "docs: the thesis — derive whole new playing models; README leads with the wild thing\n\nREADME now opens with what this repo became: a 2D jetpack deathmatch that\nplays itself, watches itself, records itself, and is becoming a training\nground for AIs that fight each other — and states the founding bet plainly:\na Fable should be smart enough to derive an ENTIRELY NEW playing strategy.\nARENA.md gains 'The real assignment': authoring a fourth doctrine is one\nBotBrain file + one registry line and it inherits the whole measurement\nstack + a title shot. /arena and CLAUDE.md offer the authoring path\nexplicitly. Blog part 20 (fight day + the thesis) pushed.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "7b1fc12c49dd73a5b974e9cc2f41ea8ef04855af",
+    "short_hash": "7b1fc12",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T01:00:26-04:00",
+    "message": "feat: arena startup protocol — every Claude session is fight day\n\nCLAUDE.md now tells any Claude waking up in this repo: check the ladder,\nstudy recent dataset summaries, file a fighter card, challenge the champion,\nreport + update the ladder. /arena runs the whole ritual end to end\n(including the two-cards form: /arena vega okonkwo). fights/LADDER.md\ntracks the belt: VEGA holds it (3-0 over OKONKWO's closer config on arena\n#7), full fight record + coaching-session archive included. Fights are ~1s\neach and every match becomes training data — when in doubt, fight.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "8effba6dbafb6652034a6f37d948898604ce3aff",
+    "short_hash": "8effba6",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:53:02-04:00",
+    "message": "feat: THE CLAUDE ARENA — fighter cards, watchable fights, generated maps, true team colors\n\nTHE INTERFACE (ARENA.md is the login): a coach — Claude Fable instance,\nhuman, or future model wrapper — grabs a brain and files a FIGHTER CARD\n(soldat-fighter-card/1: coach, engine, tweaks, rationale; validation errors\nlist the legal knobs so coaches self-serve). Two cards fight:\n\n  pnpm arena fight fights/vega.json fights/okonkwo.json --matches 3 --arena 7\n\nEvery match records a training dataset AND prints a WATCH URL — the sim is\ndeterministic per seed, so the browser REPLAYS the exact recorded match:\ncoach names on the banner ('PILOT (VEGA) vs REAPER (OKONKWO)'), each side's\nknob turns on the info card (?tweak-a/?tweak-b/?coach-a/?coach-b parsed in\nmain.ts and threaded into Game.engineTweaks).\n\nGENERATED MAPS ('we can't just play one'): generateArena(seed) rolls\ndeterministic Skyreach-family layouts (sealed aerial box, rejection-sampled\nperch pads, spread spawns) — ?arena=N in the browser, --arena N in the CLI,\narenaSeed in MatchConfig, and tournament tiles each play a different map\nper generation. Seed 0 = the canonical hand-built Skyreach. Same seed =\nbyte-identical map, so manifests stay reproducible.\n\nTRUE TEAM COLORS (user report, twice): only the shirt/pants texture slots\nwere team-tinted and dark camo ate the tint. Every non-skin Gostek part now\ncarries a bright team wash — soldiers finally READ red vs blue at any zoom.\n\nFirst official arena fight: VEGA (pilot, session shape) 3-0 OKONKWO\n(reaper, the match-4 closer config) on arena #7 — the config that won the\ncoaching-session finale did NOT generalize to a new map and fresh seeds,\nwhich is precisely the kind of finding the arena exists to surface.\nfights/vega.json + fights/okonkwo.json committed as the first cards.\n496 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 13
+  },
+  {
+    "hash": "7f3f769e6af11bd91ac3af94966fd2a4ce2a147a",
+    "short_hash": "7f3f769",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:37:18-04:00",
+    "message": "fix(arena): gzip events JSONL too — every post-game JSONL artifact compressed\n\nReplays were gzipped; events.jsonl was written plain ('events are small')\n— but at dataset scale everything JSONL gets compressed once the game is\ndone. match-N.events.jsonl.gz now, manifest files[] entries are the source\nof truth for exact names; README updated. Verified: smoke run round-trips\n(gunzip -t clean, rows parse), 488 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "2eadcce91218e28a49fbbcb4c26ccda47b4b32e7",
+    "short_hash": "2eadcce",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:34:56-04:00",
+    "message": "feat: 48-callsign name pool, rotated by match seed\n\nTwelve NATO names meant every simultaneous match fielded the same six\nAlphas. The pool grows to 48 callsigns and subjectName() takes a seed-\nderived rotation offset (browser matches and arena datasets both pass it),\nso each game fields a distinct squad — Meteor/Banshee/Ghost in one tile,\nIceman/Viper/Slider in the next. 488 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "1caf07291aba7aa5964ae12b437e6b18d3ddd8a2",
+    "short_hash": "1caf072",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:28:34-04:00",
+    "message": "feat(arena): headless match server, tweakable brains, training datasets\n\nERA 3 foundation (goal node 170, built by workflow):\n\nTWEAKABLE BRAINS (tracked): pilot/reaper/classic tuning constants became\nper-brain configs (PILOT_DEFAULTS et al — defaults byte-identical to the old\nconstants, pinned by tests + a 2000-tick identity test). createEngine(id,\ntweaks) resolves overrides (unknown keys warn-ignored); BotEngine.tweaks\nexposes the RESOLVED full config; Game.engineTweaks threads per-side tweaks\nthrough mixed matches and survives hot-swaps.\n\n@soldat/arena (new package): runMatch() plays a COMPLETE headless deathmatch\nfaster than realtime via the new additive Game.onBrainsTicked seam (rows\npair the state each brain SAW with the action it CHOSE — post-think,\npre-physics). Artifacts per match: replay.jsonl.gz (one row per tick per\nlive bot: pos/vel/fuel/hp/ammo + full control incl. aim), events.jsonl\n(shots/hits/kills with positions), telemetry.json, plus run-level\nmanifest.json (schema soldat-arena-replay/1: git rev, seeds, both sides'\nrequested AND resolved tweaks, resolved tuning) and summary.json standings.\ndatasets/ is gitignored except a thorough README documenting every schema\nwith training notes — the uniform data format future models train against.\n\nCLI: pnpm arena --teams 'pilot vs reaper' --tweak-a RANGE_MAX=460 --tweak-b\nKILL_RANGE=220 --matches 8 --round 120 [--sweep a:RANGE_MAX=380,420,460].\nLive progress, standings, sweep epilogue table.\n\nVerified by 3 independent agents: 488/488 tests (47 new); 7200-tick match\nin 1.0s; byte-identical replays across processes for identical config+seed;\nsweep + provenance inspected like a model trainer would; play mode\nregression-checked. Known v1 limits (documented): no mirror matches (engine\naliasing = next slice), no live client<->server transport yet.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 27
+  },
+  {
+    "hash": "9a03015051eb2a9792b96ab5a6f27b1a543e5ca0",
+    "short_hash": "9a03015",
+    "author": "Robert Grayson",
+    "date": "2026-06-10T00:14:09-04:00",
+    "message": "docs(blog): absolute raw.githubusercontent image URLs\n\nThe relative img/ links were valid on GitHub's blob view but Zed's markdown\npreview doesn't resolve relative image paths (zed-industries/zed#41892,\n#37686), and a weblog entry gets pasted into renderers that resolve from\narbitrary bases. All ten images verified serving 200 from origin/main.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "0a43c0196f59bf76753a0ce8bd95370625146de2",
+    "short_hash": "0a43c01",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T23:54:27-04:00",
+    "message": "feat(client): round-robin tournaments over ALL engines + H clean view\n\n?tournament with no explicit ?ai= now builds round-robin PAIRINGS over every\nregistered engine — classic v pilot, classic v reaper, pilot v reaper, cycle\n— so a new brain joins the bracket automatically (reaper was sitting out:\nthe default roster was hardcoded classic,pilot). Sidebar game lines show\neach pairing; explicit ?ai= still applies one roster to every game.\n\nH = CLEAN VIEW: in any match window (or pressed once on the tournament page,\nbroadcast into every tile via postMessage) hides the leaderboard, MVP panel,\nHUD, hint, and info-card details — leaving ONLY the engine names — so the\nshooting is fully watchable. Toggle back with H.\n\n441 tests green (pairingsFor pure + parseTournament null-roster);\nscreenshot-verified: 4 clean tiles, 3-engine standings sidebar.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "a3fe86f424bf8080ebc9d83043f869c076b2933a",
+    "short_hash": "a3fe86f",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T23:41:04-04:00",
+    "message": "feat(render): team chevrons above heads — red vs blue legible at any zoom\n\nThe teams WERE tinted (Gostek shirt/pants take the team color), but the\ncamo textures dominate at spectator zoom and a few tinted pixels can't be\nread — everyone looked vaguely blue. Each live teamed soldier now carries\na solid team-colored chevron above its head in a dedicated always-cleared\nmarker layer above all entities. FFA matches stay unmarked. 439 tests\ngreen; screenshot-verified.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "5500f7e4ae3f8b2c4b81e02456a4f270fac1e56f",
+    "short_hash": "5500f7e",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T23:37:47-04:00",
+    "message": "feat(client): adaptive match-info card, follow highlight, mute-by-default\n\nThe info layer is now watchable-WITH, not instead-of: small windows\n(tournament tiles are half-screen iframes) auto-render a COMPACT\nsemi-transparent card instead of the 34px banner — engines, strategy,\nvariant knob turns, and a new team-colored '▶ FOLLOWING <bot> — BLUE ·\npilot' line that tracks the director's camera. Full-size windows keep the\nbig banner (now with the following line too).\n\nControls: B (or the ℹ button) toggles the info card; M (or the 🔇/🔊\nbutton) toggles sound — MUTED BY DEFAULT per user preference. Buttons are\nclickable in every tile and blur after click so they never steal game keys.\n\n439 tests green; tournament screenshot verified all 4 tiles readable with\ncards + follow lines.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "235a0885aaf8016599fdf32b4452887fddfa6afa",
+    "short_hash": "235a088",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T22:36:27-04:00",
+    "message": "feat(ai): third engine — reaper, the dive brawler built to counter pilot\n\nPilot wins by holding a 200-420px range band with a height edge. Reaper\ndenies the band: relentless gap-close with an rng-jittered run-in, approach\nABOVE the target and cut jets to FALL onto it (gravity is the best juke),\nknife-range commitment (full-auto inside 180px, push THROUGH the target,\nreload only on a dry mag), 5s hunt memory, same ceiling-stall give-up as\npilot.\n\nTuned against live tournament telemetry in one iteration: v1 held fire\nunder 320px and ate free tap-bursts on the run-in — pilot swept 4-0\n(84K/53D). v2 returns fire from 460px, approaches at 200px height (above\npilot's preferred edge), commits at 180px: round went 3-1 with one game\nDECIDED ON TIEBREAK (16-16), two others by 2 kills, and reaper WON the\nmarksman variant 13-11. The meta has its first real rivalry.\n\nreaper registers like any engine: ?ai=reaper, ?duel=pilot,reaper,\n?tournament&ai=pilot,reaper, E-cycle. 439 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "29eba3e6aa0a85537df32034754c3355406aca71",
+    "short_hash": "29eba3e",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T21:21:19-04:00",
+    "message": "feat: round system — team MVP scoreboards, 10-min round winners, knob variants shown in UI\n\nROUNDS: team matches end after 10 sim-minutes (?round=SECS overrides):\nGame freezes (tick no-ops; UI/telemetry keep serving the final state), a\n56px RED WINS / BLUE WINS / DRAW banner names the winning team AND its\nengine, verdict = kills then total dominance then draw (pure\ndecideRoundWinner, tested). Telemetry dump().round carries the verdict.\n\nPER-GAME TEAM SCOREBOARD: top-center panel in every team match — RED and\nBLUE kill totals plus each team's winningest killer (MVP), live.\n\nKNOB VARIANTS, SHOWN: GameTuning instance values (defaults = the old\nconstants exactly; ?play byte-identical) with 4 named variants — baseline /\nhigh-octane / thin-air / marksman. The actual knob TURNS are spelled out in\nthe UI (banner: 'fire 6->4 · reload 95->70 · ...'; tournament sidebar per\ngame) and recorded in telemetry meta.\n\nWHOLE TEAMS (user correction): in team matches each team is ENTIRELY one\nengine, split evenly — a lopsided roster can never produce 1v5 'everyone is\non pilot'. Next round (N / printed URL) keeps the same whole teams on FRESH\ngeneration-derived seeds instead of evolving rosters toward the winner;\nthe round champion across games = engine with most game wins (dominance\ntiebreak). tools/run-tournament.mjs round mode waits for all 4 verdicts.\n\nLive 20s-round tournament: pilot swept 4-0 across all four variants.\n438 tests green (multi-agent workflow + correction pass).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 12
+  },
+  {
+    "hash": "2c28f418b77b69d40a2de648af07e89a32211887",
+    "short_hash": "2c28f41",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:42:19-04:00",
+    "message": "feat: teams + displayed leaderboard + 4-game tournament with evolution\n\nTEAMS (red vs blue): Sprite.team in the sim — findTarget skips teammates\n(the deferred AI.pas team refinement) and bullets pass through the owner's\nteammates (friendly fire off). Mixed-engine matches auto-team BY ENGINE\n(red = group 0, blue = group 1 — engine warfare); uniform matches alternate\nwith ?teams. Gostek tinting reads the real team; persists across respawns;\nhot-swap re-teams.\n\nLEADERBOARD (displayed): live top-left K/D ranking of every fighter with\nteam dots and engine tags, ranked by dominance (kills - deaths/2); L\ntoggles.\n\nTOURNAMENT (?tournament + tools/run-tournament.mjs): 4 simultaneous\nmixed-AI team games on DISTINCT seeds (the sim is deterministic — same\nseed = same match), aggregated sidebar standings (per-engine totals, crowned\ndominant, top fighters across games), and an evolutionary next round:\nrosters re-weighted by dominance, every engine keeps >= 1 slot. N key or\nthe printed command starts round 2.\n\nFirst live run (90s x 4 games): pilot crowned 124K/67D dom=90.5 vs classic\n62K/125D dom=-0.5; all top-10 fighters were pilots; evolved roster 5:1\npilot. 408 tests green (12 new).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 12
+  },
+  {
+    "hash": "77b5ed64fe890e17d045ab2b72c0215a069ac2c0",
+    "short_hash": "77b5ed6",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:25:23-04:00",
+    "message": "fix(ai): pilot ceiling-cling — concede unwinnable height contests\n\nTwo pilots each demanding a 50px height edge over the other is a symmetric\narms race that ended with the whole match pinned to the ceiling slab\n(user-reported). The brain now detects a stalled climb — burning jet for 25\nconsecutive ticks without actually rising — and concedes: thrust cut, all\nclimbing suppressed for ~3s (engage, reload-disengage, and hunt climbs all\ngated), so gravity brings the duel back into the arena before the next\nheight bid. Screenshot-verified: pilot-only match spreads across the full\nairspace. 399 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "0e1de5be8a87643b41562e9627d81f39ef39d795",
+    "short_hash": "0e1de5b",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:22:07-04:00",
+    "message": "feat: mixed-engine matches — split one match's bots across AI modes\n\n?ai now accepts a comma list (?ai=classic,pilot): bots are assigned to\nengines round-robin and the brains fight EACH OTHER in one shared arena.\nThe scoreboard becomes ENGINE vs ENGINE (group kill totals on the HUD's\nalpha:bravo line), the banner reads 'CLASSIC vs PILOT — MIXED MATCH', and\nthe followed-bot label carries a [C]/[P] engine tag. The E hot-swap cycle\nnow ends on the mixed mode: classic -> pilot -> classic+pilot -> ...\nsetEngine() accepts the same comma syntax, so a uniform match can be\nre-split live. Telemetry meta gains per-bot engine assignments (botEngines,\nre-read at dump time).\n\nFirst mixed-match screenshot: pilot leading classic 20:10 in one arena.\n399 tests green (3 new: round-robin split, hot-swap re-mix, mixed\nsustainment).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "3975c31bab72092f5e08a68326f6c07a6a1d5bd1",
+    "short_hash": "3975c31",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T20:05:27-04:00",
+    "message": "feat(client): big engine banners + live brain hot-swap (E key)\n\nEngines now self-describe (BotEngine.strategy); every spectate window shows\na BIG color-coded banner — amber CLASSIC 'REFLEX BANDS — faithful Pascal\nport...' vs cyan PILOT 'FIRST-PRINCIPLES AERIAL — take height, hold the\nrange band...' — so duel tiles are tellable-apart at a glance. The static\nduel-tile overlay label is gone (the in-game banner replaces it and, unlike\nthe overlay, stays correct after a swap).\n\nGame.setEngine(id) HOT-SWAPS the brain mid-match: every bot gets a fresh\nbrain from the new engine on the next tick; sprites, scores, fuel, and ammo\ncarry over — only the thinking changes. E key cycles registered engines in\nany spectate window; telemetry re-reads the engine id at dump time so\nswapped matches report honestly.\n\nBrowser-verified via CDP: E key flipped classic->pilot mid-match (telemetry\nmeta + banner both updated). 396 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 6
+  },
+  {
+    "hash": "4a5666f02b7f1c551cd26aae29095c3a57798fdb",
+    "short_hash": "4a5666f",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T19:22:27-04:00",
+    "message": "feat(client): softer wheel zoom + N-way duel grid\n\nZoom is now proportional to the actual scroll delta (exp(-deltaY*0.0004),\nclamped) instead of a fixed 10% per event — one wheel notch is a gentle ~4%\nand trackpad gestures stop teleporting the camera.\n\n?duel generalizes from exactly two to up to SIX comma-separated engines in\na 2-per-row grid (?duel=classic,pilot,pilot,classic), repeats allowed —\nmirror matches are legal. Verified: 4-way grid screenshot, all matches\n~118 FPS with independent kill feeds. 396 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "4e2ad818e5e0845f960b46a9e4b456585d69f5c0",
+    "short_hash": "4e2ad81",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T17:41:15-04:00",
+    "message": "docs: build-diary weblog post + CDP screenshot tool, 7 live-captured era screenshots\n\nThe post (docs/blog/building-soldat-ts.md) covers the whole arc: Pascal\narchaeology, the four locked decisions, the milestone loop, the browser\nsmoke-test bugs, one-gun combat, keyboard-only aim + assist, rocket boots,\nspectate + the pacifist-bots bug, telemetry, and Skyreach. All screenshots\ncaptured live today — four from historical commits resurrected in git\nworktrees, served and shot via the new tools/screenshot.mjs (headless\nChrome CDP: settle time, key/mouse holds, wheel zoom).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
+    "hash": "c5c224da6f35957f01b5c59ce3adb016a4d1e33c",
+    "short_hash": "c5c224d",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T17:39:40-04:00",
+    "message": "feat: swappable bot-AI engines (adapter) + ?duel side-by-side engine matches\n\nThe line in the sand (decision node 136): every bot brain now lives behind\none adapter seam — BotEngine/BotBrain in client/src/ai/ with a name registry.\nGame takes aiEngine ('classic'|'pilot'|any registered id; unknown falls back\nto classic), brains see the world plus client weapon state via a narrow\ncontext, and their only output is their bot's control.\n\n- classic: pure extraction of the existing brain (sim updateBot + spectate\n  aim conversion + shared roam fallback) — behavior unchanged, play mode\n  regression-tested\n- pilot: first-principles aerial brain v0 (observation node 130): fights\n  from above (height-edge seeking with fuel commit/reserve), keeps a\n  200-420px range band, strafe-jukes on an rng clock to defeat constant-\n  velocity lead aim, reloads on its own terms and disengages while dry,\n  hunts last-seen positions for 4s after losing LOS, tap-bursts at range,\n  time-of-flight lead + true ballistic drop compensation\n- ?ai=<engine> picks the brain for any match; ?duel[=a,b] runs TWO\n  simultaneous independent matches side by side (iframe per engine, own sim/\n  renderer/telemetry each); telemetry meta now records the engine id\n\nThe duel paid for itself in its first minute: pilot v0 telemetry showed a\n0.1% hit rate — a 60x overshoot in drop compensation — fixed and re-raced.\nFinal 90s comparison: pilot 35% hit rate / 291px median kill distance / 71%\njet use vs classic 22% / 164px / 46%. 396 tests green (6 new: registry\nresolution + per-engine 6000-tick match sustainment + play-mode regression).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 8
+  },
+  {
+    "hash": "9384f566c74429cfff1608a0f0170cc82ae9fa32",
+    "short_hash": "9384f56",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T17:07:39-04:00",
+    "message": "docs: TRANSCRIPT.md — full verbatim conversation from first clone to now\n\nReplaces the curated per-turn summary (still in git history at 7aa3222) with\nthe complete extracted conversation: all three resumed session segments of\n2026-06-08/09, every Robert prompt exactly as typed (including queued\nmid-task messages recovered from the session queue records), every visible\nClaude response. Thinking blocks, tool calls, and tool output omitted.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "8ba891acd1d23ef416ab94d9748c4976af1bb26e",
+    "short_hash": "8ba891a",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:55:12-04:00",
+    "message": "feat(client): Skyreach v2 — ceiling slab + irregular asymmetric pad layout\n\nHeight limit: bots hovering on the air-fuel trickle drifted upward until the\nmatch left the map (telemetry: mean altitude -164 -> -361 over 2 min, above\nthe apex pads). The airspace is now a sealed box — walls run ceiling to\nground, ceiling slab caps it. Verified: mean altitude holds -140..-226.\n\nLess uniform: no two pads share a height (15 distinct y values), widths vary\n130-300px, density is asymmetric — dense stacked western face, wide central\nbench + lone high island, sparse open eastern bowl, tight apex perches under\nthe ceiling. Spawns spread across all four regions.\n\n391 tests green; 90s telemetry soak + screenshot: 5 bots mid-air dogfighting,\njet use 39-54%, fight contained under the ceiling.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "17453366783da87b16d3759f4abb9f609d28bd5f",
+    "short_hash": "1745336",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:51:26-04:00",
+    "message": "feat: aerial-by-default — Skyreach arena, flying bots, spectate on startup\n\nThe game now opens on a bot-vs-bot AERIAL match (no params); ?play opts into\nfighting, ?spectate=N still sets bot count, ?map= still picks stock maps.\n\n- Skyreach: new default arena, 2800x~1000px — thin ground, tall walls, five\n  tiers of narrow floating pads (perches, not floors); spawns biased to the\n  mid/high tiers so fights start in the air\n- Aerial bot AI (sim, DESIGN OVERRIDE node 124): chase ANY height advantage\n  (was: only when target 180px overhead) + rng-rolled 25-45-tick jet BURSTS\n  during engagements, fuel-reserve gated\n- Air fuel trickle: coasting regenerates 1/tick (burn rate), so a 50% thrust\n  duty cycle sustains a dogfight; ground regen stays 3/tick\n- Spectate wander is now 2D: roam goals are random spawn pads (interior,\n  reachable), bots FLY to elevated goals, and a stuck bot re-rolls its\n  destination instead of pogo-ing in a corner (user-reported)\n- Suicides are legal physics now (ballistic bullets fall back onto climbing\n  shooters) — kill board already handled them; sustainment test updated\n\nTelemetry before/after (2-min headless matches): jet use 1.7-3.8% -> 47-56%\nof alive time, kill distance median 81 -> 169px, vertical spread ~500px,\nairTime ~99%. 391 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "30d084a9aed8d0f9df5697618afc486ded3d4fae",
+    "short_hash": "30d084a",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:29:07-04:00",
+    "message": "feat(client): match telemetry — versioned JSON schema + analyzer for gameplay math\n\nMakes bot matches machine-parseable (soldat-match-telemetry/1): per-half-\nsecond sprite samples (pos/vel/hp/jet fuel/jetting/firing/airborne), every\nshot (Game.onShot), every damaging hit (new sim World.onDamage observer —\nnotification-only, determinism preserved), every kill with killer/victim\npositions + distance. Derived stats computed in pure tested functions:\nper-bot hit rates, jet-use %, airtime %, speed, vertical spread, kills/min,\nkill-distance percentiles, grid-binned death clusters.\n\nSpectate-only wiring: window.__match.dump() for CDP/agents, T key downloads\nthe JSON, tools/analyze-match.mjs renders a report. Normal play unaffected.\n\nProven end-to-end on a 2-min headless ctf_Ash match: 36 deaths (18/min),\naggregate hit rate 21.1%, kill-distance median 81px (p25 53 / p75 130 —\nknife-fight range), jet use 1.7-3.8% per bot. The numbers confirm and\nsharpen the spectate judge's verdict: pacing too hot, bots don't fly,\nfights are point-blank. 386 tests green (6 new).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "1ebc4050fca52e84b52ceda6868ce41097f71e16",
+    "short_hash": "1ebc405",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T16:20:19-04:00",
+    "message": "feat(client): spectate mode — bot-vs-bot matches with broadcast director camera\n\n?spectate (or ?spectate=N, 2-12 bots, default 6): a self-sustaining bot\ndeathmatch with no human soldier, an action camera, and a live scoreboard —\nbuilt to watch and judge the gameplay.\n\n- Kill attribution: sim Sprite.lastHitBy (set on every damaging hit) +\n  Game.onKill fired exactly once on the death edge; suicides/unattributed\n  excluded from tallies\n- Director (new director.ts, pure tested core): scores subjects by kill\n  heat > firing > enemy proximity; 3.5s min dwell + hysteresis stops\n  whiplash; dead subject cuts immediately, preferring its killer; arrows/N/P\n  cycle bots manually, A/0 returns to auto; lerped broadcast pan with\n  snap-cuts past 1500px\n- HUD goes live in spectate: followed bot's name/vitals/ammo, FFA\n  leader/runner-up scores, real kill feed\n- Bot sustainment (spectate-gated): alpha=255 so bots can SEE each other —\n  discovered normal-mode bots are pacifists today (findTarget skips\n  alpha!==255 and nothing ever set alpha; promoting the fix to play mode is\n  a deliberate follow-up) — plus absolute->relative bot aim conversion,\n  real .PMS waypoint adoption, deterministic roam fallback with stuck\n  jump/jet pulses\n- Normal play byte-for-byte unchanged (every change spectate-gated;\n  browser-regression verified)\n\nVerified: 380/380 tests (26 new: director rules, kill board, 10k-tick match\nsustainment, play-mode regression, sim lastHitBy); two 90s headless-Chrome\nsoaks (synthetic arena + ctf_Ash) with zero input — kills strictly\naccumulating (29 and 57), all bots scoring, camera tracking live bots,\nmanual override cycling, normal mode regression-checked.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 9
+  },
+  {
+    "hash": "66ea796fad565cd46513a7bffb804a76955d7c6a",
+    "short_hash": "66ea796",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T15:33:19-04:00",
+    "message": "feat(client): light aim assist — bend near-miss player shots onto targets\n\nPlayer shots already pointed within ~9° of a live enemy (700px range) bend\nup to ~2.9° onto the angularly-closest one at fire time. Player ONLY (bots\nwould become aimbots), applied BEFORE spread so spray bloom still punishes\nheld fire, and the crosshair is never moved — the assist is invisible help\nfor coarse keyboard aim, not aim hijacking (decision node 106).\n\napplyAimAssist is a pure exported helper; 7 unit tests cover snap-within-\nbend, cap-at-max-bend, cone/range rejection, closest-of-several, and the\n±PI seam when aiming left. 354 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "70017445e018a14a66c50009ad57c6ccc13cfd47",
+    "short_hash": "7001744",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T15:31:38-04:00",
+    "message": "fix(sim): boots/jump force clobbering — most-upward-wins + 90% side-jump vertical\n\nThree bugs, one shape: a later force assignment stomping a stronger upward\nforce on the same tick (faithful to Pascal's assignment order, wrong for us):\n- Jump + jet: jet ground-kick (-0.25) OVERWROTE the jump force (-0.66) —\n  holding Shift while jumping nerfed the jump to a hop\n- Running takeoff: ground movement overwrote jet lift with -RUNSPEEDUP\n  (0.0197, below gravity 0.06) — you could never lift off while running\n- Running jump: Pascal side-jump vertical is 0.25 vs 0.66 standing — ~1/3\n  the height, i.e. 'I cant jump over basic land obstacles'. Side-jumps now\n  keep 90% of the straight jump's vertical plus the horizontal kick\n\nGround forceY now combines via most-upward-wins (min of negatives) in the\nmovement branches and the jet kick; all marked DESIGN OVERRIDE (node 100).\n3 new regression tests (jump-with-jet >= jump, running takeoff climbs,\nside-jump > 0.7x straight jump). 347 tests green.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "f5d3c9ad9f0836c1bb386efd304eb30e40518307",
+    "short_hash": "f5d3c9a",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T14:56:47-04:00",
+    "message": "feat(sim): vertical rocket boots — 1.8x up-thrust, damped drift, big tank + ground regen\n\nThis is a VERY vertical game; the boots should rocket you UP, not sideways.\nFirst deliberate DESIGN OVERRIDE of the faithful Pascal constants (decision\nnode 94, marked in code):\n- JET_THRUST 0.1 -> 0.18 (net lift vs gravity triples: 0.04 -> 0.12)\n- While the jet burns, lateral air force halves (JET_AIR_DRIFT = FLYSPEED/2)\n  so boosting reads as up + steer; full air control returns when fuel is dry\n- Fuel 250 -> 700 ticks (~11.7 s burn) + on-ground regen (3/tick, empty->full\n  ~3.9 s) for player and bots — jets gate engagements, not movement\n- Jet HUD bar fixed: was jetsCountReal (never decremented) over a hardcoded\n  max of 100; now live jetsCount over JET_FUEL_MAX\n\nTests: 344 green, incl. new 'climbs more than it drifts' (vertical gain must\nbeat 1.5x horizontal drift while jetting) and dry-tank air-control restore.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "a37fcae568a43401c3d8c00f5afdd378f31ec3cf",
+    "short_hash": "a37fcae",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T14:47:57-04:00",
+    "message": "feat(client): startup controls screen rendered from the real binding table\n\nFull-screen DOM overlay listing the keyboard-only controls, shown over the\nrunning game until the first keypress (which also acts in game — right feel\nfor a fast drop-in shooter). Rendered from CONTROL_BINDINGS, a table exported\nfrom input.ts next to the key switch; new tests assert every documented code\nis actually handled by InputController (handled keys preventDefault), so the\nscreen cannot silently drift from the real bindings.\n\nEvery startup currently counts as a first start (ALWAYS_SHOW) while the\nscheme is in flux; a localStorage gate is already in place for when it\nstabilises.\n\nVerified: typecheck + 342 tests green; CDP browser check — overlay present\nwith all 8 rows over the live game, dismissed by the first keypress.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "8c75a7e5abba4d0489fe93838ec5f6539f017ba4",
+    "short_hash": "8c75a7e",
+    "author": "Robert Grayson",
+    "date": "2026-06-09T14:43:20-04:00",
+    "message": "feat(client): keyboard-only controls — WASD move, IJKL aim, Space fire, Tab reload\n\nThe game is now fully playable with no mouse. IJKL drive a persistent aim\nangle emitted through the unchanged Control.mouseAimX/Y offset contract:\ndt-based two-phase rotation (3 rad/s fine-nudge for 80ms after each chord\nchange, then 14 rad/s swing) toward 8 octant targets, exact settle, instant\nelevation-preserving mirror-flip for turnarounds, ±1px vertical-aim facing\nbias. Space fires (W/Up is jump), Tab reloads (preventDefault on both key\nevents so focus never moves), Shift stays jetpack. Mouse remains optional:\n3px-accumulated mousemove reclaims aim, any IJKL keydown takes it back\nseeded from the last offset so the crosshair never jumps. Window blur now\nclears all held keys (fixes latent stuck-key bug for ALL bindings).\n\nVerified: typecheck + 339 tests green (20 new input tests); live headless-\nChrome CDP playtest with zero mouse events — movement, jump/jet, all aim\nchords + persistence, ammo drain 30->21 on held Space, Tab reload, focus\nretained after Tab. Multi-agent workflow: 3-lens design + judge, implement,\n3-verifier adversarial check, 1 fix round.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "967097b7623f6e8b24b3bc7ad10d97a9367a99f0",
+    "short_hash": "967097b",
+    "author": "pewpew",
+    "date": "2022-07-04T23:31:56-05:00",
+    "message": "Merge pull request #105 from BranDougherty/fix-radio-messages\n\nRestore radio message functionality.",
+    "files_changed": 0
+  }
+]
