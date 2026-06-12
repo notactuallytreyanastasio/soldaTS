@@ -193,6 +193,8 @@ The recipe (copy `kestrel.ts` or `shrike.ts` for shape):
 | `angler` | ESCA | The lure: bait with a dangled target, strike what bites. |
 | `neural` | MIMIC | **Learned** — behavior-cloned from all doctrines, then ES-evolved (§5). |
 | `disciple` | DISCIPLE | **Learned** — single-teacher clone of the championship cuadrilla. |
+| `prodigy` | PRODIGY | **Learned** — v2 senses (bullets, reloads, one-tick memory), hit-filtered aim; lost to DISCIPLE (reconstructed-feature gap, spray heat invisible). |
+| `buttstein` | BUTTSTEIN | **Learned** — fourth student, first trained on EXACT replay-schema-v2 rows (recorder-run threat scan, own spray heat as a sense, blended ×5 hit-weighted aim). |
 
 Meta-lessons the ladder taught, free of charge: read the actual
 mechanics before theorizing (the fire model's movement tax built
@@ -260,7 +262,15 @@ kinematics (x, y, vx, vy), fuel, hp, ammo, reload/ground flags, plus
 the full `control` the brain chose — sampled post-think/pre-physics, so
 `{row − control}` is exactly the observation and `control` exactly the
 label. Enemy context is reconstructed by joining the (up to 6) rows
-that share a tick. Schema: `packages/arena/src/replay.ts`. Scale at the
+that share a tick. Schema: `packages/arena/src/replay.ts`.
+**Schema v2** (`soldat-arena-replay/2`) additionally logs, per row, the
+exact weapon label, own spray heat, and the nearest-bullet-threat
+(present flag + the winning bullet's relative kinematics, selected by
+the SAME closest-approach scan the runtime dodge organs run) — so v3
+training features need no reconstruction. Trainers MUST check the
+manifest `schema`: v1 rows lack these fields
+(`tools/train-buttstein.mjs` is v2-only; the older trainers are
+v1-only). Scale at the
 time of writing: **1,100+ matches, ~35 M rows, ~1.1 GB**, growing
 ~0.5 M rows/hour from the commissioner alone; one league run adds
 ~4 M more.
