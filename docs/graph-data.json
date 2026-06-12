@@ -5719,6 +5719,17 @@
       "created_at": "2026-06-11T21:50:09.422470-04:00",
       "updated_at": "2026-06-11T21:50:09.422470-04:00",
       "metadata_json": "{\"branch\":\"main\",\"commit\":\"6c7fb20\",\"confidence\":95}"
+    },
+    {
+      "id": 521,
+      "change_id": "d1a513dd-46a3-42a9-9be3-6dd4e2ad05db",
+      "node_type": "outcome",
+      "title": "BUTTSTEIN LIVE: pushed main + main:develop (d8911b5 core via sibling, 6c7fb20 verdict card, b4ae7e6 graph), VPS redeployed via deploy-arena-live.sh — bobbby.online/arena 200, brain.html?engine=buttstein 200; the live league round-robins the registry so BUTTSTEIN enters the public board on the next cycles. 673/673 tests, typecheck clean",
+      "description": null,
+      "status": "pending",
+      "created_at": "2026-06-11T21:51:45.115872-04:00",
+      "updated_at": "2026-06-11T21:51:45.115872-04:00",
+      "metadata_json": "{\"branch\":\"main\",\"commit\":\"b4ae7e6\",\"confidence\":95}"
     }
   ],
   "edges": [
@@ -11727,6 +11738,17 @@
       "weight": 1.0,
       "rationale": "shipping the verdict",
       "created_at": "2026-06-11T21:50:09.788274-04:00"
+    },
+    {
+      "id": 600,
+      "from_node_id": 520,
+      "to_node_id": 521,
+      "from_change_id": "2dd20d1c-6b59-4839-ae82-db11e69b9c6b",
+      "to_change_id": "d1a513dd-46a3-42a9-9be3-6dd4e2ad05db",
+      "edge_type": "leads_to",
+      "weight": 1.0,
+      "rationale": "deployment verified",
+      "created_at": "2026-06-11T21:51:45.415414-04:00"
     }
   ],
   "documents": [

@@ -1,5 +1,13 @@
 [
   {
+    "hash": "b4ae7e63da20d3c0a23cd0a96401d93327376ab5",
+    "short_hash": "b4ae7e6",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T21:50:43-04:00",
+    "message": "docs: graph export (nodes 504-520 — BUTTSTEIN era)\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
     "hash": "6c7fb20ff6e3ff6ebd765d122e9a074cedd30fa7",
     "short_hash": "6c7fb20",
     "author": "Robert Grayson",
