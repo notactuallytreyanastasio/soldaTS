@@ -37,6 +37,7 @@ import {
   buildPolyMap,
   vec2,
   spawnBullet,
+  stepWorld,
   getGun,
   POS_STAND,
   WeaponIndex,
@@ -975,11 +976,61 @@ async function bootSpectator(recipe: string): Promise<Session> {
   };
   centerCamera();
 
+  // Cosmetic bullets: spawn from each sprite's fire button (carried in its
+  // snapshot) and fly them by stepping the sim — same as the player view does
+  // for remotes. Bullets are hitMultiply 0 (zero damage); the server owns hits.
+  const nextCosmeticFire: number[] = [0, 0, 0, 0, 0, 0, 0];
+  const cosmeticFire = (num: number): void => {
+    const sp = world.sprites[num];
+    const parts = world.spriteParts;
+    if (sp === undefined || parts === null || !sp.active || sp.deadMeat) return;
+    if (!sp.control.fire || specTick < (nextCosmeticFire[num] ?? 0)) return;
+    let ax = sp.control.mouseAimX;
+    let ay = sp.control.mouseAimY;
+    const len = Math.hypot(ax, ay);
+    if (len < 1e-3) {
+      ax = sp.direction >= 0 ? 1 : -1;
+      ay = 0;
+    } else {
+      ax /= len;
+      ay /= len;
+    }
+    const gun = getGun(
+      WEAPON_LABEL_BY_INDEX[sp.selWeapon] !== undefined ? sp.selWeapon : WeaponIndex.AK74,
+      false,
+    );
+    const px = (parts.posX[num] ?? 0) + ax * MUZZLE_OFFSET;
+    const py = (parts.posY[num] ?? 0) + ay * MUZZLE_OFFSET;
+    spawnBullet(world, {
+      pos: vec2(px, py),
+      velocity: vec2(ax * gun.bulletSpeed, ay * gun.bulletSpeed),
+      owner: num,
+      hitMultiply: 0,
+      gun,
+    });
+    sp.direction = ax >= 0 ? 1 : -1;
+    nextCosmeticFire[num] = specTick + COSMETIC_FIRE_INTERVAL;
+  };
+
+  let specTick = 0;
+  let accumulator = 0;
   let last = performance.now();
   const frame = (now: number): void => {
     if (!alive) return;
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
+    // Step the sim at 60 Hz to fly bullets (sprites get overridden by snapshots
+    // in renderPositions right after).
+    accumulator += dt;
+    let ran = 0;
+    while (accumulator >= TICK_DT && ran < MAX_TICKS_PER_FRAME) {
+      specTick += 1;
+      for (const num of ONLINE_SPRITES) cosmeticFire(num);
+      stepWorld(world);
+      accumulator -= TICK_DT;
+      ran += 1;
+    }
+    if (accumulator > TICK_DT) accumulator = 0;
     renderPositions();
     // framePercent 1: the spectator never steps the sim, so world.ticks is
     // frozen; render the CURRENT parts.posX (the interp's cur), not the stale
