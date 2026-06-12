@@ -15,15 +15,16 @@
 // whole phase is built on.
 
 import {
+  createMojojojoEngineWithWeights,
   createNeuralEngineWithWeights,
   registerEngine,
   type NeuralNet,
 } from '@soldat/client/headless';
 
-// Re-exported so tools/evolve.mjs can reach the shipped baseline and the
+// Re-exported so tools/evolve.mjs can reach the shipped baselines and the
 // net type through ONE module (resolution-identical with runner.ts's
 // registry — both go through the arena package's @soldat/client link).
-export { NEURAL_SHIPPED_NET, type NeuralNet } from '@soldat/client/headless';
+export { MOJOJOJO_SHIPPED_NET, NEURAL_SHIPPED_NET, type NeuralNet } from '@soldat/client/headless';
 
 // ---------------------------------------------------------------------------
 // Flat-vector ↔ NeuralNet (layout: W0,B0,W1,B1,... — layer order, weights
@@ -235,4 +236,12 @@ export function parseCheckpoint(json: string): EvolveCheckpoint {
  *  evolve loop re-registers 'neural-cand' before every candidate's matches. */
 export function registerNeuralNet(id: string, net: NeuralNet): void {
   registerEngine(id, (tweaks) => createNeuralEngineWithWeights(id, net, tweaks));
+}
+
+/** Same seam, MOJOJOJO's brain (features v3, 48→…→31): tools/evolve.mjs
+ *  --engine mojojojo registers candidates/past-selves through this instead —
+ *  the net SHAPE differs from the neural engine's, the registry mechanics
+ *  don't. */
+export function registerMojojojoNet(id: string, net: NeuralNet): void {
+  registerEngine(id, (tweaks) => createMojojojoEngineWithWeights(id, net, tweaks));
 }

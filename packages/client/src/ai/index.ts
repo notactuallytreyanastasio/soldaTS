@@ -19,6 +19,7 @@ import { createAnglerEngine } from './angler';
 import { createDiscipleEngine } from './disciple';
 import { createProdigyEngine } from './prodigy';
 import { createButtsteinEngine } from './buttstein';
+import { createMojojojoEngine } from './mojojojo';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -36,6 +37,7 @@ registerEngine('angler', createAnglerEngine);
 registerEngine('disciple', createDiscipleEngine);
 registerEngine('prodigy', createProdigyEngine);
 registerEngine('buttstein', createButtsteinEngine);
+registerEngine('mojojojo', createMojojojoEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -61,6 +63,12 @@ export { ANGLER_DEFAULTS, type AnglerConfig } from './angler';
 export { DISCIPLE_DEFAULTS, type DiscipleConfig } from './disciple';
 export { PRODIGY_DEFAULTS, type ProdigyConfig } from './prodigy';
 export { BUTTSTEIN_DEFAULTS, type ButtsteinConfig } from './buttstein';
+export {
+  MOJOJOJO_DEFAULTS,
+  MOJOJOJO_SHIPPED_NET,
+  createMojojojoEngineWithWeights,
+  type MojojojoConfig,
+} from './mojojojo';
 // v3 sense helpers: the replay recorder (packages/arena/src/replay.ts) runs
 // the SAME threat scan the runtime brains do — exported so the schema-v2
 // rows and the engines can never disagree on the winner.

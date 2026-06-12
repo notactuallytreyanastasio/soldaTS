@@ -27,6 +27,18 @@
 //        --seed 1 --round-ticks 3600 --jobs 8 (parallel match workers)
 //        --gate-every 10 --snapshot-every 10
 //
+// --engine neural|mojojojo (default neural): which learned brain to evolve.
+//   mojojojo (goal node 553, stage 2) runs the SAME ES loop over MOJOJOJO's
+//   48→128→128→31 net via the registerMojojojoNet seam, starting from and
+//   gating against the stage-1 imitation seed (mojojojoWeights.ts), with its
+//   own checkpoint dir (tools/checkpoints-mojojojo).
+// --hit-fit C (default 0): adds C·teamHitRate to each match's fitness
+//   (candidate team's hits/shots). MOJOJOJO's reason to exist: BUTTSTEIN
+//   dodged to near-parity at hit rate 2.94% vs the disciple's 17.4 — kills
+//   alone reward more dodging, so conversion gets its own term. C=30 sizes
+//   closing that hole (~14 points of hit rate) at ~4 kills/match — the size
+//   of the residual BUTTSTEIN−DISCIPLE gap.
+//
 // Zero npm deps; the runner's import chain is extensionless TS, so this
 // script re-execs itself under the arena package's tsx once (EVOLVE_TSX).
 
@@ -59,12 +71,14 @@ if (process.env.EVOLVE_TSX !== '1') {
 
 const { runMatch } = await import('../packages/arena/src/runner.ts');
 const {
+  MOJOJOJO_SHIPPED_NET,
   NEURAL_SHIPPED_NET,
   esUpdate,
   flattenNet,
   makeCheckpoint,
   mulberry32,
   parseCheckpoint,
+  registerMojojojoNet,
   registerNeuralNet,
   rms,
   samplePerturbations,
@@ -93,10 +107,27 @@ const SNAPSHOT_EVERY = Number(flag('snapshot-every', 10));
 const RESUME = has('resume');
 const EVAL_ONLY = has('eval-only');
 const WORKER = has('worker');
+const ENGINE = flag('engine', 'neural'); // 'neural' | 'mojojojo'
+const HIT_FIT = Number(flag('hit-fit', 0)); // fitness += HIT_FIT·teamHitRate
+
+if (ENGINE !== 'neural' && ENGINE !== 'mojojojo') {
+  console.error(`unknown --engine '${ENGINE}' (neural | mojojojo)`);
+  process.exit(1);
+}
+/** Engine-specific seam: register `id` to run `net` through ENGINE's brain. */
+const registerNet = ENGINE === 'mojojojo' ? registerMojojojoNet : registerNeuralNet;
 
 const LOG_PATH = join(ROOT, 'tools/evolve-log.jsonl');
-const CKPT_DIR = join(ROOT, 'tools/checkpoints');
-const WEIGHTS_TS = join(ROOT, 'packages/client/src/ai/neuralWeights.ts');
+const CKPT_DIR = join(
+  ROOT,
+  ENGINE === 'neural' ? 'tools/checkpoints' : `tools/checkpoints-${ENGINE}`,
+);
+const WEIGHTS_TS = join(
+  ROOT,
+  ENGINE === 'neural'
+    ? 'packages/client/src/ai/neuralWeights.ts'
+    : 'packages/client/src/ai/mojojojoWeights.ts',
+);
 
 // Arena layouts rotate per generation so the policy can't overfit one map.
 const ARENAS = [0, 5, 11, 23, 41];
@@ -111,32 +142,50 @@ function loadChampions() {
   });
 }
 
-const DIMS = NEURAL_SHIPPED_NET.dims;
-const BASE_FLAT = flattenNet(NEURAL_SHIPPED_NET);
+const SHIPPED_NET = ENGINE === 'mojojojo' ? MOJOJOJO_SHIPPED_NET : NEURAL_SHIPPED_NET;
+const DIMS = SHIPPED_NET.dims;
+const BASE_FLAT = flattenNet(SHIPPED_NET);
 const DIM = BASE_FLAT.length;
 const SIGMA_ABS = SIGMA_REL * rms(BASE_FLAT);
+const CAND_ID = `${ENGINE}-cand`;
 
 // --- shared: evaluate one candidate net over a match list ----------------------
 // matches: [{ arenaSeed, seed, roundTicks, engine, tweaks, champion }]
 // Registration is per-process and re-done before every eval — sequential
-// within a process, so 'neural-cand' always means THIS candidate's weights.
+// within a process, so '<engine>-cand' always means THIS candidate's weights.
 function evalCandidate(flat, matches) {
-  registerNeuralNet('neural-cand', unflattenNet(DIMS, flat));
+  registerNet(CAND_ID, unflattenNet(DIMS, flat));
   let fitness = 0;
   let champWins = 0;
   let champCount = 0;
   let killsFor = 0;
   let killsAgainst = 0;
+  let shotsFor = 0;
+  let hitsFor = 0;
   for (const m of matches) {
     const result = runMatch({
       arenaSeed: m.arenaSeed,
       seed: m.seed,
       roundTicks: m.roundTicks,
-      teams: [{ engine: 'neural-cand' }, { engine: m.engine, tweaks: m.tweaks }],
+      teams: [{ engine: CAND_ID }, { engine: m.engine, tweaks: m.tweaks }],
     });
     const r = result.round;
     if (r === null) continue; // maxTicks cap — scoreless, shouldn't happen
     fitness += r.redKills - r.blueKills + 0.25 * (r.redDom - r.blueDom);
+    if (HIT_FIT > 0) {
+      // The candidate's team-wide conversion: hits/shots by red (team 1) —
+      // see the --hit-fit rationale in the header.
+      const redBots = new Set(result.bots.filter((b) => b.team === 1).map((b) => b.index));
+      let shots = 0;
+      let hits = 0;
+      for (const e of result.events) {
+        if (e.type === 'shot' && redBots.has(e.bot)) shots++;
+        else if (e.type === 'hit' && redBots.has(e.attacker)) hits++;
+      }
+      fitness += HIT_FIT * (shots > 0 ? hits / shots : 0);
+      shotsFor += shots;
+      hitsFor += hits;
+    }
     killsFor += r.redKills;
     killsAgainst += r.blueKills;
     if (m.champion) {
@@ -144,7 +193,7 @@ function evalCandidate(flat, matches) {
       if (r.winnerTeam === 1) champWins++;
     }
   }
-  return { fitness, champWins, champCount, killsFor, killsAgainst };
+  return { fitness, champWins, champCount, killsFor, killsAgainst, shotsFor, hitsFor };
 }
 
 // --- worker mode: JSONL jobs on stdin, JSONL results on stdout -----------------
@@ -154,7 +203,7 @@ if (WORKER) {
     const msg = JSON.parse(line);
     if (msg.type === 'register') {
       // Past-self pool entries, registered once per pool change.
-      for (const p of msg.nets) registerNeuralNet(p.key, unflattenNet(DIMS, p.flat));
+      for (const p of msg.nets) registerNet(p.key, unflattenNet(DIMS, p.flat));
       process.stdout.write(JSON.stringify({ type: 'registered' }) + '\n');
     } else if (msg.type === 'eval') {
       const res = evalCandidate(Float64Array.from(msg.flat), msg.matches);
@@ -171,7 +220,8 @@ if (WORKER) {
 // --- worker pool ----------------------------------------------------------------
 function startWorkers(n) {
   return Array.from({ length: n }, () => {
-    const proc = spawn(TSX, [SELF, '--worker'], {
+    // Workers inherit the engine seam + fitness shaping flags.
+    const proc = spawn(TSX, [SELF, '--worker', '--engine', ENGINE, '--hit-fit', String(HIT_FIT)], {
       env: { ...process.env, EVOLVE_TSX: '1' },
       stdio: ['pipe', 'pipe', 'inherit'],
     });
@@ -221,7 +271,7 @@ async function runJobs(jobs, workers) {
   return results;
 }
 
-// --- shipping: regenerate neuralWeights.ts from a flat vector --------------------
+// --- shipping: regenerate the engine's weights TS from a flat vector -------------
 function writeWeightsTs(flat, gen, gateNote, meanFitness) {
   const net = unflattenNet(DIMS, flat);
   const fmt = (arr) => {
@@ -229,6 +279,51 @@ function writeWeightsTs(flat, gen, gateNote, meanFitness) {
     for (let i = 0; i < arr.length; i++) parts.push(Number(arr[i].toPrecision(7)));
     return JSON.stringify(parts);
   };
+  if (ENGINE === 'mojojojo') {
+    const file = `// GENERATED BY tools/evolve.mjs --engine mojojojo — DO NOT EDIT BY HAND.
+// Re-evolve: node tools/evolve.mjs --engine mojojojo (see flags in that
+// file); the imitation seed comes from tools/train-mojojojo.mjs.
+//
+// MOJOJOJO STAGE 2 of 2 (goal node 553): evolution-strategies self-play from
+// the stage-1 outcome-weighted imitation seed. Written ${new Date().toISOString()}
+// at generation ${gen} (antithetic ES, pop ${POP} pairs, ${MATCHES} matches/candidate,
+// sigma ${SIGMA_REL}×rms, lr ${LR}, seed ${SEED}, ${ROUND_TICKS / 60}s rounds vs champions + past
+// selves). Fitness per match: killDiff + 0.25·domDiff + ${HIT_FIT}·teamHitRate —
+// the hit-rate term is MOJOJOJO's assignment (BUTTSTEIN dodged to
+// near-parity at hit rate 2.94%; conversion gets its own gradient).
+// Mean candidate fitness at this generation: ${meanFitness.toFixed(2)}.
+// Shipping gate: ${gateNote}
+//
+// STAGE 1 imitation parent (tools/train-mojojojo.mjs, teacher cuadrilla,
+// 3,000,000 schema-v2 samples, 178 matches / 64 runs): fire head
+// OUTCOME-WEIGHTED (hit ×5 / miss ×0.3 / no-fire ×1) — fire acc 92.32%
+// (base rate 6.95%), P/R vs teacher 44.08/39.35%, P/R vs HIT-CONVERTING
+// rows 12.92/24.32%; aim blended ×5 hit-weighted (buttstein's recipe,
+// unchanged) — all-rows top-1 76.72% / cos 0.8729, hit-rows top-1 85.45%
+// / cos 0.9256. Factory FIRE_THRESH 0.35 (probed over 5 seeds — the only
+// sustaining threshold).
+//
+// Layout: dense layers input→128 tanh→128 tanh→31 raw (7 button logits +
+// 24 aim-direction bin logits, 15° sectors). weights[l] is row-major
+// [fanOut × fanIn]; the runtime forward pass lives in mojojojo.ts and the
+// feature contract in neuralFeaturesV3.ts (FEATURE_DIM_V3 ${DIMS[0]}).
+
+/** Number of aim-direction bins in the classification head. */
+export const MOJOJOJO_AIM_BINS = 24;
+
+export const MOJOJOJO_DIMS: readonly number[] = ${JSON.stringify([...DIMS])};
+
+export const MOJOJOJO_WEIGHTS: readonly (readonly number[])[] = [
+${net.weights.map((w) => `  ${fmt(w)},`).join('\n')}
+];
+
+export const MOJOJOJO_BIASES: readonly (readonly number[])[] = [
+${net.biases.map((b) => `  ${fmt(b)},`).join('\n')}
+];
+`;
+    writeFileSync(WEIGHTS_TS, file);
+    return;
+  }
   const file = `// GENERATED BY tools/evolve.mjs — DO NOT EDIT BY HAND.
 // Re-evolve: node tools/evolve.mjs (see flags in that file); the imitation
 // parent comes from tools/train-imitation.mjs.
@@ -262,8 +357,8 @@ ${net.biases.map((b) => `  ${fmt(b)},`).join('\n')}
 
 // --- the gate: mean vs the imitation baseline, 3 × 120 s -------------------------
 function gateVsBaseline(flat, gen) {
-  registerNeuralNet('neural-cand', unflattenNet(DIMS, flat));
-  registerNeuralNet('neural-imit', unflattenNet(DIMS, BASE_FLAT));
+  registerNet(CAND_ID, unflattenNet(DIMS, flat));
+  registerNet(`${ENGINE}-imit`, unflattenNet(DIMS, BASE_FLAT));
   let wins = 0;
   const scores = [];
   for (let j = 0; j < 3; j++) {
@@ -271,7 +366,7 @@ function gateVsBaseline(flat, gen) {
       arenaSeed: ARENAS[j % ARENAS.length],
       seed: gen * 977 + j,
       roundTicks: 7200,
-      teams: [{ engine: 'neural-cand' }, { engine: 'neural-imit' }],
+      teams: [{ engine: CAND_ID }, { engine: `${ENGINE}-imit` }],
     }).round;
     if (r === null) continue;
     if (r.winnerTeam === 1) wins++;
@@ -283,7 +378,7 @@ function gateVsBaseline(flat, gen) {
 // --- eval-only: shipped weights vs the champion pool ------------------------------
 function evalOnly() {
   const champions = loadChampions();
-  console.log(`[eval] shipped neural weights vs the champion pool (${ROUND_TICKS / 60}s rounds)`);
+  console.log(`[eval] shipped ${ENGINE} weights vs the champion pool (${ROUND_TICKS / 60}s rounds)`);
   console.log('opponent              W-L   killsFor  killsAgainst  avg fitness');
   for (const champ of champions) {
     const matches = ARENAS.slice(0, 4).map((arenaSeed, k) => ({
@@ -335,7 +430,8 @@ async function main() {
 
   const workers = JOBS > 1 ? startWorkers(JOBS) : [];
   console.log(
-    `[evolve] ${DIM} params, sigma ${SIGMA_ABS.toFixed(5)} (${SIGMA_REL}×rms ${rms(BASE_FLAT).toFixed(4)}), ` +
+    `[evolve] engine=${ENGINE}${HIT_FIT > 0 ? ` hit-fit=${HIT_FIT}` : ''}: ` +
+      `${DIM} params, sigma ${SIGMA_ABS.toFixed(5)} (${SIGMA_REL}×rms ${rms(BASE_FLAT).toFixed(4)}), ` +
       `lr ${LR}, pop ${POP} pairs × ${MATCHES} matches, ${ROUND_TICKS / 60}s rounds, ` +
       `${workers.length || 1} worker(s), gens ${startGen}..${startGen + GENERATIONS - 1}`,
   );
@@ -346,21 +442,21 @@ async function main() {
     const t0 = Date.now();
 
     if (poolDirty && workers.length > 0) {
-      const nets = pastSelves.map((p) => ({ key: `neural-past-${p.gen}`, flat: [...p.flat] }));
+      const nets = pastSelves.map((p) => ({ key: `${ENGINE}-past-${p.gen}`, flat: [...p.flat] }));
       await Promise.all(workers.map((w) => workerSend(w, { type: 'register', nets })));
       poolDirty = false;
     }
     const pool = [
       ...champions,
       ...pastSelves.map((p) => ({
-        key: `neural-past-${p.gen}`,
-        engine: `neural-past-${p.gen}`,
+        key: `${ENGINE}-past-${p.gen}`,
+        engine: `${ENGINE}-past-${p.gen}`,
         tweaks: undefined,
         champion: false,
       })),
     ];
     // Past selves must also exist in THIS process (gate + jobs-1 mode).
-    for (const p of pastSelves) registerNeuralNet(`neural-past-${p.gen}`, unflattenNet(DIMS, p.flat));
+    for (const p of pastSelves) registerNet(`${ENGINE}-past-${p.gen}`, unflattenNet(DIMS, p.flat));
 
     // Common random numbers: every candidate in the generation plays the SAME
     // opponents on the SAME seeds — fitness differences are pure policy.
@@ -391,12 +487,16 @@ async function main() {
     const fitMinus = [];
     let champWins = 0;
     let champCount = 0;
+    let shotsAll = 0;
+    let hitsAll = 0;
     for (let i = 0; i < POP; i++) {
       fitPlus.push(results[2 * i].fitness);
       fitMinus.push(results[2 * i + 1].fitness);
       for (const r of [results[2 * i], results[2 * i + 1]]) {
         champWins += r.champWins;
         champCount += r.champCount;
+        shotsAll += r.shotsFor ?? 0;
+        hitsAll += r.hitsFor ?? 0;
       }
     }
     mean = esUpdate(mean, eps, fitPlus, fitMinus, { lr: LR, decay: DECAY, anchor: BASE_FLAT });
@@ -405,15 +505,18 @@ async function main() {
     const meanFitness = all.reduce((a, b) => a + b, 0) / all.length;
     const bestFitness = Math.max(...all);
     const vsChampionWinRate = champCount > 0 ? champWins / champCount : null;
+    const hitRate = HIT_FIT > 0 && shotsAll > 0 ? hitsAll / shotsAll : null;
     const secs = (Date.now() - t0) / 1000;
     const opps = matchSpecs.map((m) => m.engine).join(',');
     appendFileSync(
       LOG_PATH,
       JSON.stringify({
+        ...(ENGINE === 'neural' ? {} : { engine: ENGINE, hitFit: HIT_FIT }),
         gen,
         meanFitness: Number(meanFitness.toFixed(3)),
         bestFitness: Number(bestFitness.toFixed(3)),
         vsChampionWinRate,
+        ...(hitRate === null ? {} : { hitRate: Number(hitRate.toFixed(4)) }),
         opponents: opps,
         arenaSeeds: matchSpecs.map((m) => m.arenaSeed),
         sigma: Number(SIGMA_ABS.toFixed(6)),
@@ -424,7 +527,7 @@ async function main() {
     console.log(
       `[gen ${gen}] mean ${meanFitness.toFixed(2)} best ${bestFitness.toFixed(2)} ` +
         `vsChamp ${vsChampionWinRate === null ? 'n/a' : (vsChampionWinRate * 100).toFixed(0) + '%'} ` +
-        `(${opps}) ${secs.toFixed(1)}s`,
+        `${hitRate === null ? '' : `hit% ${(hitRate * 100).toFixed(2)} `}(${opps}) ${secs.toFixed(1)}s`,
     );
 
     const last = gen === startGen + GENERATIONS - 1;
@@ -447,7 +550,7 @@ async function main() {
       const note = `gen ${gen} mean vs imitation baseline ${gate.wins}-${3 - gate.wins} (${gate.scores.join(', ')})`;
       if (shipped) {
         writeWeightsTs(mean, gen, note, meanFitness);
-        console.log(`[gate] ${note} → SHIPPED to neuralWeights.ts`);
+        console.log(`[gate] ${note} → SHIPPED to ${WEIGHTS_TS}`);
       } else {
         console.log(`[gate] ${note} → shipped weights left alone`);
       }

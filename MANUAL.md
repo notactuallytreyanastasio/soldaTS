@@ -195,6 +195,7 @@ The recipe (copy `kestrel.ts` or `shrike.ts` for shape):
 | `disciple` | DISCIPLE | **Learned** — single-teacher clone of the championship cuadrilla. |
 | `prodigy` | PRODIGY | **Learned** — v2 senses (bullets, reloads, one-tick memory), hit-filtered aim; lost to DISCIPLE (reconstructed-feature gap, spray heat invisible). |
 | `buttstein` | BUTTSTEIN | **Learned** — fourth student, first trained on EXACT replay-schema-v2 rows (recorder-run threat scan, own spray heat as a sense, blended ×5 hit-weighted aim). |
+| `mojojojo` | MOJOJOJO | **Learned** — fifth student, two-stage: BUTTSTEIN's eyes + OUTCOME-WEIGHTED fire head (hit ×5 / miss ×0.3 / no-fire ×1), then ES from that seed with a hit-rate fitness term (`tools/evolve.mjs --engine mojojojo --hit-fit 30`). |
 
 Meta-lessons the ladder taught, free of charge: read the actual
 mechanics before theorizing (the fire model's movement tax built
@@ -269,8 +270,8 @@ exact weapon label, own spray heat, and the nearest-bullet-threat
 the SAME closest-approach scan the runtime dodge organs run) — so v3
 training features need no reconstruction. Trainers MUST check the
 manifest `schema`: v1 rows lack these fields
-(`tools/train-buttstein.mjs` is v2-only; the older trainers are
-v1-only). Scale at the
+(`tools/train-buttstein.mjs` and `tools/train-mojojojo.mjs` are
+v2-only; the older trainers are v1-only). Scale at the
 time of writing: **1,100+ matches, ~35 M rows, ~1.1 GB**, growing
 ~0.5 M rows/hour from the commissioner alone; one league run adds
 ~4 M more.

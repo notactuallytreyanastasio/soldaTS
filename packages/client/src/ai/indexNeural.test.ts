@@ -10,16 +10,19 @@ import {
   createEngine,
   engineIds,
   NEURAL_SHIPPED_NET,
+  MOJOJOJO_SHIPPED_NET,
   createNeuralEngineWithWeights,
+  createMojojojoEngineWithWeights,
   nearestBulletThreat,
   nearestThreatBullet,
   type RelativeBullet,
 } from './index';
 import { FEATURE_DIM, OUTPUT_DIM } from './neuralFeatures';
+import { FEATURE_DIM_V3 } from './neuralFeaturesV3';
 
 describe('registry bootstrap — learned engines', () => {
-  it('registers all four students', () => {
-    for (const id of ['neural', 'disciple', 'prodigy', 'buttstein']) {
+  it('registers all five students', () => {
+    for (const id of ['neural', 'disciple', 'prodigy', 'buttstein', 'mojojojo']) {
       expect(engineIds()).toContain(id);
     }
   });
@@ -29,10 +32,11 @@ describe('registry bootstrap — learned engines', () => {
     expect(createEngine('disciple').id).toBe('disciple');
     expect(createEngine('prodigy').id).toBe('prodigy');
     expect(createEngine('buttstein').id).toBe('buttstein');
+    expect(createEngine('mojojojo').id).toBe('mojojojo');
   });
 
   it('each learned engine builds an independent brain with a ticking interface', () => {
-    for (const id of ['neural', 'disciple', 'prodigy', 'buttstein']) {
+    for (const id of ['neural', 'disciple', 'prodigy', 'buttstein', 'mojojojo']) {
       const engine = createEngine(id);
       const a = engine.createBrain();
       const b = engine.createBrain();
@@ -63,6 +67,28 @@ describe('re-exported evolution seam', () => {
     expect(engine.createBrain()).toBeDefined();
     // INERT for normal play: the candidate id is NOT in the static registry.
     expect(engineIds()).not.toContain('neural-cand');
+  });
+
+  it('MOJOJOJO_SHIPPED_NET is a consistent FEATURE_DIM_V3 → 31-logit net', () => {
+    const { dims, weights, biases } = MOJOJOJO_SHIPPED_NET;
+    expect(dims[0]).toBe(FEATURE_DIM_V3);
+    expect(dims[dims.length - 1]).toBe(31); // 7 buttons + 24 aim bins
+    expect(weights).toHaveLength(dims.length - 1);
+    expect(biases).toHaveLength(dims.length - 1);
+    for (let l = 0; l < dims.length - 1; l++) {
+      expect(weights[l]).toHaveLength((dims[l] ?? 0) * (dims[l + 1] ?? 0));
+      expect(biases[l]).toHaveLength(dims[l + 1] ?? 0);
+      for (const v of weights[l] ?? []) expect(Number.isFinite(v)).toBe(true);
+      for (const v of biases[l] ?? []) expect(Number.isFinite(v)).toBe(true);
+    }
+  });
+
+  it('createMojojojoEngineWithWeights builds candidate engines under alternate ids', () => {
+    const engine = createMojojojoEngineWithWeights('mojojojo-cand', MOJOJOJO_SHIPPED_NET);
+    expect(engine.id).toBe('mojojojo-cand');
+    expect(engine.createBrain()).toBeDefined();
+    // INERT for normal play: the candidate id is NOT in the static registry.
+    expect(engineIds()).not.toContain('mojojojo-cand');
   });
 });
 
