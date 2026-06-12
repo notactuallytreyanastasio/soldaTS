@@ -876,8 +876,11 @@ async function bootSpectator(recipe: string): Promise<Session> {
     i <= 2 ? `${TEAM_NAMES[i]} player` : (spriteTeam(i) === 1 ? e1 : e2).toUpperCase();
   const board: KillBoard = { kills: new Map(), feed: [] };
   let teamScore: [number, number] = [0, 0];
-  const snaps = new Map<number, { snap: SpriteSnapshotFull; atTick: number }>();
-  let specTick = 0;
+  // Per-sprite position history for SNAPSHOT INTERPOLATION: render ~110 ms in
+  // the past, always between two real snapshots, so motion is fluid and never
+  // snaps back (frame-rate independent — no per-frame tick counter).
+  const buffers = new Map<number, { t: number; x: number; y: number; vx: number; vy: number }[]>();
+  const INTERP_DELAY_MS = 110;
   let follow = 1;
   let auto = true;
   let alive = true;
@@ -906,19 +909,47 @@ async function bootSpectator(recipe: string): Promise<Session> {
     'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:30;font:11px ui-monospace,Menlo,monospace;letter-spacing:0.14em;color:#9aa3b2;background:rgba(10,12,16,0.6);padding:3px 11px;border-radius:6px;pointer-events:none';
   document.body.appendChild(hint);
 
-  const deadReckonAll = (): void => {
+  const renderPositions = (now: number): void => {
     const parts = world.spriteParts;
     if (parts === null) return;
-    for (const [num, { snap, atTick }] of snaps) {
-      const dt = Math.min(specTick - atTick, EXTRAPOLATE_MAX_TICKS);
-      const px = snap.pos.x + snap.velocity.x * dt;
-      const py = snap.pos.y + snap.velocity.y * dt;
-      parts.posX[num] = px;
-      parts.posY[num] = py;
-      parts.oldX[num] = px - snap.velocity.x;
-      parts.oldY[num] = py - snap.velocity.y;
-      parts.velocityX[num] = snap.velocity.x;
-      parts.velocityY[num] = snap.velocity.y;
+    const renderTime = now - INTERP_DELAY_MS;
+    for (const num of ONLINE_SPRITES) {
+      const buf = buffers.get(num);
+      if (buf === undefined || buf.length === 0) continue;
+      let s0 = buf[0]!;
+      let s1: { t: number; x: number; y: number; vx: number; vy: number } | undefined;
+      for (const e of buf) {
+        if (e.t <= renderTime) s0 = e;
+        else {
+          s1 = e;
+          break;
+        }
+      }
+      let x: number;
+      let y: number;
+      let vx: number;
+      let vy: number;
+      if (s1 !== undefined) {
+        const a = Math.max(0, Math.min(1, (renderTime - s0.t) / Math.max(1, s1.t - s0.t)));
+        x = s0.x + (s1.x - s0.x) * a;
+        y = s0.y + (s1.y - s0.y) * a;
+        vx = s1.vx;
+        vy = s1.vy;
+      } else {
+        const last = buf[buf.length - 1]!;
+        const ticks = Math.min(((renderTime - last.t) / 1000) * TICK_HZ, EXTRAPOLATE_MAX_TICKS);
+        x = last.x + last.vx * ticks;
+        y = last.y + last.vy * ticks;
+        vx = last.vx;
+        vy = last.vy;
+      }
+      parts.posX[num] = x;
+      parts.posY[num] = y;
+      parts.oldX[num] = x - vx;
+      parts.oldY[num] = y - vy;
+      parts.velocityX[num] = vx;
+      parts.velocityY[num] = vy;
+      while (buf.length > 2 && (buf[1]?.t ?? Infinity) < renderTime - 500) buf.shift();
     }
   };
 
@@ -944,13 +975,24 @@ async function bootSpectator(recipe: string): Promise<Session> {
     return n > 0 ? { x: sx / n, y: sy / n } : { x: 0, y: 0 };
   };
 
+  let camWX = 0;
+  let camWY = 0;
+  let camInit = false;
   const centerCamera = (): void => {
     const app = renderer.app;
     if (app === undefined) return;
-    const zoom = renderer.camera.zoom;
     const t = camTarget();
-    renderer.camera.x = app.renderer.width / 2 - t.x * zoom;
-    renderer.camera.y = app.renderer.height / 2 - t.y * zoom;
+    if (!camInit) {
+      camWX = t.x;
+      camWY = t.y;
+      camInit = true;
+    } else {
+      camWX += (t.x - camWX) * 0.12;
+      camWY += (t.y - camWY) * 0.12;
+    }
+    const zoom = renderer.camera.zoom;
+    renderer.camera.x = app.renderer.width / 2 - camWX * zoom;
+    renderer.camera.y = app.renderer.height / 2 - camWY * zoom;
     renderer.panBy(0, 0);
   };
   centerCamera();
@@ -960,8 +1002,7 @@ async function bootSpectator(recipe: string): Promise<Session> {
     if (!alive) return;
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
-    specTick += Math.max(1, Math.round(dt * TICK_HZ));
-    deadReckonAll();
+    renderPositions(now);
     entityRenderer.render(world, 0);
     blood.update(dt);
     blood.draw();
@@ -998,9 +1039,18 @@ async function bootSpectator(recipe: string): Promise<Session> {
       view.destroy();
     },
     onSnapshot(snap): void {
-      snaps.set(snap.num, { snap, atTick: specTick });
+      // Pose the full body (skeleton, weapon, health, facing) like the player
+      // path does for remotes; the render loop then interpolates COM position.
+      applySpriteSnapshot(world, snap);
       const s = world.sprites[snap.num];
       if (s !== undefined) s.deadMeat = snap.health <= 0;
+      let buf = buffers.get(snap.num);
+      if (buf === undefined) {
+        buf = [];
+        buffers.set(snap.num, buf);
+      }
+      buf.push({ t: performance.now(), x: snap.pos.x, y: snap.pos.y, vx: snap.velocity.x, vy: snap.velocity.y });
+      if (buf.length > 8) buf.shift();
     },
     onHeartbeat(score, kills): void {
       teamScore = score;
