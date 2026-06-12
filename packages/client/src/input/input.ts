@@ -140,6 +140,8 @@ export const CONTROL_BINDINGS: readonly ControlBinding[] = [
 export interface WindowLike {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   addEventListener(type: string, listener: (e: any) => void): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  removeEventListener(type: string, listener: (e: any) => void): void;
 }
 
 /** The slice of HTMLCanvasElement the controller needs. */
@@ -257,21 +259,59 @@ export class InputController {
    */
   private hasMouseSample = false;
 
+  private readonly win: WindowLike;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private readonly bound: Array<{ target: WindowLike; type: string; fn: (e: any) => void }> = [];
+
   constructor(canvas: CanvasLike, win: WindowLike = window) {
     this.canvas = canvas;
+    this.win = win;
     this.attach(win);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private on(target: WindowLike, type: string, fn: (e: any) => void): void {
+    target.addEventListener(type, fn);
+    this.bound.push({ target, type, fn });
+  }
+
+  /** Remove every listener (call when tearing the view down — cycling reboots). */
+  dispose(): void {
+    for (const { target, type, fn } of this.bound) target.removeEventListener(type, fn);
+    this.bound.length = 0;
+  }
+
+  /** A standstill Control (used while the player is typing in chat). */
+  neutralControl(): Control {
+    return {
+      left: false,
+      right: false,
+      up: false,
+      down: false,
+      fire: false,
+      jetpack: false,
+      throwNade: false,
+      changeWeapon: false,
+      throwWeapon: false,
+      reload: false,
+      prone: false,
+      flagThrow: false,
+      mouseAimX: this.lastAimX,
+      mouseAimY: this.lastAimY,
+      mouseDist: 0,
+    };
   }
 
   /** Wire up keyboard + mouse listeners on window / the canvas. */
   private attach(win: WindowLike): void {
-    win.addEventListener('keydown', this.onKey(true));
-    win.addEventListener('keyup', this.onKey(false));
+    this.on(win, 'keydown', this.onKey(true));
+    this.on(win, 'keyup', this.onKey(false));
 
     // Focus-loss hardening: if the page loses focus (Cmd+Tab, click outside),
     // the matching keyup/mouseup lands in another app and every held flag
     // would stick on (fire/jet/movement running away). Drop them all; keep
     // mouseX/mouseY and the aim angle — position is not a "held" input.
-    win.addEventListener('blur', () => {
+    this.on(win, 'blur', () => {
       const s = this.state;
       s.left = false;
       s.right = false;
@@ -293,7 +333,7 @@ export class InputController {
     // CSS pixels. While the keyboard owns aim, accumulate travel distance and
     // only steal aim back once it exceeds MOUSE_TAKEOVER_PX, so a nudged desk
     // doesn't yank a keyboard spray off-target.
-    this.canvas.addEventListener('mousemove', (e: MouseEventLike) => {
+    this.on(this.canvas, 'mousemove', (e: MouseEventLike) => {
       const rect = this.canvas.getBoundingClientRect();
       const nx = e.clientX - rect.left;
       const ny = e.clientY - rect.top;
@@ -315,15 +355,15 @@ export class InputController {
 
     // Fire: left mouse button (kept alongside Space; readControl ORs them).
     // Suppress the context menu for right-click nade.
-    this.canvas.addEventListener('mousedown', (e: MouseEventLike) => {
+    this.on(this.canvas, 'mousedown', (e: MouseEventLike) => {
       if (e.button === 0) this.state.fireMouse = true;
       if (e.button === 2) this.state.throwNade = true;
     });
-    win.addEventListener('mouseup', (e: MouseEventLike) => {
+    this.on(win, 'mouseup', (e: MouseEventLike) => {
       if (e.button === 0) this.state.fireMouse = false;
       if (e.button === 2) this.state.throwNade = false;
     });
-    this.canvas.addEventListener('contextmenu', (e: MouseEventLike) => {
+    this.on(this.canvas, 'contextmenu', (e: MouseEventLike) => {
       e.preventDefault();
     });
   }

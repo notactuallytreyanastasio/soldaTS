@@ -45,6 +45,7 @@ import {
 import {
   decodeMessage,
   encodeMessage,
+  ChatChannel,
   HandshakeResult,
   Posture,
   PROTOCOL_VERSION,
@@ -67,7 +68,7 @@ import { START_HEALTH } from '../ui/helpers';
 import { applyKill, type KillBoard } from './director';
 import { generateArena } from './arena';
 import { DEFAULT_TUNING } from './game';
-import { VoiceChat } from './voice';
+import { VoiceMesh } from './voice';
 
 const TICK_HZ = 60;
 const TICK_DT = 1 / TICK_HZ;
@@ -393,7 +394,7 @@ function pickEngineOverlay(): Promise<string> {
   });
 }
 
-function showTeamBanner(myTeam: number, myEngine: string, oppEngine: string): void {
+function showTeamBanner(myTeam: number, myEngine: string, oppEngine: string): HTMLDivElement {
   const el = document.createElement('div');
   const opp = myTeam === 1 ? 2 : 1;
   el.innerHTML =
@@ -414,31 +415,635 @@ function showTeamBanner(myTeam: number, myEngine: string, oppEngine: string): vo
     'pointer-events:none',
   ].join(';');
   document.body.appendChild(el);
+  return el;
 }
 
 // ---------------------------------------------------------------------------
-// The boot
+// Persistent stage UI (survives match cycling): chat box + roster strip
+// ---------------------------------------------------------------------------
+
+interface ChatBox {
+  el: HTMLDivElement;
+  input: HTMLInputElement;
+  append(label: string, text: string, color: string): void;
+  teardown(): void;
+}
+
+function makeChatBox(onSend: (text: string) => void): ChatBox {
+  const el = document.createElement('div');
+  el.style.cssText = [
+    'position:fixed',
+    'bottom:48px',
+    'left:12px',
+    'z-index:40',
+    'width:min(320px,42vw)',
+    'font:12px ui-monospace,Menlo,monospace',
+    'color:#e8e4d8',
+    'user-select:text',
+  ].join(';');
+  const log = document.createElement('div');
+  log.style.cssText =
+    'max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;margin-bottom:4px;text-shadow:0 1px 2px rgba(0,0,0,0.8)';
+  const input = document.createElement('input');
+  input.placeholder = 'press Enter to chat…';
+  input.maxLength = 200;
+  input.style.cssText =
+    'width:100%;box-sizing:border-box;background:rgba(10,12,16,0.72);color:#e8e4d8;border:1px solid #2a2f3a;border-radius:5px;padding:5px 9px;font:inherit;outline:none';
+  // Keep typing out of the game input — stop keys reaching document listeners.
+  input.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      const t = input.value.trim();
+      if (t !== '') onSend(t);
+      input.value = '';
+      input.blur();
+    } else if (e.key === 'Escape') {
+      input.value = '';
+      input.blur();
+    }
+  });
+  el.append(log, input);
+  document.body.appendChild(el);
+  // Enter (when not already typing) focuses the chat.
+  const focusKey = (e: KeyboardEvent): void => {
+    if (e.key === 'Enter' && document.activeElement !== input) input.focus();
+  };
+  window.addEventListener('keydown', focusKey);
+  return {
+    el,
+    input,
+    append(label, text, color): void {
+      const row = document.createElement('div');
+      row.innerHTML = `<span style="color:${color};font-weight:bold">${label}</span> ${escapeHtml(text)}`;
+      log.appendChild(row);
+      while (log.childElementCount > 60) log.firstChild?.remove();
+      log.scrollTop = log.scrollHeight;
+    },
+    teardown(): void {
+      window.removeEventListener('keydown', focusKey);
+      el.remove();
+    },
+  };
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] ?? c);
+}
+
+interface RosterStrip {
+  update(r: ArenaRoster): void;
+  teardown(): void;
+}
+
+function makeRosterStrip(): RosterStrip {
+  const el = document.createElement('div');
+  el.style.cssText = [
+    'position:fixed',
+    'top:34px',
+    'left:50%',
+    'transform:translateX(-50%)',
+    'z-index:30',
+    'font:11px ui-monospace,Menlo,monospace',
+    'letter-spacing:0.1em',
+    'background:rgba(10,12,16,0.6)',
+    'color:#9aa3b2',
+    'padding:3px 11px',
+    'border-radius:6px',
+    'pointer-events:none',
+    'white-space:nowrap',
+  ].join(';');
+  document.body.appendChild(el);
+  return {
+    update(r): void {
+      const watching = r.spectators === 1 ? '1 watching' : `${r.spectators} watching`;
+      let mine = '';
+      if (r.you.role === 'player') {
+        mine = r.you.waiting ? ' · YOU: waiting for an opponent' : ' · YOU: playing';
+      } else if (r.you.role === 'spectator') {
+        mine = ` · YOU: spectating (next up: #${r.you.queuePos})`;
+      }
+      el.textContent = `⚔ ${r.players.length}/2 playing · 👁 ${watching}${mine}`;
+    },
+    teardown(): void {
+      el.remove();
+    },
+  };
+}
+
+interface ArenaRoster {
+  players: number[];
+  spectators: number;
+  peers: number[];
+  you: { id: number; role: 'player' | 'spectator' | null; queuePos: number; waiting: boolean };
+}
+
+function parseArenaRoster(text: string): ArenaRoster | null {
+  if (!text.startsWith('arena:')) return null;
+  try {
+    return JSON.parse(text.slice('arena:'.length)) as ArenaRoster;
+  } catch {
+    return null;
+  }
+}
+
+/** A relayed participant chat line: `say:<id>:<text>`. */
+function parseSay(text: string): { id: number; text: string } | null {
+  if (!text.startsWith('say:')) return null;
+  const rest = text.slice('say:'.length);
+  const colon = rest.indexOf(':');
+  if (colon < 0) return null;
+  const id = parseInt(rest.slice(0, colon), 10);
+  if (!Number.isFinite(id)) return null;
+  return { id, text: rest.slice(colon + 1) };
+}
+
+// ---------------------------------------------------------------------------
+// Shared view (renderer + world + entities), used by both boots
+// ---------------------------------------------------------------------------
+
+interface View {
+  renderer: MapRenderer;
+  world: World;
+  entityRenderer: EntityRenderer;
+  blood: BloodFx;
+  crosshair: Crosshair;
+  hud: Hud;
+  canvas: HTMLCanvasElement;
+  e1: string;
+  e2: string;
+  arenaSeed: number;
+  seed: number;
+  destroy(): void;
+}
+
+async function buildView(recipe: string): Promise<View> {
+  const { arenaSeed, seed, e1, e2 } = parseMatchRecipe(recipe);
+  const mount = document.getElementById('app');
+  if (mount === null) throw new Error('#app element not found');
+  const renderer = new MapRenderer({ container: mount });
+  await renderer.init();
+
+  const { map, spawns } = generateArena(arenaSeed);
+  const mesh = buildMapMesh(map);
+  renderer.setMap(mesh);
+  try {
+    const textured = await buildTexturedMap(map, mesh);
+    if (textured.children.length > 0) renderer.world.addChildAt(textured, 1);
+  } catch {
+    /* flat colours are fine */
+  }
+
+  const world = createWorld();
+  initSimWorld(world, { seed });
+  world.map = buildPolyMap(map);
+  for (const num of ONLINE_SPRITES) {
+    const spawnIdx = (num <= 2 ? num - 1 : num) % spawns.length;
+    spawnOnlineSprite(world, num, spawns[spawnIdx] ?? { x: 0, y: 0 }, spriteTeam(num));
+  }
+
+  const entityRenderer = new EntityRenderer();
+  renderer.world.addChild(entityRenderer.container);
+  void entityRenderer.enableTextured().catch(() => undefined);
+
+  const blood = new BloodFx();
+  renderer.world.addChild(blood.gfx);
+  world.onBulletHit = (_victim, x, y, vx, vy, damage, fatal): void => {
+    blood.spawnHit(x, y, vx, vy, damage, fatal);
+  };
+
+  const crosshair = new Crosshair();
+  renderer.world.addChild(crosshair);
+
+  const hud = new Hud();
+  const stage = renderer.app?.stage;
+  if (stage !== undefined) {
+    stage.addChild(hud);
+    hud.resize(renderer.app?.canvas.width ?? 0, renderer.app?.canvas.height ?? 0);
+  }
+
+  const canvas = renderer.app?.canvas;
+  if (canvas === undefined) throw new Error('renderer canvas missing after init()');
+
+  return {
+    renderer,
+    world,
+    entityRenderer,
+    blood,
+    crosshair,
+    hud,
+    canvas,
+    e1,
+    e2,
+    arenaSeed,
+    seed,
+    destroy(): void {
+      try {
+        renderer.destroy();
+      } catch {
+        /* already gone */
+      }
+      mount.innerHTML = '';
+    },
+  };
+}
+
+/** A live view of the stage; the router feeds it server messages. */
+interface Session {
+  teardown(): void;
+  onSnapshot(snap: SpriteSnapshotFull): void;
+  onHeartbeat(teamScore: [number, number], kills: Map<number, number>): void;
+  onKill(killer: number, victim: number, weapon: string): void;
+}
+
+// ---------------------------------------------------------------------------
+// Boot: PLAYER (predicted own sprite, dead-reckoned rest)
+// ---------------------------------------------------------------------------
+
+async function bootPlayer(
+  recipe: string,
+  myNum: number,
+  ws: WebSocket,
+  isChatting: () => boolean,
+): Promise<Session> {
+  const view = await buildView(recipe);
+  const { world, renderer, entityRenderer, blood, crosshair, hud, canvas, e1, e2 } = view;
+  const myTeam = myNum;
+  const myEngine = myTeam === 1 ? e1 : e2;
+  const oppEngine = myTeam === 1 ? e2 : e1;
+
+  entityRenderer.playerIndex = myNum;
+  const buffer = new PredictionBuffer(world, myNum);
+  const input = new InputController(canvas);
+  if (shouldShowControls()) showControlsScreen();
+  const banner = showTeamBanner(myTeam, myEngine, oppEngine);
+
+  const nameOf = (i: number): string => spriteLabel(i, myNum, e1, e2);
+  const board: KillBoard = { kills: new Map(), feed: [] };
+  let teamScore: [number, number] = [0, 0];
+  let ownAmmo = 30;
+  const remoteSnaps = new Map<number, { snap: SpriteSnapshotFull; atTick: number }>();
+  let clientTick = 0;
+  let alive = true;
+
+  const markVitals = (num: number, health: number): void => {
+    const s = world.sprites[num];
+    if (s !== undefined) s.deadMeat = health <= 0;
+  };
+
+  const nextCosmeticFire: number[] = [0, 0, 0, 0, 0, 0, 0];
+  const cosmeticFire = (num: number): void => {
+    const s = world.sprites[num];
+    const parts = world.spriteParts;
+    if (s === undefined || parts === null || !s.active || s.deadMeat) return;
+    if (!s.control.fire || clientTick < (nextCosmeticFire[num] ?? 0)) return;
+    let ax = s.control.mouseAimX;
+    let ay = s.control.mouseAimY;
+    const len = Math.hypot(ax, ay);
+    if (len < 1e-3) {
+      ax = s.direction >= 0 ? 1 : -1;
+      ay = 0;
+    } else {
+      ax /= len;
+      ay /= len;
+    }
+    const gun = getGun(
+      WEAPON_LABEL_BY_INDEX[s.selWeapon] !== undefined ? s.selWeapon : WeaponIndex.AK74,
+      false,
+    );
+    const px = (parts.posX[num] ?? 0) + ax * MUZZLE_OFFSET;
+    const py = (parts.posY[num] ?? 0) + ay * MUZZLE_OFFSET;
+    spawnBullet(world, {
+      pos: vec2(px, py),
+      velocity: vec2(ax * gun.bulletSpeed, ay * gun.bulletSpeed),
+      owner: num,
+      hitMultiply: 0,
+      gun,
+    });
+    s.direction = ax >= 0 ? 1 : -1;
+    nextCosmeticFire[num] = clientTick + COSMETIC_FIRE_INTERVAL;
+  };
+
+  const jetRegen = (num: number): void => {
+    const s = world.sprites[num];
+    if (s === undefined || s.deadMeat || !s.active) return;
+    if (!s.control.jetpack && s.jetsCount < DEFAULT_TUNING.jetFuelMax) {
+      const regen = s.onGround ? DEFAULT_TUNING.jetRegenPerTick : DEFAULT_TUNING.jetAirRegenPerTick;
+      s.jetsCount = Math.min(s.jetsCount + regen, DEFAULT_TUNING.jetFuelMax);
+    }
+  };
+
+  const deadReckonRemotes = (): void => {
+    const parts = world.spriteParts;
+    if (parts === null) return;
+    for (const [num, { snap, atTick }] of remoteSnaps) {
+      const dt = Math.min(clientTick - atTick, EXTRAPOLATE_MAX_TICKS);
+      const px = snap.pos.x + snap.velocity.x * dt;
+      const py = snap.pos.y + snap.velocity.y * dt;
+      parts.posX[num] = px;
+      parts.posY[num] = py;
+      parts.oldX[num] = px - snap.velocity.x;
+      parts.oldY[num] = py - snap.velocity.y;
+      parts.velocityX[num] = snap.velocity.x;
+      parts.velocityY[num] = snap.velocity.y;
+    }
+  };
+
+  const centerCamera = (): void => {
+    const app = renderer.app;
+    const parts = world.spriteParts;
+    if (app === undefined || parts === null) return;
+    const zoom = renderer.camera.zoom;
+    renderer.camera.x = app.renderer.width / 2 - (parts.posX[myNum] ?? 0) * zoom;
+    renderer.camera.y = app.renderer.height / 2 - (parts.posY[myNum] ?? 0) * zoom;
+    renderer.panBy(0, 0);
+  };
+  const onWheel = (e: WheelEvent): void => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const clamped = Math.max(-160, Math.min(160, e.deltaY));
+    renderer.zoomAt(Math.exp(-clamped * 0.0004), e.clientX - rect.left, e.clientY - rect.top);
+  };
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+  centerCamera();
+
+  let accumulator = 0;
+  let last = performance.now();
+  const mySprite = world.sprites[myNum];
+  if (mySprite === undefined) throw new Error('online: my sprite missing');
+
+  const frame = (now: number): void => {
+    if (!alive) return;
+    const dt = Math.min((now - last) / 1000, 0.25);
+    last = now;
+    const app = renderer.app;
+    const parts = world.spriteParts;
+    const zoom = renderer.camera.zoom;
+    const px = parts !== null ? (parts.posX[myNum] ?? 0) : 0;
+    const py = parts !== null ? (parts.posY[myNum] ?? 0) : 0;
+    // While typing in chat, freeze input (a neutral control) so WASD types.
+    const control = isChatting()
+      ? input.neutralControl()
+      : input.readControl(px * zoom + renderer.camera.x, py * zoom + renderer.camera.y, now);
+    crosshair.moveTo(px + control.mouseAimX, py + control.mouseAimY);
+
+    if (ws.readyState === WebSocket.OPEN) {
+      accumulator += dt;
+      let ran = 0;
+      while (accumulator >= TICK_DT && ran < MAX_TICKS_PER_FRAME) {
+        clientTick += 1;
+        const myFrame = controlToInputFrame(clientTick, control);
+        for (const num of ONLINE_SPRITES) if (num !== myNum) cosmeticFire(num);
+        buffer.recordInput(clientTick, myFrame);
+        cosmeticFire(myNum);
+        jetRegen(myNum);
+        ws.send(encodeMessage({ kind: 'inputFrame', ...myFrame }));
+        accumulator -= TICK_DT;
+        ran += 1;
+      }
+      if (accumulator > TICK_DT) accumulator = 0;
+    }
+
+    deadReckonRemotes();
+    entityRenderer.render(world, accumulator / TICK_DT);
+    blood.update(dt);
+    blood.draw();
+    centerCamera();
+
+    const hudState: HudState = {
+      health: mySprite.health,
+      maxHealth: START_HEALTH,
+      jet: mySprite.jetsCount,
+      maxJet: DEFAULT_TUNING.jetFuelMax,
+      ammo: ownAmmo,
+      weaponName:
+        `${TEAM_NAMES[myTeam]} YOU + ${myEngine.toUpperCase()} · ` +
+        (WEAPON_LABEL_BY_INDEX[mySprite.selWeapon] ?? 'AK74'),
+      scores: {
+        alpha: teamScore[0],
+        bravo: teamScore[1],
+        playerKills: board.kills.get(myNum) ?? 0,
+        leading: myTeam === 1 ? teamScore[0] > teamScore[1] : teamScore[1] > teamScore[0],
+        gap: Math.abs(teamScore[0] - teamScore[1]),
+      },
+      killFeed: board.feed,
+      fps: dt > 0 ? 1 / dt : 0,
+    };
+    hud.update(hudState);
+    if (app !== undefined && alive) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+
+  return {
+    teardown(): void {
+      alive = false;
+      canvas.removeEventListener('wheel', onWheel);
+      input.dispose?.();
+      banner.remove();
+      view.destroy();
+    },
+    onSnapshot(snap): void {
+      if (snap.num === myNum) {
+        ownAmmo = snap.weapon.ammoCount;
+        buffer.onSnapshot(snap.serverTick, (w) => applySpriteSnapshot(w, snap));
+        markVitals(myNum, snap.health);
+      } else {
+        remoteSnaps.set(snap.num, { snap, atTick: clientTick });
+        applySpriteSnapshot(world, snap);
+        markVitals(snap.num, snap.health);
+      }
+    },
+    onHeartbeat(score, kills): void {
+      teamScore = score;
+      board.kills.clear();
+      for (const [num, k] of kills) board.kills.set(num, k);
+    },
+    onKill(killer, victim, weapon): void {
+      applyKill(board, killer, victim, nameOf, myNum, weapon);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Boot: SPECTATOR (no input, dead-reckon all six, follow the action)
+// ---------------------------------------------------------------------------
+
+async function bootSpectator(recipe: string): Promise<Session> {
+  const view = await buildView(recipe);
+  const { world, renderer, entityRenderer, blood, hud, canvas, e1, e2 } = view;
+  entityRenderer.playerIndex = -1;
+
+  const specLabel = (i: number): string =>
+    i <= 2 ? `${TEAM_NAMES[i]} player` : (spriteTeam(i) === 1 ? e1 : e2).toUpperCase();
+  const board: KillBoard = { kills: new Map(), feed: [] };
+  let teamScore: [number, number] = [0, 0];
+  const snaps = new Map<number, { snap: SpriteSnapshotFull; atTick: number }>();
+  let specTick = 0;
+  let follow = 1;
+  let auto = true;
+  let alive = true;
+
+  const cycleFollow = (dir: number): void => {
+    auto = false;
+    follow = ((follow - 1 + dir + 6) % 6) + 1;
+  };
+  const onKey = (e: KeyboardEvent): void => {
+    if (e.key === 'ArrowRight') cycleFollow(1);
+    else if (e.key === 'ArrowLeft') cycleFollow(-1);
+    else if (e.key === 'a' || e.key === 'A') auto = true;
+  };
+  window.addEventListener('keydown', onKey);
+  const onWheel = (e: WheelEvent): void => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const clamped = Math.max(-160, Math.min(160, e.deltaY));
+    renderer.zoomAt(Math.exp(-clamped * 0.0004), e.clientX - rect.left, e.clientY - rect.top);
+  };
+  canvas.addEventListener('wheel', onWheel, { passive: false });
+
+  const hint = document.createElement('div');
+  hint.textContent = 'SPECTATING · ←/→ follow · A auto · type to chat';
+  hint.style.cssText =
+    'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:30;font:11px ui-monospace,Menlo,monospace;letter-spacing:0.14em;color:#9aa3b2;background:rgba(10,12,16,0.6);padding:3px 11px;border-radius:6px;pointer-events:none';
+  document.body.appendChild(hint);
+
+  const deadReckonAll = (): void => {
+    const parts = world.spriteParts;
+    if (parts === null) return;
+    for (const [num, { snap, atTick }] of snaps) {
+      const dt = Math.min(specTick - atTick, EXTRAPOLATE_MAX_TICKS);
+      const px = snap.pos.x + snap.velocity.x * dt;
+      const py = snap.pos.y + snap.velocity.y * dt;
+      parts.posX[num] = px;
+      parts.posY[num] = py;
+      parts.oldX[num] = px - snap.velocity.x;
+      parts.oldY[num] = py - snap.velocity.y;
+      parts.velocityX[num] = snap.velocity.x;
+      parts.velocityY[num] = snap.velocity.y;
+    }
+  };
+
+  const camTarget = (): { x: number; y: number } => {
+    const parts = world.spriteParts;
+    if (parts === null) return { x: 0, y: 0 };
+    const followSprite = world.sprites[follow];
+    if (!auto && followSprite !== undefined && !followSprite.deadMeat) {
+      return { x: parts.posX[follow] ?? 0, y: parts.posY[follow] ?? 0 };
+    }
+    // Auto / dead subject: centroid of the alive sprites.
+    let sx = 0;
+    let sy = 0;
+    let n = 0;
+    for (const num of ONLINE_SPRITES) {
+      const s = world.sprites[num];
+      if (s !== undefined && s.active && !s.deadMeat) {
+        sx += parts.posX[num] ?? 0;
+        sy += parts.posY[num] ?? 0;
+        n += 1;
+      }
+    }
+    return n > 0 ? { x: sx / n, y: sy / n } : { x: 0, y: 0 };
+  };
+
+  const centerCamera = (): void => {
+    const app = renderer.app;
+    if (app === undefined) return;
+    const zoom = renderer.camera.zoom;
+    const t = camTarget();
+    renderer.camera.x = app.renderer.width / 2 - t.x * zoom;
+    renderer.camera.y = app.renderer.height / 2 - t.y * zoom;
+    renderer.panBy(0, 0);
+  };
+  centerCamera();
+
+  let last = performance.now();
+  const frame = (now: number): void => {
+    if (!alive) return;
+    const dt = Math.min((now - last) / 1000, 0.25);
+    last = now;
+    specTick += Math.max(1, Math.round(dt * TICK_HZ));
+    deadReckonAll();
+    entityRenderer.render(world, 0);
+    blood.update(dt);
+    blood.draw();
+    centerCamera();
+    const fs = world.sprites[follow];
+    const hudState: HudState = {
+      health: fs?.health ?? 0,
+      maxHealth: START_HEALTH,
+      jet: fs?.jetsCount ?? 0,
+      maxJet: DEFAULT_TUNING.jetFuelMax,
+      ammo: 0,
+      weaponName: `SPECTATING · ${e1.toUpperCase()} vs ${e2.toUpperCase()}`,
+      scores: {
+        alpha: teamScore[0],
+        bravo: teamScore[1],
+        playerKills: 0,
+        leading: teamScore[0] > teamScore[1],
+        gap: Math.abs(teamScore[0] - teamScore[1]),
+      },
+      killFeed: board.feed,
+      fps: dt > 0 ? 1 / dt : 0,
+    };
+    hud.update(hudState);
+    if (renderer.app !== undefined && alive) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+
+  return {
+    teardown(): void {
+      alive = false;
+      window.removeEventListener('keydown', onKey);
+      canvas.removeEventListener('wheel', onWheel);
+      hint.remove();
+      view.destroy();
+    },
+    onSnapshot(snap): void {
+      snaps.set(snap.num, { snap, atTick: specTick });
+      const s = world.sprites[snap.num];
+      if (s !== undefined) s.deadMeat = snap.health <= 0;
+    },
+    onHeartbeat(score, kills): void {
+      teamScore = score;
+      board.kills.clear();
+      for (const [num, k] of kills) board.kills.set(num, k);
+    },
+    onKill(killer, victim, weapon): void {
+      applyKill(board, killer, victim, specLabel, -1, weapon);
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The boot — connect, route, and (re)boot the view as the server cycles
 // ---------------------------------------------------------------------------
 
 export async function onlineMain(): Promise<void> {
-  // Brain picker FIRST — the hello must carry the choice.
   const myEnginePick = await pickEngineOverlay();
-
   const overlay = makeOverlay();
   overlay.set('CONNECTING…');
 
   const ws = new WebSocket(deriveWsUrl(window.location));
   ws.binaryType = 'arraybuffer';
 
-  let booted = false;
-  let matchOver = false;
-  let voice: VoiceChat | null = null;
+  let myId = 0;
+  let voice: VoiceMesh | null = null;
+  let session: Session | null = null;
+  let bootGen = 0;
+  const playerIds = new Set<number>();
+
+  const roster = makeRosterStrip();
+  const chat = makeChatBox((text) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(encodeMessage({ kind: 'chat', senderNum: 0, channel: ChatChannel.Public, text }));
+    }
+  });
+  const isChatting = (): boolean => document.activeElement === chat.input;
 
   ws.addEventListener('open', () => {
     overlay.set(
-      `WAITING FOR AN OPPONENT…<br>` +
-        `<span style="font-size:13px;color:#9aa3b2">your squad: ${myEnginePick.toUpperCase()} — ` +
-        `first to arrive waits; send a friend to /arena/play/?online</span>`,
+      'JOINING THE STAGE…<br>' +
+        `<span style="font-size:13px;color:#9aa3b2">squad: ${myEnginePick.toUpperCase()} — ` +
+        'first two play, the rest watch &amp; chat</span>',
     );
     ws.send(
       encodeMessage({
@@ -459,20 +1064,70 @@ export async function onlineMain(): Promise<void> {
       }),
     );
   });
+
   ws.addEventListener('close', () => {
+    session?.teardown();
+    session = null;
     voice?.dispose();
-    if (!matchOver) {
-      overlay.set(
-        booted
-          ? 'CONNECTION LOST<br><span style="font-size:13px">reload to find a new match</span>'
-          : 'GAME SERVER UNREACHABLE<br><span style="font-size:13px">try again in a minute</span>',
-        '#ffb347',
-      );
-    }
+    overlay.set('CONNECTION LOST<br><span style="font-size:13px">reload to rejoin</span>', '#ffb347');
   });
 
-  // Pre-match messages: wait for the welcome, then hand off to bootMatch.
-  const onLobbyMessage = (e: MessageEvent): void => {
+  async function reboot(spectator: boolean, yourNum: number, recipe: string): Promise<void> {
+    const gen = ++bootGen;
+    session?.teardown();
+    session = null;
+    overlay.set(spectator ? 'TAKING A SEAT…' : 'YOUR MATCH IS STARTING…');
+    const next = spectator ? await bootSpectator(recipe) : await bootPlayer(recipe, yourNum, ws, isChatting);
+    if (gen !== bootGen) {
+      next.teardown(); // a newer welcome superseded this boot
+      return;
+    }
+    session = next;
+    overlay.hide();
+  }
+
+  function handleWelcome(hs: Message): void {
+    if (hs.kind !== 'handshake' || hs.handshake.kind !== 'welcome') return;
+    const w = hs.handshake;
+    if (w.result !== HandshakeResult.Ok) {
+      overlay.set(`REJECTED: ${w.reason ?? 'unknown'}`, '#ffb347');
+      ws.close();
+      return;
+    }
+    if (w.yourId !== undefined) myId = w.yourId;
+    if (voice === null && myId > 0) {
+      voice = new VoiceMesh({
+        myId,
+        sendSignal: (peerId, data) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(encodeMessage({ kind: 'voice', peer: peerId, data }));
+        },
+      });
+      void voice.start();
+    }
+    void reboot(w.spectator === true, w.yourNum ?? 0, w.mapName ?? '');
+  }
+
+  function handleChat(text: string): void {
+    const r = parseArenaRoster(text);
+    if (r !== null) {
+      roster.update(r);
+      playerIds.clear();
+      for (const id of r.players) playerIds.add(id);
+      voice?.setPeers(r.peers);
+      return;
+    }
+    const said = parseSay(text);
+    if (said !== null) {
+      const label = said.id === myId ? 'You' : playerIds.has(said.id) ? 'Player' : 'Spectator';
+      const color = said.id === myId ? '#9be07f' : playerIds.has(said.id) ? '#ffd75e' : '#9aa3b2';
+      chat.append(`${label}:`, said.text, color);
+      return;
+    }
+    const ev = parseServerChat(text);
+    if (ev.type === 'kill') session?.onKill(ev.killer, ev.victim, ev.weapon);
+  }
+
+  ws.addEventListener('message', (e: MessageEvent) => {
     if (!(e.data instanceof ArrayBuffer)) return;
     let msg: Message;
     try {
@@ -480,322 +1135,27 @@ export async function onlineMain(): Promise<void> {
     } catch {
       return;
     }
-    if (msg.kind === 'chat' && parseServerChat(msg.text).type === 'waiting') {
-      return; // already showing the waiting overlay
+    switch (msg.kind) {
+      case 'handshake':
+        handleWelcome(msg);
+        break;
+      case 'voice':
+        void voice?.onSignal(msg.peer, msg.data);
+        break;
+      case 'chat':
+        handleChat(msg.text);
+        break;
+      case 'spriteSnapshot':
+        if (msg.snapshot.kind === 'full') session?.onSnapshot(msg.snapshot);
+        break;
+      case 'heartbeat': {
+        const kills = new Map<number, number>();
+        for (const row of msg.players) kills.set(row.num, row.kills);
+        session?.onHeartbeat([msg.teamScore[0] ?? 0, msg.teamScore[1] ?? 0], kills);
+        break;
+      }
+      default:
+        break;
     }
-    if (msg.kind !== 'handshake' || msg.handshake.kind !== 'welcome') return;
-    const welcome = msg.handshake;
-    if (welcome.result !== HandshakeResult.Ok || welcome.yourNum === undefined) {
-      overlay.set(`REJECTED: ${welcome.reason ?? 'unknown'}`, '#ffb347');
-      ws.close();
-      return;
-    }
-    ws.removeEventListener('message', onLobbyMessage);
-    booted = true;
-    void bootMatch(welcome.yourNum, welcome.mapName ?? '');
-  };
-  ws.addEventListener('message', onLobbyMessage);
-
-  // --- The match ------------------------------------------------------------
-
-  async function bootMatch(myNum: number, mapName: string): Promise<void> {
-    const { arenaSeed, seed, e1, e2 } = parseMatchRecipe(mapName);
-    const myTeam = myNum; // slot 1 = red, slot 2 = blue (server contract)
-    const myEngine = myTeam === 1 ? e1 : e2;
-    const oppEngine = myTeam === 1 ? e2 : e1;
-
-    const mount = document.getElementById('app');
-    if (mount === null) throw new Error('#app element not found');
-    const renderer = new MapRenderer({ container: mount });
-    await renderer.init();
-
-    const { map, spawns } = generateArena(arenaSeed);
-    const mesh = buildMapMesh(map);
-    renderer.setMap(mesh);
-    try {
-      const textured = await buildTexturedMap(map, mesh);
-      if (textured.children.length > 0) renderer.world.addChildAt(textured, 1);
-    } catch {
-      /* flat colours are fine */
-    }
-
-    // Local predicted world: all SIX sprites spawned exactly where the server
-    // spawned them (same generateArena recipe, same spawn cycling — humans
-    // h=0,1 take spawnFor(h), bots take spawnFor(index); see Game's ctor).
-    const world = createWorld();
-    initSimWorld(world, { seed });
-    world.map = buildPolyMap(map);
-    for (const num of ONLINE_SPRITES) {
-      const spawnIdx = (num <= 2 ? num - 1 : num) % spawns.length;
-      spawnOnlineSprite(world, num, spawns[spawnIdx] ?? { x: 0, y: 0 }, spriteTeam(num));
-    }
-    const buffer = new PredictionBuffer(world, myNum);
-
-    const entityRenderer = new EntityRenderer();
-    entityRenderer.playerIndex = myNum;
-    renderer.world.addChild(entityRenderer.container);
-    void entityRenderer.enableTextured().catch(() => undefined);
-
-    const blood = new BloodFx();
-    renderer.world.addChild(blood.gfx);
-    world.onBulletHit = (_victim, x, y, vx, vy, damage, fatal): void => {
-      blood.spawnHit(x, y, vx, vy, damage, fatal);
-    };
-
-    const crosshair = new Crosshair();
-    renderer.world.addChild(crosshair);
-
-    const hud = new Hud();
-    const stage = renderer.app?.stage;
-    if (stage !== undefined) {
-      stage.addChild(hud);
-      hud.resize(renderer.app?.canvas.width ?? 0, renderer.app?.canvas.height ?? 0);
-    }
-
-    const canvas = renderer.app?.canvas;
-    if (canvas === undefined) throw new Error('renderer canvas missing after init()');
-    const input = new InputController(canvas);
-    if (shouldShowControls()) showControlsScreen();
-    showTeamBanner(myTeam, myEngine, oppEngine);
-    overlay.hide();
-
-    // Voice chat (goal node 522): open mic + mute pill, signaling relayed by
-    // the match server. Slot 2 (blue) is the perfect-negotiation polite peer.
-    voice = new VoiceChat({
-      polite: myNum === 2,
-      sendSignal: (data): void => {
-        if (!matchOver && ws.readyState === WebSocket.OPEN) {
-          ws.send(encodeMessage({ kind: 'voice', data }));
-        }
-      },
-    });
-    void voice.start();
-
-    // --- Net state ---------------------------------------------------------
-    const nameOf = (i: number): string => spriteLabel(i, myNum, e1, e2);
-    const board: KillBoard = { kills: new Map(), feed: [] };
-    let teamScore: [number, number] = [0, 0];
-    let ownAmmo = 30;
-    /** Latest snapshot per REMOTE sprite (opposing human + all four bots). */
-    const remoteSnaps = new Map<number, { snap: SpriteSnapshotFull; atTick: number }>();
-    let clientTick = 0;
-
-    const markVitals = (num: number, health: number): void => {
-      const s = world.sprites[num];
-      if (s !== undefined) s.deadMeat = health <= 0;
-    };
-
-    ws.addEventListener('message', (e: MessageEvent) => {
-      if (!(e.data instanceof ArrayBuffer)) return;
-      let msg: Message;
-      try {
-        msg = decodeMessage(e.data);
-      } catch {
-        return;
-      }
-      if (msg.kind === 'spriteSnapshot') {
-        const snap = msg.snapshot;
-        if (snap.kind !== 'full') return; // v1 servers send full snapshots only
-        if (snap.num === myNum) {
-          ownAmmo = snap.weapon.ammoCount;
-          buffer.onSnapshot(snap.serverTick, (w) => {
-            applySpriteSnapshot(w, snap);
-          });
-          markVitals(myNum, snap.health);
-        } else {
-          remoteSnaps.set(snap.num, { snap, atTick: clientTick });
-          applySpriteSnapshot(world, snap);
-          markVitals(snap.num, snap.health);
-        }
-        return;
-      }
-      if (msg.kind === 'heartbeat') {
-        teamScore = [msg.teamScore[0] ?? 0, msg.teamScore[1] ?? 0];
-        for (const row of msg.players) board.kills.set(row.num, row.kills);
-        return;
-      }
-      if (msg.kind === 'voice') {
-        void voice?.onSignal(msg.data);
-        return;
-      }
-      if (msg.kind === 'chat') {
-        const ev = parseServerChat(msg.text);
-        if (ev.type === 'kill') {
-          applyKill(board, ev.killer, ev.victim, nameOf, myNum, ev.weapon);
-        } else if (ev.type === 'end') {
-          matchOver = true;
-          voice?.dispose();
-          const won = ev.winnerNum === myNum;
-          overlay.set(
-            won
-              ? 'STRANGER LEFT — YOU WIN<br><span style="font-size:13px">reload for a new match</span>'
-              : 'MATCH OVER<br><span style="font-size:13px">reload for a new match</span>',
-            won ? '#9be07f' : '#ffb347',
-          );
-        }
-      }
-    });
-
-    // --- Cosmetic fire (visual bullets; hitMultiply 0 = zero local damage) --
-    const nextCosmeticFire: number[] = [0, 0, 0, 0, 0, 0, 0];
-    const cosmeticFire = (num: number): void => {
-      const s = world.sprites[num];
-      const parts = world.spriteParts;
-      if (s === undefined || parts === null || !s.active || s.deadMeat) return;
-      if (!s.control.fire || clientTick < (nextCosmeticFire[num] ?? 0)) return;
-      let ax = s.control.mouseAimX;
-      let ay = s.control.mouseAimY;
-      const len = Math.hypot(ax, ay);
-      if (len < 1e-3) {
-        ax = s.direction >= 0 ? 1 : -1;
-        ay = 0;
-      } else {
-        ax /= len;
-        ay /= len;
-      }
-      const gun = getGun(
-        WEAPON_LABEL_BY_INDEX[s.selWeapon] !== undefined ? s.selWeapon : WeaponIndex.AK74,
-        false,
-      );
-      const px = (parts.posX[num] ?? 0) + ax * MUZZLE_OFFSET;
-      const py = (parts.posY[num] ?? 0) + ay * MUZZLE_OFFSET;
-      spawnBullet(world, {
-        pos: vec2(px, py),
-        velocity: vec2(ax * gun.bulletSpeed, ay * gun.bulletSpeed),
-        owner: num,
-        hitMultiply: 0,
-        gun,
-      });
-      s.direction = ax >= 0 ? 1 : -1;
-      nextCosmeticFire[num] = clientTick + COSMETIC_FIRE_INTERVAL;
-    };
-
-    /** Mirror the Game's jet refuel rule for the local HUD bar. */
-    const jetRegen = (num: number): void => {
-      const s = world.sprites[num];
-      if (s === undefined || s.deadMeat || !s.active) return;
-      if (!s.control.jetpack && s.jetsCount < DEFAULT_TUNING.jetFuelMax) {
-        const regen = s.onGround
-          ? DEFAULT_TUNING.jetRegenPerTick
-          : DEFAULT_TUNING.jetAirRegenPerTick;
-        s.jetsCount = Math.min(s.jetsCount + regen, DEFAULT_TUNING.jetFuelMax);
-      }
-    };
-
-    /** Pin every REMOTE sprite to (latest snapshot + velocity × elapsed ticks). */
-    const deadReckonRemotes = (): void => {
-      const parts = world.spriteParts;
-      if (parts === null) return;
-      for (const [num, { snap, atTick }] of remoteSnaps) {
-        const dt = Math.min(clientTick - atTick, EXTRAPOLATE_MAX_TICKS);
-        const px = snap.pos.x + snap.velocity.x * dt;
-        const py = snap.pos.y + snap.velocity.y * dt;
-        parts.posX[num] = px;
-        parts.posY[num] = py;
-        parts.oldX[num] = px - snap.velocity.x;
-        parts.oldY[num] = py - snap.velocity.y;
-        parts.velocityX[num] = snap.velocity.x;
-        parts.velocityY[num] = snap.velocity.y;
-      }
-    };
-
-    // --- Camera --------------------------------------------------------------
-    const centerCamera = (): void => {
-      const app = renderer.app;
-      const parts = world.spriteParts;
-      if (app === undefined || parts === null) return;
-      const zoom = renderer.camera.zoom;
-      renderer.camera.x = app.renderer.width / 2 - (parts.posX[myNum] ?? 0) * zoom;
-      renderer.camera.y = app.renderer.height / 2 - (parts.posY[myNum] ?? 0) * zoom;
-      renderer.panBy(0, 0);
-    };
-    canvas.addEventListener(
-      'wheel',
-      (e: WheelEvent) => {
-        e.preventDefault();
-        const rect = canvas.getBoundingClientRect();
-        const clamped = Math.max(-160, Math.min(160, e.deltaY));
-        renderer.zoomAt(Math.exp(-clamped * 0.0004), e.clientX - rect.left, e.clientY - rect.top);
-      },
-      { passive: false },
-    );
-    centerCamera();
-
-    // --- Main loop -----------------------------------------------------------
-    let accumulator = 0;
-    let last = performance.now();
-    const mySprite = world.sprites[myNum];
-    if (mySprite === undefined) throw new Error('online: my sprite missing');
-
-    const frame = (now: number): void => {
-      const dt = Math.min((now - last) / 1000, 0.25);
-      last = now;
-
-      const app = renderer.app;
-      const parts = world.spriteParts;
-      const zoom = renderer.camera.zoom;
-      const px = parts !== null ? (parts.posX[myNum] ?? 0) : 0;
-      const py = parts !== null ? (parts.posY[myNum] ?? 0) : 0;
-      const control = input.readControl(
-        px * zoom + renderer.camera.x,
-        py * zoom + renderer.camera.y,
-        now,
-      );
-      crosshair.moveTo(px + control.mouseAimX, py + control.mouseAimY);
-
-      if (!matchOver && ws.readyState === WebSocket.OPEN) {
-        accumulator += dt;
-        let ran = 0;
-        while (accumulator >= TICK_DT && ran < MAX_TICKS_PER_FRAME) {
-          clientTick += 1;
-          // Cosmetic muzzle output for every remote sprite BEFORE the
-          // predicted step moves the world (they fire from their last-known
-          // state — fire buttons arrive inside their snapshots).
-          const myFrame = controlToInputFrame(clientTick, control);
-          for (const num of ONLINE_SPRITES) {
-            if (num !== myNum) cosmeticFire(num);
-          }
-          // Record + predict (applies control to my sprite, steps the world).
-          buffer.recordInput(clientTick, myFrame);
-          cosmeticFire(myNum);
-          jetRegen(myNum);
-          ws.send(encodeMessage({ kind: 'inputFrame', ...myFrame }));
-          accumulator -= TICK_DT;
-          ran += 1;
-        }
-        if (accumulator > TICK_DT) accumulator = 0;
-      }
-
-      deadReckonRemotes();
-      entityRenderer.render(world, accumulator / TICK_DT);
-      blood.update(dt);
-      blood.draw();
-      centerCamera();
-
-      const hudState: HudState = {
-        health: mySprite.health,
-        maxHealth: START_HEALTH,
-        jet: mySprite.jetsCount,
-        maxJet: DEFAULT_TUNING.jetFuelMax,
-        ammo: ownAmmo,
-        weaponName:
-          `${TEAM_NAMES[myTeam]} YOU + ${myEngine.toUpperCase()} · ` +
-          (WEAPON_LABEL_BY_INDEX[mySprite.selWeapon] ?? 'AK74'),
-        scores: {
-          alpha: teamScore[0],
-          bravo: teamScore[1],
-          playerKills: board.kills.get(myNum) ?? 0,
-          leading:
-            (myTeam === 1 ? teamScore[0] > teamScore[1] : teamScore[1] > teamScore[0]),
-          gap: Math.abs(teamScore[0] - teamScore[1]),
-        },
-        killFeed: board.feed,
-        fps: dt > 0 ? 1 / dt : 0,
-      };
-      hud.update(hudState);
-
-      if (app !== undefined) requestAnimationFrame(frame);
-    };
-    requestAnimationFrame(frame);
-  }
+  });
 }

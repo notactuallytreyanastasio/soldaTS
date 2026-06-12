@@ -43,9 +43,19 @@ function makeHarness(): Harness {
       arr.push(listener);
       map.set(type, arr);
     };
-  const win: WindowLike = { addEventListener: adder(winListeners) };
+  const remover =
+    (map: ListenerMap) =>
+    (type: string, listener: Listener): void => {
+      const arr = map.get(type);
+      if (arr !== undefined) map.set(type, arr.filter((l) => l !== listener));
+    };
+  const win: WindowLike = {
+    addEventListener: adder(winListeners),
+    removeEventListener: remover(winListeners),
+  };
   const canvas: CanvasLike = {
     addEventListener: adder(canvasListeners),
+    removeEventListener: remover(canvasListeners),
     getBoundingClientRect: () => ({ left: 0, top: 0 }),
   };
   const input = new InputController(canvas, win);

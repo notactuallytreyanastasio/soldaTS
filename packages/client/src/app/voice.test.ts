@@ -1,9 +1,12 @@
-// VoiceChat signaling-glue tests (goal node 522) — fake RTCPeerConnection and
-// getUserMedia through the constructor seams; no real WebRTC, no DOM. What's
-// under test is OUR glue: offer kickoff, perfect-negotiation glare handling,
-// candidate routing, listen-only fallback, mute, dispose.
+// VoiceMesh glue tests (goal node 522, mesh upgrade 551) — fake
+// RTCPeerConnection + getUserMedia through the constructor seams; no real
+// WebRTC, no DOM audio. Under test: mic acquisition, per-peer link reconcile
+// (setPeers), perfect-negotiation politeness by id, targeted signaling, mute,
+// and dispose.
 import { describe, expect, it } from 'vitest';
-import { VoiceChat } from './voice';
+import { VoiceMesh } from './voice';
+
+const flush = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
 class FakeTrack {
   enabled = true;
@@ -13,7 +16,6 @@ class FakeTrack {
     this.stopped = true;
   }
 }
-
 class FakeStream {
   constructor(readonly tracks: FakeTrack[]) {}
   getAudioTracks(): FakeTrack[] {
@@ -28,12 +30,8 @@ class FakePc {
   onnegotiationneeded: (() => Promise<void> | void) | null = null;
   onicecandidate: ((e: { candidate: unknown }) => void) | null = null;
   ontrack: ((e: unknown) => void) | null = null;
-  onconnectionstatechange: (() => void) | null = null;
-
   signalingState = 'stable';
-  connectionState = 'new';
   localDescription: { type: string; sdp: string } | null = null;
-
   addedTracks: unknown[] = [];
   transceivers: string[] = [];
   remoteDescriptions: { type: string }[] = [];
@@ -44,128 +42,139 @@ class FakePc {
     this.addedTracks.push(track);
     void this.onnegotiationneeded?.();
   }
-
   addTransceiver(_kind: string, opts: { direction: string }): void {
     this.transceivers.push(opts.direction);
-    void this.onnegotiationneeded?.();
   }
-
   async setLocalDescription(): Promise<void> {
     const type = this.signalingState === 'have-remote-offer' ? 'answer' : 'offer';
     this.localDescription = { type, sdp: 'x' };
     this.signalingState = type === 'offer' ? 'have-local-offer' : 'stable';
   }
-
   async setRemoteDescription(d: { type: string }): Promise<void> {
     this.remoteDescriptions.push(d);
     this.signalingState = d.type === 'offer' ? 'have-remote-offer' : 'stable';
   }
-
   async addIceCandidate(c: unknown): Promise<void> {
     this.candidates.push(c);
   }
-
   close(): void {
     this.closed = true;
   }
 }
 
 interface Rig {
-  voice: VoiceChat;
-  pc: FakePc;
-  sent: { description?: { type: string }; candidate?: unknown }[];
+  mesh: VoiceMesh;
+  pcs: Map<string, FakePc>;
+  sent: { to: number; data: string }[];
   track: FakeTrack;
 }
 
-function rig(opts: { polite?: boolean; denyMic?: boolean } = {}): Rig {
-  const pc = new FakePc();
+function rig(myId: number, opts: { denyMic?: boolean } = {}): Rig {
+  const pcs = new Map<string, FakePc>();
+  let n = 0;
   const sent: Rig['sent'] = [];
   const track = new FakeTrack();
-  const voice = new VoiceChat({
-    polite: opts.polite ?? false,
-    sendSignal: (data): void => {
-      sent.push(JSON.parse(data) as Rig['sent'][number]);
+  const mesh = new VoiceMesh({
+    myId,
+    sendSignal: (to, data) => sent.push({ to, data }),
+    createPeer: (): RTCPeerConnection => {
+      const pc = new FakePc();
+      pcs.set(String(n++), pc);
+      return pc as unknown as RTCPeerConnection;
     },
-    createPeer: (): RTCPeerConnection => pc as unknown as RTCPeerConnection,
     getUserMedia: opts.denyMic === true
       ? (): Promise<MediaStream> => Promise.reject(new Error('NotAllowedError'))
       : (): Promise<MediaStream> =>
           Promise.resolve(new FakeStream([track]) as unknown as MediaStream),
   });
-  return { voice, pc, sent, track };
+  return { mesh, pcs, sent, track };
 }
 
-describe('VoiceChat — startup', () => {
-  it('adds the mic track and sends the kickoff offer', async () => {
-    const { voice, pc, sent, track } = rig();
-    await voice.start();
-    expect(pc.addedTracks).toContain(track);
-    expect(sent.some((m) => m.description?.type === 'offer')).toBe(true);
+describe('VoiceMesh — startup + peers', () => {
+  it('acquires the mic and opens a link per other peer, sending an offer', async () => {
+    const { mesh, pcs, sent, track } = rig(1);
+    await mesh.start();
+    mesh.setPeers([1, 2, 3]); // self + two peers
+    expect(pcs.size).toBe(2);
+    for (const pc of pcs.values()) expect(pc.addedTracks).toContain(track);
+    await flush(); // the offers go out in the async onnegotiationneeded
+    expect(sent.some((m) => m.to === 2)).toBe(true);
+    expect(sent.some((m) => m.to === 3)).toBe(true);
+  });
+
+  it('tears down a link when a peer leaves the roster', async () => {
+    const { mesh, pcs } = rig(1);
+    await mesh.start();
+    mesh.setPeers([1, 2, 3]);
+    const closedBefore = [...pcs.values()].filter((p) => p.closed).length;
+    expect(closedBefore).toBe(0);
+    mesh.setPeers([1, 2]); // peer 3 left
+    expect([...pcs.values()].filter((p) => p.closed).length).toBe(1);
   });
 
   it('falls back to listen-only when the mic is denied', async () => {
-    const { voice, pc } = rig({ denyMic: true });
-    await voice.start();
-    expect(pc.transceivers).toEqual(['recvonly']);
-    expect(voice.voiceState).toBe('mic-denied');
+    const { mesh, pcs } = rig(1, { denyMic: true });
+    await mesh.start();
+    expect(mesh.voiceState).toBe('mic-denied');
+    mesh.setPeers([1, 2]);
+    expect([...pcs.values()][0]!.transceivers).toEqual(['recvonly']);
   });
 });
 
-describe('VoiceChat — perfect negotiation', () => {
-  it('answers an incoming offer', async () => {
-    const { voice, pc, sent } = rig({ polite: true, denyMic: true });
-    await voice.start();
-    sent.length = 0;
-    await voice.onSignal(JSON.stringify({ description: { type: 'offer', sdp: 'remote' } }));
-    expect(pc.remoteDescriptions.map((d) => d.type)).toContain('offer');
-    expect(sent.some((m) => m.description?.type === 'answer')).toBe(true);
+describe('VoiceMesh — negotiation + routing', () => {
+  it('answers an incoming offer from a peer (creating the link on demand)', async () => {
+    const { mesh, pcs, sent } = rig(5, { denyMic: true });
+    await mesh.start();
+    await mesh.onSignal(2, JSON.stringify({ description: { type: 'offer', sdp: 'r' } }));
+    expect(pcs.size).toBe(1);
+    expect([...pcs.values()][0]!.remoteDescriptions.map((d) => d.type)).toContain('offer');
+    expect(sent.some((m) => m.to === 2 && m.data.includes('answer'))).toBe(true);
   });
 
-  it('IMPOLITE peer ignores a glared offer; POLITE peer accepts it', async () => {
-    const impolite = rig({ polite: false });
-    await impolite.voice.start(); // local offer pending -> signalingState not stable
-    await impolite.voice.onSignal(
-      JSON.stringify({ description: { type: 'offer', sdp: 'glare' } }),
-    );
-    expect(impolite.pc.remoteDescriptions).toHaveLength(0);
+  it('politeness goes by id — the higher id yields on glare', async () => {
+    // myId 2 vs peer 5: 2 < 5 so this side is IMPOLITE and ignores a glare offer.
+    const impolite = rig(2);
+    await impolite.mesh.start();
+    impolite.mesh.setPeers([2, 5]); // makes a local offer (signalingState != stable)
+    await impolite.mesh.onSignal(5, JSON.stringify({ description: { type: 'offer', sdp: 'g' } }));
+    expect([...impolite.pcs.values()][0]!.remoteDescriptions).toHaveLength(0);
 
-    const polite = rig({ polite: true });
-    await polite.voice.start();
-    await polite.voice.onSignal(JSON.stringify({ description: { type: 'offer', sdp: 'glare' } }));
-    expect(polite.pc.remoteDescriptions.map((d) => d.type)).toContain('offer');
+    // myId 9 vs peer 5: 9 > 5 so POLITE — accepts the glare offer.
+    const polite = rig(9);
+    await polite.mesh.start();
+    polite.mesh.setPeers([9, 5]);
+    await polite.mesh.onSignal(5, JSON.stringify({ description: { type: 'offer', sdp: 'g' } }));
+    expect([...polite.pcs.values()][0]!.remoteDescriptions.map((d) => d.type)).toContain('offer');
   });
 
-  it('routes remote candidates and drops malformed payloads', async () => {
-    const { voice, pc } = rig({ denyMic: true });
-    await voice.start();
-    await voice.onSignal(JSON.stringify({ candidate: { candidate: 'c1' } }));
-    expect(pc.candidates).toHaveLength(1);
-    await voice.onSignal('not json at all'); // must not throw
-    expect(pc.candidates).toHaveLength(1);
+  it('drops self-addressed and malformed signals without throwing', async () => {
+    const { mesh } = rig(1, { denyMic: true });
+    await mesh.start();
+    await expect(mesh.onSignal(1, 'whatever')).resolves.toBeUndefined(); // self
+    await expect(mesh.onSignal(2, 'not json')).resolves.toBeUndefined();
   });
 });
 
-describe('VoiceChat — mute + dispose', () => {
-  it('toggleMute flips the mic track', async () => {
-    const { voice, track } = rig();
-    await voice.start();
+describe('VoiceMesh — mute + dispose', () => {
+  it('toggleMute flips the shared mic track for every peer', async () => {
+    const { mesh, track } = rig(1);
+    await mesh.start();
+    mesh.setPeers([1, 2, 3]);
     expect(track.enabled).toBe(true);
-    expect(voice.toggleMute()).toBe(true);
+    expect(mesh.toggleMute()).toBe(true);
     expect(track.enabled).toBe(false);
-    expect(voice.toggleMute()).toBe(false);
+    expect(mesh.toggleMute()).toBe(false);
     expect(track.enabled).toBe(true);
   });
 
-  it('dispose stops the mic, closes the pc, and is idempotent', async () => {
-    const { voice, pc, track, sent } = rig();
-    await voice.start();
-    voice.dispose();
+  it('dispose closes every link, stops the mic, and is idempotent', async () => {
+    const { mesh, pcs, track } = rig(1);
+    await mesh.start();
+    mesh.setPeers([1, 2, 3]);
+    mesh.dispose();
+    expect([...pcs.values()].every((p) => p.closed)).toBe(true);
     expect(track.stopped).toBe(true);
-    expect(pc.closed).toBe(true);
-    expect(voice.voiceState).toBe('off');
-    const sentBefore = sent.length;
-    voice.dispose(); // second call: no throw, no new signals
-    await voice.onSignal(JSON.stringify({ candidate: { candidate: 'late' } }));
-    expect(sent.length).toBe(sentBefore);
+    expect(mesh.voiceState).toBe('off');
+    expect(() => mesh.dispose()).not.toThrow();
   });
 });

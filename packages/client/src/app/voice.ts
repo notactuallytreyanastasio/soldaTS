@@ -1,173 +1,94 @@
-// WebRTC voice chat between the two HUMANS of an online match (goal node 522).
+// WebRTC voice for the arena (goal node 522, mesh upgrade for the shared stage
+// goal node 551). Everyone on the stage — the two players AND every spectator —
+// can talk. Each participant keeps one RTCPeerConnection per OTHER participant
+// (a full mesh, fine for the handful of people a personal-site arena draws),
+// sharing one local mic across all of them.
 //
-// Transport: the match's existing WebSocket relays opaque `voice` protocol
-// frames (SDP descriptions + ICE candidates) VERBATIM to the opposite player
-// — see packages/server/src/match.ts. The audio itself never touches the game
-// server: it flows peer-to-peer over an RTCPeerConnection (STUN only, no
-// TURN — a symmetric-NAT pair stays silent rather than relaying through us).
-//
-// Negotiation is the WHATWG "perfect negotiation" pattern: the POLITE peer
-// (slot 2 / blue) rolls back on offer glare, the IMPOLITE peer (slot 1 / red)
-// ignores the collision. Mic policy is OPEN MIC once getUserMedia is granted,
-// with a click-to-mute pill (product decision with the user — not push-to-
-// talk). A player who denies the mic still HEARS the opponent (recvonly).
-
-export type VoiceState =
-  | 'connecting' // pc negotiating / ICE gathering
-  | 'live' // connected, mic transmitting
-  | 'muted' // connected, mic muted by the player
-  | 'mic-denied' // connected or connecting, but listen-only (no mic permission)
-  | 'failed' // ICE failed (likely symmetric NAT) — match plays on, silent
-  | 'off'; // disposed
-
-/** Signaling payload shape carried inside the `voice` frame's JSON string. */
-interface VoiceSignal {
-  description?: RTCSessionDescriptionInit;
-  candidate?: RTCIceCandidateInit | null;
-}
-
-export interface VoiceChatOptions {
-  /** Perfect-negotiation role: slot 2 (blue) is the polite peer. */
-  polite: boolean;
-  /** Send one opaque signaling string to the opposite player (via the WS). */
-  sendSignal: (data: string) => void;
-  /** Injection seam for tests; defaults to the real RTCPeerConnection. */
-  createPeer?: (config: RTCConfiguration) => RTCPeerConnection;
-  /** Injection seam for tests; defaults to navigator.mediaDevices. */
-  getUserMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream>;
-}
+// Signaling rides the match WebSocket as `voice` frames addressed by
+// participant id: a frame carries the TARGET peer on the way up and the SENDER
+// on the way back (the server rewrites it). Negotiation is the WHATWG "perfect
+// negotiation" pattern, with politeness decided by id comparison so each pair
+// agrees who yields on glare. Audio is peer-to-peer (STUN only); a symmetric-NAT
+// pair just stays silent. Deny the mic and you still HEAR everyone (recvonly).
 
 const ICE_CONFIG: RTCConfiguration = {
   iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
 };
 
-export class VoiceChat {
-  private readonly polite: boolean;
-  private readonly sendSignal: (data: string) => void;
-  private readonly createPeer: (config: RTCConfiguration) => RTCPeerConnection;
-  private readonly requestMic: (c: MediaStreamConstraints) => Promise<MediaStream>;
+export interface VoiceMeshOptions {
+  /** This client's stable participant id (from the welcome's yourId). */
+  myId: number;
+  /** Send one signaling payload to a specific peer (over the match WS). */
+  sendSignal: (peerId: number, data: string) => void;
+  /** Test seam; defaults to the real RTCPeerConnection. */
+  createPeer?: (config: RTCConfiguration) => RTCPeerConnection;
+  /** Test seam; defaults to navigator.mediaDevices.getUserMedia. */
+  getUserMedia?: (constraints: MediaStreamConstraints) => Promise<MediaStream>;
+}
 
-  private pc: RTCPeerConnection | null = null;
-  private mic: MediaStream | null = null;
-  private micTrack: MediaStreamTrack | null = null;
-  private remoteAudio: HTMLAudioElement | null = null;
-  private pill: HTMLDivElement | null = null;
-
-  private state: VoiceState = 'connecting';
-  private muted = false;
-  private disposed = false;
-
-  // Perfect-negotiation bookkeeping.
+/** One peer-to-peer link (perfect negotiation against a single other id). */
+class PeerLink {
+  readonly pc: RTCPeerConnection;
   private makingOffer = false;
   private ignoreOffer = false;
+  private remoteAudio: HTMLAudioElement | null = null;
+  private closed = false;
 
-  constructor(opts: VoiceChatOptions) {
-    this.polite = opts.polite;
-    this.sendSignal = opts.sendSignal;
-    this.createPeer = opts.createPeer ?? ((config): RTCPeerConnection => new RTCPeerConnection(config));
-    this.requestMic =
-      opts.getUserMedia ?? ((c): Promise<MediaStream> => navigator.mediaDevices.getUserMedia(c));
-  }
-
-  /** Current UI state (exposed for tests). */
-  get voiceState(): VoiceState {
-    return this.state;
-  }
-
-  /**
-   * Ask for the mic and start negotiating. Safe to call exactly once, right
-   * after the welcome (both players know their slot, the relay is live).
-   */
-  async start(): Promise<void> {
-    if (this.disposed) return;
-    this.mountPill();
-
-    const pc = this.createPeer(ICE_CONFIG);
+  constructor(
+    private readonly polite: boolean,
+    private readonly sendSignal: (data: string) => void,
+    createPeer: (c: RTCConfiguration) => RTCPeerConnection,
+    micTrack: MediaStreamTrack | null,
+    micStream: MediaStream | null,
+  ) {
+    const pc = createPeer(ICE_CONFIG);
     this.pc = pc;
 
     pc.onnegotiationneeded = async (): Promise<void> => {
       try {
         this.makingOffer = true;
         await pc.setLocalDescription();
-        if (pc.localDescription !== null) this.signal({ description: pc.localDescription });
+        if (pc.localDescription !== null) this.sendSignal(JSON.stringify({ description: pc.localDescription }));
       } catch (err) {
         console.warn('[voice] negotiation failed:', err);
       } finally {
         this.makingOffer = false;
       }
     };
-
     pc.onicecandidate = (e): void => {
-      this.signal({ candidate: e.candidate?.toJSON() ?? null });
+      this.sendSignal(JSON.stringify({ candidate: e.candidate?.toJSON() ?? null }));
     };
-
     pc.ontrack = (e): void => {
       const stream = e.streams[0] ?? new MediaStream([e.track]);
       this.playRemote(stream);
     };
 
-    pc.onconnectionstatechange = (): void => {
-      if (this.disposed) return;
-      switch (pc.connectionState) {
-        case 'connected':
-          this.setState(this.micTrack === null ? 'mic-denied' : this.muted ? 'muted' : 'live');
-          break;
-        case 'failed':
-          this.setState('failed');
-          break;
-        case 'connecting':
-        case 'new':
-          if (this.state !== 'mic-denied') this.setState('connecting');
-          break;
-        default:
-          break; // 'disconnected'/'closed' transients keep the last state
-      }
-    };
-
-    // Open mic (echoCancellation keeps the opponent's audio out of the
-    // uplink; both players are typically on speakers next to gunfire).
-    try {
-      this.mic = await this.requestMic({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-      const track = this.mic.getAudioTracks()[0] ?? null;
-      this.micTrack = track;
-      if (track !== null) {
-        pc.addTrack(track, this.mic);
-      } else {
-        pc.addTransceiver('audio', { direction: 'recvonly' });
-        this.setState('mic-denied');
-      }
-    } catch {
-      // Denied / no device: still negotiate a downlink so this player can
-      // HEAR the opponent — and the pill says why they can't talk.
+    if (micTrack !== null && micStream !== null) {
+      pc.addTrack(micTrack, micStream);
+    } else {
       pc.addTransceiver('audio', { direction: 'recvonly' });
-      this.setState('mic-denied');
     }
   }
 
-  /** Route one relayed signaling payload from the opposite player. */
   async onSignal(data: string): Promise<void> {
-    const pc = this.pc;
-    if (pc === null || this.disposed) return;
-    let msg: VoiceSignal;
+    if (this.closed) return;
+    let msg: { description?: RTCSessionDescriptionInit; candidate?: RTCIceCandidateInit | null };
     try {
-      msg = JSON.parse(data) as VoiceSignal;
+      msg = JSON.parse(data);
     } catch {
-      return; // malformed payloads are dropped, never fatal
+      return;
     }
-
+    const pc = this.pc;
     try {
       if (msg.description !== undefined) {
-        const offerCollision =
-          msg.description.type === 'offer' &&
-          (this.makingOffer || pc.signalingState !== 'stable');
-        this.ignoreOffer = !this.polite && offerCollision;
+        const collision =
+          msg.description.type === 'offer' && (this.makingOffer || pc.signalingState !== 'stable');
+        this.ignoreOffer = !this.polite && collision;
         if (this.ignoreOffer) return;
         await pc.setRemoteDescription(msg.description);
         if (msg.description.type === 'offer') {
           await pc.setLocalDescription();
-          if (pc.localDescription !== null) this.signal({ description: pc.localDescription });
+          if (pc.localDescription !== null) this.sendSignal(JSON.stringify({ description: pc.localDescription }));
         }
       } else if (msg.candidate !== undefined && msg.candidate !== null) {
         try {
@@ -181,61 +102,137 @@ export class VoiceChat {
     }
   }
 
-  /** Flip the mic. Returns the new muted flag (no-op without a mic). */
-  toggleMute(): boolean {
-    if (this.micTrack === null) return true;
-    this.muted = !this.muted;
-    this.micTrack.enabled = !this.muted;
-    if (this.state === 'live' || this.state === 'muted') {
-      this.setState(this.muted ? 'muted' : 'live');
-    }
-    return this.muted;
-  }
-
-  /** Tear everything down (match over / connection lost). Idempotent. */
-  dispose(): void {
-    if (this.disposed) return;
-    this.disposed = true;
-    this.setState('off');
-    for (const t of this.mic?.getTracks() ?? []) t.stop();
-    this.mic = null;
-    this.micTrack = null;
-    this.pc?.close();
-    this.pc = null;
-    this.remoteAudio?.remove();
-    this.remoteAudio = null;
-    this.pill?.remove();
-    this.pill = null;
-  }
-
-  // --- internals -------------------------------------------------------------
-
-  private signal(msg: VoiceSignal): void {
-    if (this.disposed) return;
-    this.sendSignal(JSON.stringify(msg));
-  }
-
   private playRemote(stream: MediaStream): void {
     if (this.remoteAudio === null) {
       const el = document.createElement('audio');
       el.autoplay = true;
-      // iOS: route through the media element inline, not fullscreen.
       el.setAttribute('playsinline', '');
       document.body.appendChild(el);
       this.remoteAudio = el;
     }
     this.remoteAudio.srcObject = stream;
-    // The brain-picker click earlier satisfies the autoplay gesture rule, but
-    // play() can still reject on some browsers — surface it, don't crash.
     void this.remoteAudio.play().catch((err) => console.warn('[voice] autoplay:', err));
   }
 
-  private setState(s: VoiceState): void {
-    this.state = s;
-    this.renderPill();
+  close(): void {
+    this.closed = true;
+    try {
+      this.pc.close();
+    } catch {
+      /* already closed */
+    }
+    this.remoteAudio?.remove();
+    this.remoteAudio = null;
+  }
+}
+
+export type VoiceMeshState = 'connecting' | 'live' | 'muted' | 'mic-denied' | 'off';
+
+export class VoiceMesh {
+  private readonly myId: number;
+  private readonly sendSignal: (peerId: number, data: string) => void;
+  private readonly createPeer: (c: RTCConfiguration) => RTCPeerConnection;
+  private readonly requestMic: (c: MediaStreamConstraints) => Promise<MediaStream>;
+
+  private readonly links = new Map<number, PeerLink>();
+  private mic: MediaStream | null = null;
+  private micTrack: MediaStreamTrack | null = null;
+  private started = false;
+  private muted = false;
+  private disposed = false;
+  private pill: HTMLDivElement | null = null;
+  private state: VoiceMeshState = 'connecting';
+
+  constructor(opts: VoiceMeshOptions) {
+    this.myId = opts.myId;
+    this.sendSignal = opts.sendSignal;
+    this.createPeer = opts.createPeer ?? ((c): RTCPeerConnection => new RTCPeerConnection(c));
+    this.requestMic =
+      opts.getUserMedia ?? ((c): Promise<MediaStream> => navigator.mediaDevices.getUserMedia(c));
   }
 
-  /** The clickable status pill, styled to match the team banner. */
+  get voiceState(): VoiceMeshState {
+    return this.state;
+  }
+
+  /** Acquire the mic once and mount the mute pill. Idempotent. */
+  async start(): Promise<void> {
+    if (this.started || this.disposed) return;
+    this.started = true;
+    this.mountPill();
+    try {
+      this.mic = await this.requestMic({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
+      this.micTrack = this.mic.getAudioTracks()[0] ?? null;
+      this.setState(this.micTrack === null ? 'mic-denied' : 'live');
+    } catch {
+      this.setState('mic-denied'); // listen-only
+    }
+  }
+
+  /**
+   * Reconcile the live peer set against the roster (a list of ALL participant
+   * ids including this one). New peers get a link; departed peers are dropped.
+   */
+  setPeers(ids: readonly number[]): void {
+    if (this.disposed) return;
+    const want = new Set(ids.filter((id) => id !== this.myId));
+    for (const id of want) {
+      if (!this.links.has(id)) this.links.set(id, this.makeLink(id));
+    }
+    for (const id of [...this.links.keys()]) {
+      if (!want.has(id)) {
+        this.links.get(id)?.close();
+        this.links.delete(id);
+      }
+    }
+  }
+
+  /** Route one relayed signaling payload from `fromId`. */
+  async onSignal(fromId: number, data: string): Promise<void> {
+    if (this.disposed || fromId === this.myId) return;
+    let link = this.links.get(fromId);
+    if (link === undefined) {
+      link = this.makeLink(fromId);
+      this.links.set(fromId, link);
+    }
+    await link.onSignal(data);
+  }
+
+  toggleMute(): boolean {
+    if (this.micTrack === null) return true;
+    this.muted = !this.muted;
+    this.micTrack.enabled = !this.muted;
+    this.setState(this.muted ? 'muted' : 'live');
+    return this.muted;
+  }
+
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+    this.state = 'off';
+    for (const link of this.links.values()) link.close();
+    this.links.clear();
+    for (const t of this.mic?.getTracks() ?? []) t.stop();
+    this.mic = null;
+    this.micTrack = null;
+    this.pill?.remove();
+    this.pill = null;
+  }
+
+  private makeLink(peerId: number): PeerLink {
+    // Lower id is impolite (initiates, ignores glare); higher id is polite.
+    const polite = this.myId > peerId;
+    return new PeerLink(
+      polite,
+      (data) => this.sendSignal(peerId, data),
+      this.createPeer,
+      this.micTrack,
+      this.mic,
+    );
+  }
+
   private mountPill(): void {
     if (this.pill !== null || typeof document === 'undefined') return;
     const el = document.createElement('div');
@@ -243,12 +240,12 @@ export class VoiceChat {
       'position:fixed',
       'bottom:12px',
       'left:12px',
-      'z-index:30',
+      'z-index:40',
       'font:12px ui-monospace,Menlo,monospace',
-      'letter-spacing:0.14em',
-      'background:rgba(10,12,16,0.65)',
+      'letter-spacing:0.12em',
+      'background:rgba(10,12,16,0.72)',
       'color:#9aa3b2',
-      'padding:4px 10px',
+      'padding:5px 11px',
       'border-radius:6px',
       'cursor:pointer',
       'user-select:none',
@@ -259,6 +256,11 @@ export class VoiceChat {
     this.renderPill();
   }
 
+  private setState(s: VoiceMeshState): void {
+    this.state = s;
+    this.renderPill();
+  }
+
   private renderPill(): void {
     const el = this.pill;
     if (el === null) return;
@@ -266,15 +268,9 @@ export class VoiceChat {
       connecting: ['VOICE: CONNECTING…', '#9aa3b2'],
       live: ['🎤 VOICE LIVE — click to mute', '#9be07f'],
       muted: ['🔇 MUTED — click to talk', '#ffb347'],
-      'mic-denied': ['VOICE: MIC BLOCKED — listen-only', '#ffb347'],
-      failed: ['VOICE: UNAVAILABLE (NAT)', '#9aa3b2'],
+      'mic-denied': ['VOICE: MIC OFF — listen-only', '#ffb347'],
       off: ['', ''],
     }[this.state] as [string, string];
-    if (this.state === 'off') {
-      el.remove();
-      this.pill = null;
-      return;
-    }
     el.textContent = text;
     el.style.color = color;
   }
