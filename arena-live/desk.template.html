@@ -996,11 +996,14 @@ const GUNS = {
   AK74: { icon: '🔫', name: 'AK-74', note: 'the shared rifle' },
   SPAS12: { icon: '💥', name: 'SPAS-12', note: 'wildcard shotgun' },
   BARRETT: { icon: '🎯', name: 'Barrett', note: 'wildcard one-shot' },
+  ROCKET: { icon: '🚀', name: 'M79 Rocket', note: 'wildcard launcher' },
+  RICOCHET: { icon: '🟡', name: 'Ricochet', note: 'wildcard bank-shot' },
+  CHAINSAW: { icon: '🪚', name: 'Chainsaw', note: 'wildcard melee' },
 };
 function gunMeterHtml(d) {
   const g = d.gunBoards;
   if (!g) return '<div class="chartnote">no kill tape yet</div>';
-  const order = ['AK74', 'SPAS12', 'BARRETT'].filter((w) => g[w]);
+  const order = ['AK74', 'SPAS12', 'BARRETT', 'ROCKET', 'RICOCHET', 'CHAINSAW'].filter((w) => g[w]);
   if (!order.length) return '<div class="chartnote">no kill tape yet</div>';
   const total = order.reduce((n, w) => n + g[w].total, 0) || 1;
   const hour = (d.desk && d.desk.gunHour) || { tally: {}, top: null };
