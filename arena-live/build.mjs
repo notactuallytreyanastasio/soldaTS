@@ -363,6 +363,9 @@ function loadDataset(name, cardByEngine) {
     roundSecs,
     arenaSeed,
     cli: manifest.cli ?? null,
+    // Resolved gameplay variant from the manifest; pre-variant manifests
+    // were all stock rules. Drives the ERA stat gate (see ERA below).
+    variant: manifest.variant?.name ?? 'baseline',
     sides: [sideA, sideB],
     standings: summary?.standings ?? null,
     bots: summary?.bots ?? null,
@@ -423,6 +426,23 @@ function tsFromDirName(name) {
   if (!m) return null;
   return `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.000Z`;
 }
+
+// --- THE ERA GATE ----------------------------------------------------------
+// THE SIDEARM ERA (goal 583): the stats RESTARTED under the new rules.
+// Everything that prices a coach — the Big Board, rank history, analytics,
+// gun boards, the brain-cam, the desk's gun meter — is computed ONLY from
+// fights whose manifest records the era's variant. The full archive stays:
+// the fight feed, belt lineage, and corpus stats keep every dataset (old
+// replays remain watchable; the training corpus is era-agnostic), and the
+// pre-era record book lives in fights/SEASONS.md + history.jsonl.
+// Manifests record the RESOLVED variant, so "counts toward the board" ===
+// "was played under the current rules" — deterministic, non-destructive,
+// and the server restarts its own board the moment it rebuilds.
+const ERA = {
+  variant: 'sidearm',
+  label: 'THE SIDEARM ERA',
+  blurb: 'AK demoted to a pistol · the five wildcard guns headline · stats restarted at the era turn',
+};
 
 // --- recency decay -------------------------------------------------------
 // Kills stop compounding forever: every fight's contribution to the ranking
@@ -767,7 +787,9 @@ function gunOfTheHour(fights) {
   return { tally, top: top ? { weapon: top[0], kills: top[1] } : null };
 }
 
-function computeDesk(fights, doctrines, ladderMd) {
+/** `eraFights` feeds the stats (gun meter); `allFights` feeds corpusStats —
+ *  the training corpus is era-agnostic (every replay row still trains). */
+function computeDesk(eraFights, allFights, doctrines, ladderMd) {
   const seasonState = readJson(SEASON_STATE); // {season, startedAt, endsAt}
   let league = null;
   try {
@@ -787,10 +809,10 @@ function computeDesk(fights, doctrines, ladderMd) {
   return {
     seasonState,
     lastSeason: lastSeasonInfo(ladderMd),
-    corpus: corpusStats(fights),
+    corpus: corpusStats(allFights),
     league,
     evolveShips: evolveShips(),
-    gunHour: gunOfTheHour(fights),
+    gunHour: gunOfTheHour(eraFights),
   };
 }
 
@@ -1127,10 +1149,15 @@ export function build() {
 
   const fights = loadDatasets(cardByEngine);
 
+  // THE ERA GATE (see ERA above): the stats restart at the era turn. Only
+  // fights played under the current rules price coaches; the feed and the
+  // record books keep the whole archive.
+  const eraFights = fights.filter((f) => f.variant === ERA.variant);
+
   // Board + rank history: never let a history problem kill the build.
   let board = [], rankHistory = [];
   try {
-    const computed = computeBoard(fights);
+    const computed = computeBoard(eraFights);
     board = computed.board;
     rankHistory = syncHistory(computed.canonical);
     decorateBoard(board, rankHistory);
@@ -1143,7 +1170,7 @@ export function build() {
   // Analytics desk + belt lineage: nice-to-haves that must NEVER kill a build.
   let analytics = null;
   try {
-    analytics = computeAnalytics(fights, board);
+    analytics = computeAnalytics(eraFights, board); // era stats only
   } catch (e) {
     warn(`analytics failed: ${e.message}`);
   }
@@ -1164,7 +1191,7 @@ export function build() {
     let totalKills = 0;
     engineGuns = {};
     const eg = (engine, w) => ((engineGuns[engine] ??= {})[w] ??= { k: 0, d: 0 });
-    for (const f of fights) {
+    for (const f of eraFights) { // era stats only
       for (const m of f.matches) {
         if (!m.timeline) continue;
         for (const k of m.timeline) {
@@ -1202,7 +1229,7 @@ export function build() {
   // grinder progress, weight-ship events — never allowed to kill a build.
   let desk = null;
   try {
-    desk = computeDesk(fights, doctrines, ladderMarkdown);
+    desk = computeDesk(eraFights, fights, doctrines, ladderMarkdown);
   } catch (e) {
     warn(`desk data failed: ${e.message}`);
   }
@@ -1211,7 +1238,7 @@ export function build() {
   // fights, gun splits, weights provenance + eval ledger. Never fatal.
   let brains = null;
   try {
-    brains = computeBrains(fights, doctrines, cards, engineGuns);
+    brains = computeBrains(eraFights, doctrines, cards, engineGuns); // era stats only
   } catch (e) {
     warn(`brain-cam data failed: ${e.message}`);
   }
@@ -1241,6 +1268,9 @@ export function build() {
     rankHistory,
     analytics,
     beltLineage,
+    // THE ERA GATE: what the stats above were computed from. The page shows
+    // the banner; eraFights/totalFights make the gate's effect auditable.
+    era: { ...ERA, eraFights: eraFights.length, totalFights: fights.length },
     halfLifeHours: HALF_LIFE_HOURS,
     crucibles: loadCrucibles(),
     commissioner: loadCommissioner(),
@@ -1327,6 +1357,7 @@ export function build() {
       generatedAt: data.generatedAt,
       live: data.live,
       ladderMarkdown,
+      era: data.era, // the stat gate — the desk shows the era banner
       board,
       rankHistory,
       h2h: analytics ? analytics.h2h : null,

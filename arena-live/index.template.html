@@ -845,7 +845,11 @@ function boardHtml(d) {
     ? `<details class="fold"><summary>▸ one-shot configs (${oneShots.length}) — fewer than ${MIN_SERIES} series fought, ranks kept but folded</summary>` +
       `<table class="board">${BOARD_HEAD}${osBody}</table></details>`
     : '';
+  const eraNote = d.era
+    ? `<div class="dim" style="font-size:11px;margin:-4px 0 8px">🔫 ${esc(d.era.label)} — ${esc(d.era.blurb)} · only <b>${esc(d.era.variant)}</b>-rules fights price the board (${d.era.eraFights} of ${d.era.totalFights} on disk) · the old book closed in fights/SEASONS.md</div>`
+    : '';
   return `<div class="panel bigboard"><h2>📈 The Big Board — coach configs by decayed score</h2>
+    ${eraNote}
     <table class="board">${BOARD_HEAD}${mainBody}</table>
     ${fold}
     <div class="dim" style="font-size:10px;margin-top:6px">one row per coach+engine+settings config · SCORE = recency-decayed W−L (every series fades by half each ${hl}h — idle rows SINK, kills don't compound forever) · ties broken by decayed K/D · FORM = last 5 series newest first (<span class="up">●</span> win <span class="down">○</span> loss <span class="flat">◐</span> draw) · REC/VOL = raw career totals · main table shows configs with ≥${MIN_SERIES} series of real history · click a row to open the latest replay</div></div>`;
