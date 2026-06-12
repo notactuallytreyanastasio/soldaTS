@@ -76,6 +76,9 @@
   .cred { color: var(--red); } .cblue { color: var(--blue); }
   .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
   .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  /* engine names are doors into the BRAIN-CAM (brain.html?engine=…) */
+  .brainlink { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .brainlink:hover { color: var(--gold); text-decoration: none; border-bottom-color: var(--gold); }
 
   /* ---- masthead ------------------------------------------------------------ */
   .masthead { background: var(--head-bg); border-bottom: 3px double var(--rule); padding: 14px 22px 10px; }
@@ -289,7 +292,7 @@
 <body>
 <header class="masthead">
   <div class="ears">
-    <span class="ear"><a href="index.html" title="the stock-ticker view">📈 THE FLOOR</a></span>
+    <span class="ear"><a href="index.html" title="the stock-ticker view">📈 THE FLOOR</a> <a href="brain.html" title="BRAIN-CAM — one brain, watched live">🧠 BRAIN-CAM</a></span>
     <div class="mast-title">The <span class="blade">Skyreach</span> Desk</div>
     <span class="ear"><button id="themeBtn" title="toggle light/dark">☀ / 🌙</button></span>
   </div>
@@ -368,6 +371,12 @@ function hashStr(s) {
   return h >>> 0;
 }
 const pickT = (arr, id) => arr[hashStr(id) % arr.length];
+// Every engine name is a door into the BRAIN-CAM — the per-brain live page.
+// The click delegation ignores anchors, so these links can sit inside
+// data-watch zones (rivalry cards, pyramid cells) without stealing the click.
+const brainLink = (e, txt) => e
+  ? `<a class="brainlink" href="brain.html?engine=${attr(encodeURIComponent(e))}" title="BRAIN-CAM: ${attr(e)}">${esc(txt ?? e)}</a>`
+  : '';
 
 // ---- theme (shared localStorage key with the ticker) --------------------------
 function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
@@ -707,21 +716,40 @@ function drawClimb(d) {
         if (best) openUrl(watchOf(d, best.trigger));
       });
   }
-  // weight-ship pins (evolve gates; ts = checkpoint mtime)
+  // weight-ship pins (evolve gates) — CLUSTERED: the autopilot runs gates
+  // every few minutes now (87+ and counting), so per-gate lines/labels
+  // became unreadable smear. One pin per x-proximity burst, count labels,
+  // gate-by-gate detail in the tooltip.
   const ships = ((d.desk && d.desk.evolveShips) || []).filter((e) => e.ts);
   const [t0, t1] = x.domain();
+  const inWin = ships.filter((e) => { const t = new Date(e.ts); return t >= t0 && t <= t1; })
+    .sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  const clusters = [];
+  const PIN_PX = 26; // bursts closer than this merge into one pin
+  for (const e of inWin) {
+    const px = x(new Date(e.ts));
+    const last = clusters[clusters.length - 1];
+    if (last && px - last.px1 < PIN_PX) { last.gates.push(e); last.px1 = px; }
+    else clusters.push({ px0: px, px1: px, gates: [e] });
+  }
   let pin = 0;
-  for (const e of ships) {
-    const t = new Date(e.ts);
-    if (t < t0 || t > t1) continue;
-    const col = e.shipped ? P.up : P.down;
-    svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', m.t - 4).attr('y2', H - m.b)
-      .attr('stroke', col).attr('stroke-opacity', 0.45).attr('stroke-dasharray', '3,4');
-    svg.append('text').attr('x', x(t) + 3).attr('y', m.t + 10 + (pin % 3) * 11)
-      .attr('fill', col).attr('font-size', 9)
-      .text(`g${e.gen}${e.shipped ? ' ⚡shipped' : ' held'}`)
+  for (const c of clusters) {
+    const shipped = c.gates.filter((g) => g.shipped).length;
+    const held = c.gates.length - shipped;
+    const col = shipped > 0 ? P.up : P.down;
+    const cx = (c.px0 + c.px1) / 2;
+    svg.append('line').attr('x1', cx).attr('x2', cx).attr('y1', m.t - 4).attr('y2', H - m.b)
+      .attr('stroke', col).attr('stroke-opacity', 0.35).attr('stroke-dasharray', '3,4');
+    const label = c.gates.length === 1
+      ? `g${c.gates[0].gen}${c.gates[0].shipped ? ' ⚡' : ' ·held'}`
+      : `${shipped ? '⚡' + shipped : ''}${shipped && held ? '/' : ''}${held ? '·' + held : ''} ×${c.gates.length}`;
+    const lines = c.gates.slice(-12).map((g) =>
+      `g${g.gen}: ${g.shipped ? 'SHIPPED' : 'held'} — ${g.gate ?? ''} (${ago(g.ts)})`);
+    if (c.gates.length > 12) lines.unshift(`… ${c.gates.length - 12} earlier gates`);
+    svg.append('text').attr('x', cx + 3).attr('y', m.t + 10 + (pin % 2) * 11)
+      .attr('fill', col).attr('font-size', 9).text(label)
       .style('cursor', 'default')
-      .on('mousemove', (ev) => showTip(ev, `evolve gate — gen ${e.gen}\n${e.gate}\n${e.shipped ? 'weights SHIPPED to the neural engine' : 'gate failed — weights held back'}\n${ago(e.ts)}`))
+      .on('mousemove', (ev) => showTip(ev, `evolve gates ×${c.gates.length} (⚡${shipped} shipped, ${held} held)\n` + lines.join('\n')))
       .on('mouseleave', hideTip);
     pin += 1;
   }
@@ -802,7 +830,7 @@ function pyramidHtml(d) {
     const verdict = split ? 'SPLIT' : won ? 'TOOK THE SERIES' : 'DENIED';
     const vcls = split ? 'flat' : won ? 'up' : 'down';
     return `<div class="pyr-cell${won ? ' bout-win' : split ? '' : ' bout-loss'}" data-watch="${attr(watchOf(d, c.dataset))}">
-      <div class="pc-who">${esc(c.challenger.coach)} <span class="pc-sub">${esc(c.challenger.engine)}</span></div>
+      <div class="pc-who">${esc(c.challenger.coach)} <span class="pc-sub">${brainLink(c.challenger.engine)}</span></div>
       <div class="pc-sub">vs ${esc(c.champion.coach)} · <b class="${vcls}">${esc(claimScore(c))} ${verdict}</b> · ${esc(ago(c.ts))}</div>
     </div>`;
   }).join('');
@@ -814,7 +842,7 @@ function pyramidHtml(d) {
       ? ` · ${r.streak.n}${r.streak.res === 'w' ? 'W' : r.streak.res === 'l' ? 'L' : 'D'} run` : '';
     return `<div class="pyr-cell${learned ? ' pyr-learned' : ''}" data-watch="${attr(r.lastUrl)}" title="open latest replay">
       ${r.rank === 1 ? '<span class="pc-badge">TOP OF THE BOARD</span>' : ''}
-      <div class="pc-who">${esc(r.coach)}${learned ? ' 🧠' : ''} <span class="pc-sub">${esc(r.engine)}</span></div>
+      <div class="pc-who">${esc(r.coach)}${learned ? ' 🧠' : ''} <span class="pc-sub">${brainLink(r.engine)}</span></div>
       <div class="pc-sub"><span class="pc-score">${Number(r.score ?? 0).toFixed(2)}</span> · #${r.rank} · ${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''}${sk}</div>
     </div>`;
   };
@@ -889,16 +917,19 @@ function rivalriesHtml(d) {
   const U = (s) => String(s).toUpperCase();
   return picks.map((p) => {
     const id = `rv:${p.A}:${p.B}`;
+    // names are pre-escaped BRAIN-CAM links; the surrounding copy is static,
+    // so the title is injected without a second esc() pass.
+    const A = brainLink(p.A, U(p.A)), B = brainLink(p.B, U(p.B));
     const title = p.tag === 'even'
-      ? pickT([`${U(p.A)} vs ${U(p.B)}: DEAD EVEN`, `NOBODY BLINKS: ${U(p.A)} / ${U(p.B)}`, `COIN-FLIP SERIES: ${U(p.A)} × ${U(p.B)}`], id)
+      ? pickT([`${A} vs ${B}: DEAD EVEN`, `NOBODY BLINKS: ${A} / ${B}`, `COIN-FLIP SERIES: ${A} × ${B}`], id)
       : p.margin >= 0.7
-        ? pickT([`${U(p.A)} OWNS ${U(p.B)}`, `${U(p.B)} CANNOT SOLVE ${U(p.A)}`, `TOTAL OWNERSHIP: ${U(p.A)} OVER ${U(p.B)}`], id)
-        : pickT([`${U(p.A)} HAS ${U(p.B)}'S NUMBER`, `${U(p.A)} KEEPS BEATING ${U(p.B)}`, `EDGE: ${U(p.A)} OVER ${U(p.B)}`], id);
+        ? pickT([`${A} OWNS ${B}`, `${B} CANNOT SOLVE ${A}`, `TOTAL OWNERSHIP: ${A} OVER ${B}`], id)
+        : pickT([`${A} HAS ${B}'S NUMBER`, `${A} KEEPS BEATING ${B}`, `EDGE: ${A} OVER ${B}`], id);
     const meet = latestMeeting(d, p.A, p.B);
     const wp = (p.w / p.n * 100).toFixed(0), lp = (p.l / p.n * 100).toFixed(0), dp = (p.dr / p.n * 100).toFixed(0);
     return `<div class="rivcard"${meet && meet.url ? ` data-watch="${attr(meet.url)}"` : ''}>
       <span class="rivtag ${p.tag === 'even' ? 'even' : 'hot'}">${p.tag === 'even' ? 'CONTESTED' : 'LOPSIDED'}</span>
-      <div class="rt">${esc(title)}</div>
+      <div class="rt">${title}</div>
       <div class="rr num"><span class="cred">${p.w}</span>–<span class="cblue">${p.l}</span>${p.dr ? `–${p.dr}d` : ''} <span class="dim">over ${p.n} series</span></div>
       <div class="rivbar"><span class="w" style="flex:0 0 ${wp}%"></span><span class="d0" style="flex:0 0 ${dp}%"></span><span class="l" style="flex:0 0 ${lp}%"></span></div>
       <div class="rm">${meet ? `▶ latest meeting ${esc(ago(meet.at))} — click to watch` : 'no tape on file'}</div>
@@ -917,9 +948,9 @@ function tonightHtml(d) {
       `<span class="mchip">M${m.n} <b class="${m.winnerTeam === 1 ? 'cred' : m.winnerTeam === 2 ? 'cblue' : 'flat'}">${m.winnerTeam ? esc(m.winnerCoach ?? '') : 'DRAW'}</b> ${m.redKills}–${m.blueKills}</span>`).join('');
     liveBox = `<div class="livebox${running ? ' on' : ''}" data-watch="${attr(lv.watchUrl ?? '')}">
       <div class="tag">${running ? '<span class="reddot">●</span> <span class="down">LIVE NOW</span>' : '<span class="dim">LATEST SERIES — FINAL</span>'} <span class="dim">· arena #${esc(lv.arenaSeed)}</span></div>
-      <div class="names"><span class="who cred">${esc(lv.red.coach)}</span><span class="eng">${esc(lv.red.engine)}</span>
+      <div class="names"><span class="who cred">${esc(lv.red.coach)}</span><span class="eng">${brainLink(lv.red.engine)}</span>
         <span class="score">${s.red}–${s.blue}</span>
-        <span class="who cblue">${esc(lv.blue.coach)}</span><span class="eng">${esc(lv.blue.engine)}</span></div>
+        <span class="who cblue">${esc(lv.blue.coach)}</span><span class="eng">${brainLink(lv.blue.engine)}</span></div>
       <div class="mchips">${chips || '<span class="dim" style="font:11px var(--mono)">first match under way…</span>'}</div>
     </div>`;
   } else {
