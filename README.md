@@ -1236,11 +1236,14 @@ at a genuine two-engine team fight (orca versus cuadrilla, the belt rivalry)
 where the teams are real and the chevrons above each soldier's head keep red and
 blue legible even zoomed out.
 
-What's being built now is the natural next step: one shared stage instead of
-invisible parallel duels. Two play, everyone else watches and chats — text and
+And then the natural next step shipped: one shared stage instead of invisible
+parallel duels. Two play, everyone else watches and chats — text and group
 voice — from a queue, and when a seat opens the next person in line cycles
-straight in without a reload. The server and protocol for that are done and
-tested; the spectator's-eye view is the last piece. (Goal node 551.)
+straight in without a reload. The server runs the match and fans its snapshots
+out to spectators; the client became a small router that re-boots its view on
+every welcome, so a watcher who gets promoted just slides into the empty seat.
+Voice went from the 1v1 pair to a full mesh keyed by participant id. (Goal node
+551.)
 
 ## Closing
 
