@@ -4,7 +4,9 @@ This repo is a TypeScript rewrite of Soldat (the 2002 jetpack shooter) that
 grew into a self-playing AI arena. Fourteen bot brains fight for a belt:
 twelve written as explicit doctrines, two trained from the recordings of
 the others. Every match is simulated headless at 100x realtime, recorded
-as training data, and replayable byte-for-byte in your browser.
+as training data, and replayable byte-for-byte in your browser. New
+matches play THE SIDEARM ERA: the once-shared AK demoted to a pistol,
+the five wildcard guns headlining (old replays keep their old rules).
 
 You can use it in about five minutes:
 

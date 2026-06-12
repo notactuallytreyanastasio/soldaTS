@@ -53,6 +53,20 @@ export const VARIANTS: readonly Variant[] = [
     blurb: 'laser accuracy, 12-round mags, long reloads',
     tuning: { spreadBase: 0.005, spreadHeatPerShot: 0.004, magSize: 12, reloadTicks: 150, fireInterval: 9 },
   },
+  // THE SIDEARM ERA (goal node 573): the AK re-cast as a PISTOL — slow
+  // (3 shots/s), small 12-round mag, crisp (tighter base spread), with a
+  // quick 70-tick reload. An honest sidearm: accurate, low DPS, never the
+  // star. The point is to make the five wildcard guns carry the match (see
+  // WILDCARD_CHANCE_PCT, raised in step). This is the DEFAULT variant for
+  // all NEW fights (arena CLI, ?play, online); 'baseline' stays byte-frozen
+  // because every recorded watch URL without ?variant must keep resolving
+  // to it. Appended LAST so the tournament tile rotation (g % length over
+  // games 0..3) keeps its original four metas.
+  {
+    name: 'sidearm',
+    blurb: 'the AK demoted to a pistol — slow, crisp, quick reload; wildcards are the stars',
+    tuning: { fireInterval: 20, magSize: 12, reloadTicks: 70, spreadBase: 0.012 },
+  },
 ];
 
 /** Resolve a variant by name; unknown/undefined → baseline (VARIANTS[0]). */

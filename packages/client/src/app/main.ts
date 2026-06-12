@@ -246,8 +246,15 @@ export function parseSpectate(
   // chance era carries no param and must keep replaying byte-identically.
   const wildcardRaw = params.get('wildcard') ?? undefined;
   if (params.has(PLAY_QUERY_PARAM)) {
+    // THE SIDEARM ERA: fresh play sessions (the menu, bare ?play links)
+    // default to the sidearm variant — the AK is a pistol, the wildcards
+    // are the stars. ?variant=baseline opts back into the frozen stock
+    // rules. SPECTATE below keeps `variant` raw (undefined → baseline):
+    // every recorded watch URL without ?variant predates the era and must
+    // keep replaying byte-identically.
     return {
-      spectate: false, botCount: 3, aiEngine, seed, teams, variant, roundSecs,
+      spectate: false, botCount: 3, aiEngine, seed, teams, roundSecs,
+      variant: variant ?? 'sidearm',
       tweakA, tweakB, coachA, coachB, arenaSeed,
       wildcard: resolveWildcard(wildcardRaw ?? 'chance', seed),
     };

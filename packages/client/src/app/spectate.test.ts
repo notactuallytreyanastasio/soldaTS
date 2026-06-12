@@ -103,9 +103,17 @@ describe('Game spectate mode', () => {
 });
 
 describe('parseSpectate (variant + round params)', () => {
-  it('parses ?variant by name, undefined when absent', () => {
+  it('parses ?variant by name, undefined when absent (spectate = pre-era replay compat)', () => {
     expect(parseSpectate('?spectate&variant=thin-air').variant).toBe('thin-air');
+    // SPECTATE without ?variant stays undefined → baseline: every watch URL
+    // recorded before the sidearm era carries no param and must keep
+    // replaying byte-identically.
     expect(parseSpectate('?spectate').variant).toBeUndefined();
+  });
+
+  it('PLAY without ?variant defaults to the sidearm era; explicit names win', () => {
+    expect(parseSpectate('?play').variant).toBe('sidearm');
+    expect(parseSpectate('?play&variant=baseline').variant).toBe('baseline');
   });
 
   it('parses ?round=SECS with a 600 s default and garbage tolerance', () => {

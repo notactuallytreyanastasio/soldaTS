@@ -23,7 +23,8 @@
 //     server truth carried by snapshots, heartbeats, and kill chats.
 //   * ENGINE CHOICES ride the wire twice: the hello's v2 `engine` field
 //     carries yours up, and the welcome's mapName recipe
-//     (`arena=A&seed=S&e1=..&e2=..`) carries both back down, so the banner
+//     (`arena=A&seed=S&e1=..&e2=..&variant=..`) carries both back down (plus
+//     the sidearm-era gameplay variant), so the banner
 //     and kill feed can say 'YOU + WOLF vs STRANGER + HYDRA'.
 //
 // GAPS that REMAIN (shipped loudly, not silently): ammo/reload state rides
@@ -69,6 +70,7 @@ import { START_HEALTH } from '../ui/helpers';
 import { applyKill, type KillBoard } from './director';
 import { generateArena } from './arena';
 import { DEFAULT_TUNING } from './game';
+import { resolveVariant } from './tournament';
 import { VoiceMesh } from './voice';
 
 const TICK_HZ = 60;
@@ -134,26 +136,32 @@ export function controlToInputFrame(clientTick: number, c: Control): InputFrame 
 export const ONLINE_SPRITES = [1, 2, 3, 4, 5, 6] as const;
 
 /**
- * Parse the welcome's mapName recipe (`arena=<A>&seed=<S>&e1=<id>&e2=<id>`).
+ * Parse the welcome's mapName recipe
+ * (`arena=<A>&seed=<S>&e1=<id>&e2=<id>&variant=<name>`).
  * e1/e2 are the sanitised per-team engine ids (red/blue); pre-team servers
- * (no e1/e2) read as 'classic' so nothing renders blank.
+ * (no e1/e2) read as 'classic' so nothing renders blank. `variant` is the
+ * gameplay variant the server sims under (sidearm era); pre-era servers send
+ * none, which reads as 'baseline' — exactly the rules they run.
  */
 export function parseMatchRecipe(mapName: string): {
   arenaSeed: number;
   seed: number;
   e1: string;
   e2: string;
+  variant: string;
 } {
   const p = new URLSearchParams(mapName);
   const arenaSeed = parseInt(p.get('arena') ?? '', 10);
   const seed = parseInt(p.get('seed') ?? '', 10);
   const e1 = p.get('e1') ?? '';
   const e2 = p.get('e2') ?? '';
+  const variant = p.get('variant') ?? '';
   return {
     arenaSeed: Number.isFinite(arenaSeed) ? arenaSeed : 1,
     seed: Number.isFinite(seed) ? seed : 1,
     e1: e1 !== '' ? e1 : 'classic',
     e2: e2 !== '' ? e2 : 'classic',
+    variant: variant !== '' ? variant : 'baseline',
   };
 }
 
@@ -574,11 +582,16 @@ interface View {
   e2: string;
   arenaSeed: number;
   seed: number;
+  /** Cosmetic-fire cadence in ticks — the recipe variant's AK fireInterval
+   *  (sidearm era: 20), so client-side muzzle flashes match the server sim. */
+  cosmeticFireInterval: number;
   destroy(): void;
 }
 
 async function buildView(recipe: string): Promise<View> {
-  const { arenaSeed, seed, e1, e2 } = parseMatchRecipe(recipe);
+  const { arenaSeed, seed, e1, e2, variant } = parseMatchRecipe(recipe);
+  const cosmeticFireInterval =
+    resolveVariant(variant).tuning.fireInterval ?? COSMETIC_FIRE_INTERVAL;
   const mount = document.getElementById('app');
   if (mount === null) throw new Error('#app element not found');
   const renderer = new MapRenderer({ container: mount });
@@ -637,6 +650,7 @@ async function buildView(recipe: string): Promise<View> {
     e2,
     arenaSeed,
     seed,
+    cosmeticFireInterval,
     destroy(): void {
       try {
         renderer.destroy();
@@ -721,7 +735,7 @@ async function bootPlayer(
       gun,
     });
     s.direction = ax >= 0 ? 1 : -1;
-    nextCosmeticFire[num] = clientTick + COSMETIC_FIRE_INTERVAL;
+    nextCosmeticFire[num] = clientTick + view.cosmeticFireInterval;
   };
 
   const jetRegen = (num: number): void => {
@@ -1009,7 +1023,7 @@ async function bootSpectator(recipe: string): Promise<Session> {
       gun,
     });
     sp.direction = ax >= 0 ? 1 : -1;
-    nextCosmeticFire[num] = specTick + COSMETIC_FIRE_INTERVAL;
+    nextCosmeticFire[num] = specTick + view.cosmeticFireInterval;
   };
 
   let specTick = 0;

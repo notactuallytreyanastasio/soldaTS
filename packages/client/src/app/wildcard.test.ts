@@ -16,6 +16,7 @@ import { describe, it, expect } from 'vitest';
 import { BulletStyle, createWorld, initSimWorld } from '@soldat/sim';
 import { Game, DEFAULT_TUNING, SPAS_PELLETS } from './game';
 import {
+  WILDCARD_CHANCE_PCT,
   WILDCARD_WEAPONS,
   rollWildcard,
   pickWildcardWeapon,
@@ -467,7 +468,7 @@ describe('rifle wildcard distribution (one Barrett carrier per team)', () => {
   });
 });
 
-describe("'chance' mode with five wildcards (35% armed, then an even weapon pick)", () => {
+describe(`'chance' mode with five wildcards (${WILDCARD_CHANCE_PCT}% armed, then a weighted weapon pick)`, () => {
   it('resolves armed seeds to pickWildcardWeapon and unarmed seeds to stock', () => {
     for (let seed = 1; seed <= 100; seed++) {
       const resolved = resolveWildcard('chance', seed);
@@ -479,15 +480,21 @@ describe("'chance' mode with five wildcards (35% armed, then an even weapon pick
     }
   });
 
-  it('ARMING decisions for old seeds are unchanged (the shotgun-era hash, pinned inline)', () => {
-    // The exact pre-rifle rollWildcard formula, reproduced literally: if this
-    // fails, recorded chance-era arming decisions have drifted. (The weapon
-    // PICK for an armed seed MAY differ from the 50/50 era — by design; the
-    // recorded artifacts carry the resolved weapon, never the mode.)
-    const legacyRoll = (seed: number): boolean =>
-      (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < 35;
+  it('the ARMING hash for old seeds is unchanged (shotgun-era hash pinned inline; pct is policy)', () => {
+    // The exact shotgun-era rollWildcard HASH, reproduced literally: if this
+    // fails, recorded chance-era arming decisions have drifted. THE THRESHOLD
+    // IS DELIBERATELY PARAMETERIZED (sidearm era, goal 573: 35 → 80): the pct
+    // is tunable policy, the hash is the replay contract — recorded artifacts
+    // carry the RESOLVED wildcard, never the mode, so a threshold move only
+    // changes FUTURE rolls. (The weapon PICK for an armed seed MAY also
+    // differ from the 50/50 era — by design, same reason.)
+    const legacyHashRoll = (seed: number, pct: number): boolean =>
+      (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < pct;
     for (let seed = 1; seed <= 300; seed++) {
-      expect(rollWildcard(seed)).toBe(legacyRoll(seed));
+      expect(rollWildcard(seed)).toBe(legacyHashRoll(seed, WILDCARD_CHANCE_PCT));
+      // And the era-35 arming set is recoverable by passing the old pct —
+      // the hash itself never moved.
+      expect(rollWildcard(seed, 35)).toBe(legacyHashRoll(seed, 35));
     }
   });
 

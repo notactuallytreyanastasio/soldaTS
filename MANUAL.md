@@ -39,6 +39,7 @@ Prereqs: node + pnpm (pinned in `.tool-versions`, asdf-friendly).
 | `/?spectate&ai=kestrel,hydra&teams&seed=7&round=120&arena=23` | Broadcast mode: red vs blue, director camera, scoreboard, kill feed, team chevrons. |
 | `/?duel=pilot,reaper` | Side-by-side simultaneous matches, one per engine. |
 | `/?tournament` | Round-robin tiles across gameplay variants. |
+| `…&variant=sidearm\|baseline\|…` | Gameplay variant. **`?play` defaults to `sidearm`** (THE SIDEARM ERA, §4): the AK demoted to a pistol. Spectate/watch URLs **without** the param resolve to `baseline` (the frozen pre-era stock rules) so every recorded replay stays byte-identical. |
 | `…&wildcard=shotgun\|rifle\|none\|chance` | Arm a wildcard gun (see §4). |
 
 Controls in play mode: movement/jets on the keys in the controls screen,
@@ -91,10 +92,12 @@ pnpm arena fight fights/<you>.json fights/<champ>.json --matches 3 --arena <fres
 
 Key flags: `--matches N`, `--round SECS`, `--bots N` (3v3 default),
 `--arena N` (deterministic generated map; 0 = canonical Skyreach),
-`--seed N` (match k uses seed+k), `--variant NAME`,
+`--seed N` (match k uses seed+k), `--variant NAME` (**default `sidearm`**
+— THE SIDEARM ERA, §4; `--variant baseline` opts back into the frozen
+pre-era stock rules; `runMatch`/eval paths still default to baseline),
 `--wildcard shotgun|rifle|none|chance` (**default `chance`** — every match
-rolls a 35 % seeded chance of arming one wildcard carrier per team,
-shotgun or rifle picked 50/50 from a separate seeded hash).
+rolls an 80 % seeded chance of arming one wildcard carrier per team,
+the weapon drawn from a separate seeded hash, spectacle guns weighted 3×).
 
 ### Fighter cards (`fights/*.json`, schema `soldat-fighter-card/1`)
 
@@ -209,6 +212,16 @@ disciplined teacher.
 
 ## 4. The wildcard guns
 
+**THE SIDEARM ERA (the current default).** New fights run the `sidearm`
+variant: the AK re-tuned to a pistol role — 3 shots/s (`fireInterval`
+20), a 12-round mag, a quick 70-tick reload, tighter 0.012 base spread.
+Accurate, honest, low DPS — never the star. The wildcards carry the
+match now: `chance` arms 80 % of matches (up from 35 %). `baseline`
+(the old 10/s AK) is byte-frozen for replay/eval compatibility — old
+watch URLs and `EVAL_SPEC_V1` still run it. All wildcard stats below are
+quoted at stock (baseline) tuning; variants scale them by their own AK
+ratios, so the sidearm era also slows the specials' cadence in step.
+
 All five wildcards come off the same Pascal weapon contract as the AK;
 one carrier per team, chosen deterministically from the match seed.
 
@@ -242,10 +255,12 @@ blade strikes (every other tick, ~29 px reach) that kill on contact, fed
 by a 200-round fuel tank (~6.7 s of continuous sawing, 110-tick refuel).
 Useless at range, absolute at arm's length.
 
-Modes (CLI `--wildcard`, URL `?wildcard=`): `chance` (default — 35 %
-seeded roll per match; armed matches pick one of the five weapons evenly
-from a separate hash — the ARMING roll is still the shotgun-era hash, and
-recorded replays carry the resolved weapon, so every old watch URL stays
+Modes (CLI `--wildcard`, URL `?wildcard=`): `chance` (default — 80 %
+seeded roll per match since the sidearm era, 35 % before; armed matches
+pick one of the five weapons (spectacle guns weighted 3×) from a separate
+hash — the ARMING hash is still the shotgun-era one (the pct is policy,
+the hash is the contract), and recorded replays carry the resolved
+weapon, so every old watch URL stays
 byte-identical), a weapon name (force), `none` (stock). Spectate URLs
 without the param stay stock so every pre-wildcard watch URL replays
 byte-identically. Players cycle all six weapons any time (`Tab`/`B`);

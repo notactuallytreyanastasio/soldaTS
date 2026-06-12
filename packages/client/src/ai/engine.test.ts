@@ -6,6 +6,7 @@ import { describe, it, expect } from 'vitest';
 import { createEngine, engineIds } from './index';
 import { Game } from '../app/game';
 import { ARENA_SPAWNS } from '../app/arena';
+import { resolveVariant } from '../app/tournament';
 
 describe('engine registry', () => {
   it('registers classic, pilot, reaper, matador, kestrel, wolf, plover, hydra, shrike, cuadrilla, orca, and neural', () => {
@@ -236,5 +237,77 @@ describe('whole teams (user correction on node 157)', () => {
     });
     const pilots = game.botIndices().filter((i) => game.engineOf(i) === 'pilot');
     expect(pilots).toHaveLength(5);
+  });
+});
+
+// THE SIDEARM ERA (goal node 573): the default era for NEW fights runs the
+// 'sidearm' variant — AK demoted to a pistol (fireInterval 20, mag 12,
+// reload 70, spread 0.012). Every brain above was tuned/probed under the
+// 10/s baseline AK, so this is the sustainment reality check: representative
+// engines (3 hand-written + the learned MOJOJOJO) must still produce kills
+// over 6000 ticks at 3/s.
+// The per-engine suite above stays on default tuning (= baseline) on purpose.
+//
+describe.each(['classic', 'cuadrilla', 'orca'] as const)(
+  'sidearm-era sustainment under the %s engine',
+  (engine) => {
+    it('still produces kills over 6000 ticks with the pistol AK', () => {
+      const game = new Game({
+        seed: 7,
+        spawns: ARENA_SPAWNS,
+        botCount: 4,
+        spectate: true,
+        aiEngine: engine,
+        tuning: resolveVariant('sidearm').tuning,
+      });
+      expect(game.magSize()).toBe(12); // the variant actually applied
+      const kills: { killer: number; victim: number }[] = [];
+      game.onKill = (killer, victim): void => {
+        kills.push({ killer, victim });
+      };
+      for (let t = 0; t < 6000; t++) game.tick(1 / 60);
+      expect(kills.length).toBeGreaterThan(0);
+    });
+  },
+);
+
+// KNOWN CASUALTIES of the era, noted loudly (probed, 6000-tick matches):
+//  * MOJOJOJO's FACTORY FIRE_THRESH (0.3) was probed under the baseline AK
+//    and effectively dies under sidearm tuning — 0 kills across most probe
+//    seeds (the trained trigger rarely crosses 0.3 at a 20-tick cadence,
+//    and each miss now costs 1/12th of the mag). Its CARD
+//    (fights/mojojojo.json) pins FIRE_THRESH 0.01, which sustains in mixed
+//    company; the test below applies the CARD tweak. The pinned engine
+//    DEFAULTS are deliberately untouched — they are the trained artifact's
+//    provenance.
+//  * A learned-vs-learned MIRROR (mojojojo-only world) zeroes under sidearm
+//    even at FIRE_THRESH 0 — aim precision is the learned bots' known
+//    bottleneck, and the pistol's 3/s DPS is below their hit rate's kill
+//    threshold. Sidearm-era sustainment for learned bots therefore means
+//    "lands kills in mixed company", which is what the league plays.
+//  * The other learned bots (neural/disciple/prodigy/buttstein) sustain at
+//    factory defaults under sidearm vs hand-written opponents — weakly, but
+//    alive (1-3 kills per 100 s 3v3).
+describe('sidearm-era sustainment under the learned mojojojo engine (card tweak)', () => {
+  it('lands a kill over 6000 ticks (3v3 vs classic) with FIRE_THRESH 0.01 from its card', () => {
+    const game = new Game({
+      seed: 7,
+      spawns: ARENA_SPAWNS,
+      botCount: 6,
+      spectate: true,
+      aiEngine: 'mojojojo,classic',
+      engineTweaks: { mojojojo: { FIRE_THRESH: 0.01 } },
+      tuning: resolveVariant('sidearm').tuning,
+    });
+    expect(game.magSize()).toBe(12);
+    let total = 0;
+    let byMojo = 0;
+    game.onKill = (killer): void => {
+      total += 1;
+      if (killer > 0 && game.engineOf(killer) === 'mojojojo') byMojo += 1;
+    };
+    for (let t = 0; t < 6000; t++) game.tick(1 / 60);
+    expect(total).toBeGreaterThan(0);
+    expect(byMojo).toBeGreaterThan(0); // factory 0.3 lands ZERO here
   });
 });

@@ -94,7 +94,13 @@ export function buildWatchUrl(
   base: string,
   a: FighterCard,
   b: FighterCard,
-  opts: { seed: number; roundSecs: number; arenaSeed: number; wildcard?: string | undefined },
+  opts: {
+    seed: number;
+    roundSecs: number;
+    arenaSeed: number;
+    wildcard?: string | undefined;
+    variant?: string | undefined;
+  },
 ): string {
   const params = new URLSearchParams();
   params.set('spectate', '');
@@ -106,6 +112,10 @@ export function buildWatchUrl(
   // Wildcard must ride along: the browser replay only matches the recorded
   // sim when it arms the same carriers from the same seed.
   if (opts.wildcard !== undefined) params.set('wildcard', opts.wildcard);
+  // SIDEARM ERA: the variant rides along EXPLICITLY on every new watch URL,
+  // so replays stay exact however the defaults move later. URLs WITHOUT
+  // ?variant predate the era and keep resolving to baseline.
+  if (opts.variant !== undefined) params.set('variant', opts.variant);
   if (tweaksToParam(a.tweaks) !== '') params.set('tweak-a', tweaksToParam(a.tweaks));
   if (tweaksToParam(b.tweaks) !== '') params.set('tweak-b', tweaksToParam(b.tweaks));
   params.set('coach-a', a.coach);

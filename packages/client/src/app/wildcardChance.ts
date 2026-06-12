@@ -24,11 +24,21 @@
 // value ('shotgun'), never the mode — forced-'shotgun' resolution and the
 // Game's seed→carrier draw are byte-for-byte untouched.
 
-/** Percent of matches the 'chance' mode arms a wildcard. */
-export const WILDCARD_CHANCE_PCT = 35;
+/** Percent of matches the 'chance' mode arms a wildcard.
+ *
+ *  THE SIDEARM ERA (goal node 573): 35 → 80. With the AK demoted to a pistol
+ *  (the 'sidearm' default variant), most matches should arm one of the five
+ *  specials — they are the stars now. The PCT IS POLICY, THE HASH IS THE
+ *  CONTRACT: rollWildcard's hash below is unchanged, and recorded artifacts
+ *  (manifests + watch URLs) carry the RESOLVED wildcard value, never the
+ *  mode, so raising the threshold only affects FUTURE rolls — every old
+ *  replay re-arms exactly what it recorded. */
+export const WILDCARD_CHANCE_PCT = 80;
 
 /** Seed-derived roll (Knuth multiplicative hash) — pure and stable.
- *  UNCHANGED since the shotgun era: old seeds keep their arming decision. */
+ *  The HASH is unchanged since the shotgun era; the default threshold moved
+ *  35 → 80 in the sidearm era (policy, not contract — see the PCT doc above:
+ *  recorded artifacts carry resolved values and never re-roll). */
 export function rollWildcard(seed: number, pct: number = WILDCARD_CHANCE_PCT): boolean {
   const h = Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0;
   return h % 100 < pct;

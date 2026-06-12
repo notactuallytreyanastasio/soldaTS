@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  WILDCARD_CHANCE_PCT,
   WILDCARD_WEAPONS,
   rollWildcard,
   pickWildcardWeapon,
@@ -96,9 +97,12 @@ describe("'chance' wildcard mode (all games get a shot at shotgun play)", () => 
   });
 
   it('arms SOME seeds and not others, and records which on the result', () => {
+    // (Era note: CONFIG.seed armed nothing at the 35 % threshold; the
+    // sidearm era's 80 % arms it, and the five-weapon pick says chainsaw.
+    // pickWildcardWeapon keeps this true to whatever the policy says.)
     const armed = rollWildcard(CONFIG.seed);
     const r = runMatch({ ...CONFIG, wildcard: 'chance', roundTicks: 600 });
-    expect(r.wildcard).toBe(armed ? 'shotgun' : null);
+    expect(r.wildcard).toBe(armed ? pickWildcardWeapon(CONFIG.seed) : null);
     // The roll is a real chance: both outcomes occur across nearby seeds.
     const rolls = Array.from({ length: 40 }, (_, i) => rollWildcard(i + 1));
     expect(rolls.some(Boolean)).toBe(true);
@@ -184,11 +188,15 @@ describe("'chance' mode six-way split (none | the five WILDCARD_WEAPONS)", () =>
     const again = runMatch({ ...CONFIG, wildcard: 'shotgun' });
     expect(forced.replayJsonl === again.replayJsonl).toBe(true);
     expect(forced.wildcard).toBe('shotgun');
-    // And the arming hash itself is the shotgun-era one (pinned inline).
-    const legacyRoll = (seed: number): boolean =>
-      (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < 35;
+    // And the arming HASH itself is the shotgun-era one (pinned inline). The
+    // threshold is parameterized on purpose (sidearm era: 35 → 80) — the pct
+    // is policy, the hash is the replay contract; recorded artifacts carry
+    // the RESOLVED wildcard so threshold moves only affect future rolls.
+    const legacyHashRoll = (seed: number, pct: number): boolean =>
+      (Math.imul(seed ^ 0x9e3779b9, 2654435761) >>> 0) % 100 < pct;
     for (let seed = 1; seed <= 300; seed++) {
-      expect(rollWildcard(seed)).toBe(legacyRoll(seed));
+      expect(rollWildcard(seed)).toBe(legacyHashRoll(seed, WILDCARD_CHANCE_PCT));
+      expect(rollWildcard(seed, 35)).toBe(legacyHashRoll(seed, 35));
     }
   });
 });

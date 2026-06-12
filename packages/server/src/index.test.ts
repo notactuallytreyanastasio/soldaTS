@@ -177,12 +177,13 @@ describe('game server entry point (real child process)', () => {
         expect(w.handshake.result).toBe(HandshakeResult.Ok);
         expect(w.handshake.protocolVersion).toBe(PROTOCOL_VERSION);
         expect(w.handshake.serverTick).toBe(0);
-        // mapName recipe: arena=<A>&seed=<S>&e1=<idA>&e2=<idB>. The seeds are
-        // rolled with Math.random in index.ts (production behavior), so only
-        // their presence and range are assertable here.
+        // mapName recipe: arena=<A>&seed=<S>&e1=<idA>&e2=<idB>&variant=sidearm.
+        // The seeds are rolled with Math.random in index.ts (production
+        // behavior), so only their presence and range are assertable here.
         const params = new URLSearchParams(w.handshake.mapName);
         expect(params.get('e1')).toBe('wolf');
         expect(params.get('e2')).toBe('hydra');
+        expect(params.get('variant')).toBe('sidearm'); // the sidearm era online
         const arena = Number(params.get('arena'));
         const seed = Number(params.get('seed'));
         expect(arena).toBeGreaterThanOrEqual(1);

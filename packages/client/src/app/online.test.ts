@@ -59,16 +59,26 @@ describe('controlToInputFrame', () => {
 });
 
 describe('parseMatchRecipe', () => {
-  it('extracts arena + seed + both team engines from the welcome mapName', () => {
-    expect(parseMatchRecipe('arena=512&seed=90210&e1=wolf&e2=hydra')).toEqual({
+  it('extracts arena + seed + both team engines + the era variant from the welcome mapName', () => {
+    expect(parseMatchRecipe('arena=512&seed=90210&e1=wolf&e2=hydra&variant=sidearm')).toEqual({
       arenaSeed: 512,
       seed: 90210,
       e1: 'wolf',
       e2: 'hydra',
+      variant: 'sidearm',
     });
   });
-  it("falls back to 1/1 + 'classic' engines on garbage", () => {
-    expect(parseMatchRecipe('')).toEqual({ arenaSeed: 1, seed: 1, e1: 'classic', e2: 'classic' });
+  it("pre-era recipes (no variant) read as 'baseline' — the rules those servers run", () => {
+    expect(parseMatchRecipe('arena=512&seed=90210&e1=wolf&e2=hydra').variant).toBe('baseline');
+  });
+  it("falls back to 1/1 + 'classic' engines + 'baseline' on garbage", () => {
+    expect(parseMatchRecipe('')).toEqual({
+      arenaSeed: 1,
+      seed: 1,
+      e1: 'classic',
+      e2: 'classic',
+      variant: 'baseline',
+    });
   });
 });
 

@@ -165,10 +165,26 @@ describe('variants', () => {
     expect(resolveVariant(undefined).tuning).toEqual({});
   });
 
-  it('has 4 uniquely named variants, baseline first', () => {
-    expect(VARIANTS).toHaveLength(4);
-    expect(new Set(VARIANTS.map((v) => v.name)).size).toBe(4);
+  it('has 5 uniquely named variants, baseline first (frozen) and sidearm last', () => {
+    expect(VARIANTS).toHaveLength(5);
+    expect(new Set(VARIANTS.map((v) => v.name)).size).toBe(5);
     expect(VARIANTS[0]!.name).toBe('baseline');
+    // baseline is BYTE-FROZEN: every recorded watch URL without ?variant
+    // resolves here and must keep re-simulating identically.
+    expect(VARIANTS[0]!.tuning).toEqual({});
+    // sidearm is appended LAST so the 4 tournament tiles (g % length over
+    // games 0..3) keep their original four metas.
+    expect(VARIANTS[4]!.name).toBe('sidearm');
+  });
+
+  it("'sidearm' demotes the AK to a pistol: 3/s fire, 12-round mag, quick crisp reload", () => {
+    const v = resolveVariant('sidearm');
+    expect(v.tuning).toEqual({
+      fireInterval: 20,
+      magSize: 12,
+      reloadTicks: 70,
+      spreadBase: 0.012,
+    });
   });
 });
 

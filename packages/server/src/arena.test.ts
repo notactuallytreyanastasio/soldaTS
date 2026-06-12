@@ -61,7 +61,7 @@ describe('Arena — seating', () => {
     expect(lastWelcome(a)?.yourNum).toBe(1);
     expect(lastWelcome(b)?.yourNum).toBe(2);
     expect(lastWelcome(a)?.spectator).toBeUndefined();
-    expect(lastWelcome(a)?.mapName).toBe('arena=5&seed=7&e1=wolf&e2=hydra');
+    expect(lastWelcome(a)?.mapName).toBe('arena=5&seed=7&e1=wolf&e2=hydra&variant=sidearm');
   });
 
   it('makes the third+ visitor a spectator who gets a spectator welcome and the live feed', () => {

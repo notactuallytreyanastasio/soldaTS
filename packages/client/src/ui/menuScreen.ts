@@ -66,7 +66,8 @@ function startGame(engineId: string, wildcard: string): void {
   let url =
     `${window.location.pathname}?play&ai=${encodeURIComponent(engineId)}` +
     `&arena=${roll(999)}&seed=${roll(99999)}`;
-  // 'chance' is the play-mode default (parseSpectate) — omit it from the URL.
+  // 'chance' wildcard and the 'sidearm' variant are the play-mode defaults
+  // (parseSpectate) — omit both from the URL; menu games enter the era.
   if (wildcard !== 'chance') url += `&wildcard=${encodeURIComponent(wildcard)}`;
   window.location.href = url;
 }

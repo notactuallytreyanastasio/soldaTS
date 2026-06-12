@@ -76,9 +76,9 @@ describe('Match — pairing handshake', () => {
     expect(welcomes[0]!.yourId).toBe(11);
     expect(welcomes[1]!.yourId).toBe(22);
     // Match-start carries BOTH engine choices in the recipe.
-    expect(welcomes[0]!.mapName).toBe('arena=5&seed=7&e1=wolf&e2=hydra');
+    expect(welcomes[0]!.mapName).toBe('arena=5&seed=7&e1=wolf&e2=hydra&variant=sidearm');
     expect(welcomes[1]!.mapName).toBe(welcomes[0]!.mapName);
-    expect(match.recipe).toBe('arena=5&seed=7&e1=wolf&e2=hydra');
+    expect(match.recipe).toBe('arena=5&seed=7&e1=wolf&e2=hydra&variant=sidearm');
 
     expect(match.game.teamOf(1)).toBe(1);
     expect(match.game.teamOf(2)).toBe(2);
@@ -113,7 +113,9 @@ describe('Match — team engines (3v3)', () => {
     expect(new Set(carriers.map((c) => armed.game.teamOf(c))).size).toBe(2); // one per team
     armed.dispose();
 
-    const stock = new Match(mp(new FakeSocket(), 1), mp(new FakeSocket(), 2), { ...OPTS, seed: 3 });
+    // Seed 5 hashes to 80 — unarmed even at the sidearm era's 80% threshold
+    // (seed 3 armed once WILDCARD_CHANCE_PCT rose 35 → 80).
+    const stock = new Match(mp(new FakeSocket(), 1), mp(new FakeSocket(), 2), { ...OPTS, seed: 5 });
     expect(stock.game.wildcard).toBeUndefined();
     expect(stock.game.wildcardCarriers()).toHaveLength(0);
     stock.dispose();

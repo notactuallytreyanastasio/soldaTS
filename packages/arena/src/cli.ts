@@ -46,6 +46,9 @@ OPTIONS:
   --round SECS           round length in sim-seconds (default 120)
   --bots N               total bots, split evenly (default 6 = 3v3)
   --variant NAME         gameplay variant: ${VARIANTS.map((v) => v.name).join(' | ')}
+                         default 'sidearm' (THE SIDEARM ERA: the AK is a
+                         pistol, the wildcards are the stars); 'baseline'
+                         is the frozen pre-era stock rules
   --wildcard MODE        ${WILDCARD_MODES.join(' | ')} — default 'chance': each match
                          rolls a seeded chance of arming one SPAS-12 carrier
                          per team; 'shotgun' forces it, 'none' is stock
@@ -117,7 +120,12 @@ function main(): void {
         throw new Error(`unknown engine '${id}' (registered: ${engineIds().join(', ')})`);
       }
     }
-    variant = values.variant ?? 'baseline';
+    // THE SIDEARM ERA (goal node 573): NEW fights default to the 'sidearm'
+    // variant (AK demoted to a pistol; wildcards are the stars). Recorded
+    // artifacts are safe: manifests store the RESOLVED variant and replay
+    // paths (runner.ts resolveVariant fallback, ?spectate URLs without
+    // ?variant, EVAL_SPEC_V1 runCell) all still default to baseline.
+    variant = values.variant ?? 'sidearm';
     if (!VARIANTS.some((v) => v.name === variant)) {
       throw new Error(
         `unknown variant '${variant}' (known: ${VARIANTS.map((v) => v.name).join(', ')})`,
@@ -294,6 +302,7 @@ function fight(
     arena?: string | undefined;
     out?: string | undefined;
     wildcard?: string | undefined;
+    variant?: string | undefined;
   },
 ): void {
   if (cardPaths.length !== 2) {
@@ -332,13 +341,24 @@ function fight(
     process.exitCode = 1;
     return;
   }
+  // THE SIDEARM ERA: fights default to the sidearm variant too (the
+  // commissioner shells this subcommand). --variant baseline opts back into
+  // the frozen stock rules.
+  const variant = values.variant ?? 'sidearm';
+  if (!VARIANTS.some((v) => v.name === variant)) {
+    console.error(
+      `arena fight: unknown variant '${variant}' (known: ${VARIANTS.map((v) => v.name).join(', ')})`,
+    );
+    process.exitCode = 1;
+    return;
+  }
   const outDir =
     values.out ?? fileURLToPath(new URL('../../../datasets', import.meta.url));
 
   console.log(
     `CLAUDE ARENA — ${a.coach} (${a.engine}) vs ${b.coach} (${b.engine}) · ` +
       `${matches} match(es) · ${roundSecs}s rounds · arena #${arenaSeed}` +
-      ` · wildcard ${wildcard}`,
+      ` · variant ${variant} · wildcard ${wildcard}`,
   );
   if (a.rationale !== undefined) console.log(`  ${a.coach}: "${a.rationale}"`);
   if (b.rationale !== undefined) console.log(`  ${b.coach}: "${b.rationale}"`);
@@ -363,6 +383,7 @@ function fight(
       botCount,
       roundTicks: roundSecs * 60,
       wildcard,
+      variant,
       teams: [
         { engine: a.engine, tweaks: a.tweaks },
         { engine: b.engine, tweaks: b.tweaks },
@@ -400,7 +421,7 @@ function fight(
     botCount,
     roundTicks: roundSecs * 60,
     maxTicks: roundSecs * 60 + 600,
-    variantName: 'baseline',
+    variantName: variant,
     wildcard,
     teams: [
       { engine: a.engine, tweaks: a.tweaks },
@@ -420,6 +441,7 @@ function fight(
   const watchUrl = buildWatchUrl('http://localhost:5173', a, b, {
     seed: seedBase, roundSecs, arenaSeed,
     wildcard: results[0]?.wildcard ?? undefined,
+    variant,
   });
   console.log(`  ${watchUrl}`);
   live.finish({ dataset: dir, watchUrl });

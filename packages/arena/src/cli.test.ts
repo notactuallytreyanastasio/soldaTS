@@ -101,6 +101,24 @@ describe('arena argument validation (exit 1, helpful stderr, no dataset)', () =>
     expect(r.stderr).toContain('baseline');
   }, 60_000);
 
+  it("fight rejects an unknown --variant too (its default is 'sidearm')", () => {
+    const a = writeCard('var-a.json', {
+      schema: FIGHTER_CARD_SCHEMA,
+      coach: 'TESTA',
+      engine: 'pilot',
+      tweaks: {},
+    });
+    const b = writeCard('var-b.json', {
+      schema: FIGHTER_CARD_SCHEMA,
+      coach: 'TESTB',
+      engine: 'reaper',
+      tweaks: {},
+    });
+    const r = arena(['fight', a, b, '--variant', 'nosuch']);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain("unknown variant 'nosuch'");
+  }, 60_000);
+
   it('rejects an unknown --wildcard mode', () => {
     const r = arena(['--teams', 'pilot vs reaper', '--wildcard', 'lasers']);
     expect(r.status).toBe(1);
@@ -308,7 +326,7 @@ describe('arena fight — a real seeded 1v1 (10s round, tmp dataset)', () => {
     expect(run1.stdout).toMatch(/series: TESTA \d+ — \d+ TESTB/);
   });
 
-  it('prints a WATCH URL carrying seed/round/arena/tweaks/coaches', () => {
+  it('prints a WATCH URL carrying seed/round/arena/tweaks/coaches/variant', () => {
     const m = run1.stdout.match(/http:\/\/localhost:5173\/\?\S+/);
     expect(m).not.toBeNull();
     const url = new URL(m![0]!);
@@ -320,6 +338,9 @@ describe('arena fight — a real seeded 1v1 (10s round, tmp dataset)', () => {
     expect(url.searchParams.get('coach-a')).toBe('TESTA');
     expect(url.searchParams.get('coach-b')).toBe('TESTB');
     expect(url.searchParams.has('spectate')).toBe(true);
+    // SIDEARM ERA: every new watch URL carries the variant EXPLICITLY so
+    // the replay stays exact however the defaults move later.
+    expect(url.searchParams.get('variant')).toBe('sidearm');
   });
 
   it('writes the dataset files into --out', () => {
@@ -335,6 +356,9 @@ describe('arena fight — a real seeded 1v1 (10s round, tmp dataset)', () => {
     ]);
     const manifest = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
     expect(manifest.teams ?? manifest.matches ?? manifest).toBeDefined();
+    // The manifest records the RESOLVED era — fights default to sidearm.
+    expect(manifest.variant.name).toBe('sidearm');
+    expect(manifest.variant.tuning.fireInterval).toBe(20);
   });
 
   it('is deterministic: the recorded replay is byte-identical across runs', () => {

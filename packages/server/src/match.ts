@@ -25,10 +25,12 @@
 // the sim tick respectively. Spectators dead-reckon ALL six, so every sprite
 // they receive carries the sim tick.
 //
-// MATCH START: the welcome's mapName recipe carries the deterministic arena
-// AND both engine choices — `arena=<A>&seed=<S>&e1=<idA>&e2=<idB>` — so each
-// client can label teams ('YOU + WOLF vs STRANGER + HYDRA') without a new
-// message type. The Arena reuses the same recipe to boot spectators.
+// MATCH START: the welcome's mapName recipe carries the deterministic arena,
+// both engine choices, AND the gameplay variant —
+// `arena=<A>&seed=<S>&e1=<idA>&e2=<idB>&variant=sidearm` — so each client can
+// label teams ('YOU + WOLF vs STRANGER + HYDRA') and knows the era's rules
+// without a new message type. The Arena reuses the same recipe to boot
+// spectators.
 //
 // LIFECYCLE: the Match never owns socket message/close wiring and never closes
 // a socket. The Arena (arena.ts) owns every participant socket, routes player
@@ -45,8 +47,15 @@ import {
   type ScoreboardEntry,
 } from '@soldat/protocol';
 import { applyInputToSprite, captureSpriteSnapshotOne } from '@soldat/netcode';
-import { Game, generateArena, engineIds, resolveWildcard } from '@soldat/client/headless';
+import { Game, generateArena, engineIds, resolveWildcard, resolveVariant } from '@soldat/client/headless';
 import type { GameSocket } from './ws.js';
+
+/** THE SIDEARM ERA: online matches run the sidearm variant (AK demoted to a
+ *  pistol; the wildcards are the stars). The welcome recipe carries it so
+ *  clients can label/replay the exact rules. Sidearm touches only weapon
+ *  knobs (fire/mag/reload/spread) — jet + respawn prediction client-side is
+ *  untouched, ammo/reload already ride server snapshots. */
+export const ONLINE_VARIANT = 'sidearm';
 
 /** Sim ticks between snapshot batches: 3 -> 20 Hz at the 60 Hz sim rate. */
 const SNAPSHOT_EVERY_TICKS = 3;
@@ -139,6 +148,8 @@ export class Match {
       // Same seeded chance roll local play uses — bot carriers exist online
       // now, so a lucky seed arms one wildcard carrier per team.
       wildcard: resolveWildcard('chance', opts.seed),
+      // Sidearm-era rules (see ONLINE_VARIANT).
+      tuning: resolveVariant(ONLINE_VARIANT).tuning,
     });
     this.game.loadMap(arena.map);
 
@@ -163,7 +174,8 @@ export class Match {
     // deterministic map recipe, both teams' engines, and its own participant id.
     this.recipe =
       `arena=${opts.arenaSeed}&seed=${opts.seed}` +
-      `&e1=${encodeURIComponent(this.teamEngines[0])}&e2=${encodeURIComponent(this.teamEngines[1])}`;
+      `&e1=${encodeURIComponent(this.teamEngines[0])}&e2=${encodeURIComponent(this.teamEngines[1])}` +
+      `&variant=${ONLINE_VARIANT}`;
     for (const p of this.players) {
       p.sock.send(
         encodeMessage({

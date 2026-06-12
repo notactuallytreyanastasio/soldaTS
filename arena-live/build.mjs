@@ -206,7 +206,7 @@ function tweaksToParam(tweaks) {
 const WATCH_BASE = (process.env.ARENA_WATCH_BASE ?? 'http://localhost:5173').replace(/\/+$/, '');
 
 /** Same shape as packages/arena/src/fighterCard.ts buildWatchUrl. */
-function buildWatchUrl(a, b, { seed, roundSecs, arenaSeed, wildcard }) {
+function buildWatchUrl(a, b, { seed, roundSecs, arenaSeed, wildcard, variant }) {
   const params = new URLSearchParams();
   params.set('spectate', '');
   params.set('ai', `${a.engine},${b.engine}`);
@@ -215,6 +215,10 @@ function buildWatchUrl(a, b, { seed, roundSecs, arenaSeed, wildcard }) {
   params.set('round', String(roundSecs));
   if (arenaSeed > 0) params.set('arena', String(arenaSeed));
   if (wildcard) params.set('wildcard', wildcard); // resolved per match (chance era)
+  // SIDEARM ERA: non-baseline variants ride along explicitly (manifests
+  // record the resolved variant). Baseline is omitted — URLs without
+  // ?variant resolve to baseline, so pre-era datasets keep their exact URLs.
+  if (variant && variant !== 'baseline') params.set('variant', variant);
   if (tweaksToParam(a.tweaks) !== '') params.set('tweak-a', tweaksToParam(a.tweaks));
   if (tweaksToParam(b.tweaks) !== '') params.set('tweak-b', tweaksToParam(b.tweaks));
   params.set('coach-a', a.coach);
@@ -343,6 +347,7 @@ function loadDataset(name, cardByEngine) {
       watchUrl: buildWatchUrl(sideA, sideB, {
         seed, roundSecs, arenaSeed,
         wildcard: resolvedWildcard,
+        variant: manifest.variant?.name,
       }),
       timeline,
     });

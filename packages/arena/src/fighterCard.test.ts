@@ -62,4 +62,22 @@ describe('watch URL', () => {
     expect(tweaksToParam({ A: 1, B: 2.5 })).toBe('A=1,B=2.5');
     expect(tweaksToParam({})).toBe('');
   });
+
+  it('carries the gameplay variant EXPLICITLY when given, omits it when not (pre-era URLs)', () => {
+    const a = validateCard(good).card;
+    const b = validateCard({
+      schema: 'soldat-fighter-card/1',
+      coach: 'OKONKWO',
+      engine: 'reaper',
+      tweaks: {},
+    }).card;
+    const opts = { seed: 1, roundSecs: 60, arenaSeed: 0 };
+    // SIDEARM ERA: new fights pass the variant so future replays are exact.
+    const withVariant = new URL(buildWatchUrl('http://x', a, b, { ...opts, variant: 'sidearm' }));
+    expect(withVariant.searchParams.get('variant')).toBe('sidearm');
+    // No variant → no param: URLs without ?variant resolve to baseline,
+    // which is how every pre-era recorded watch URL stays untouched.
+    const without = new URL(buildWatchUrl('http://x', a, b, opts));
+    expect(without.searchParams.has('variant')).toBe(false);
+  });
 });
