@@ -981,7 +981,10 @@ async function bootSpectator(recipe: string): Promise<Session> {
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
     renderPositions();
-    entityRenderer.render(world, 0);
+    // framePercent 1: the spectator never steps the sim, so world.ticks is
+    // frozen; render the CURRENT parts.posX (the interp's cur), not the stale
+    // prev — otherwise every sprite draws at its seeded spawn forever.
+    entityRenderer.render(world, 1);
     blood.update(dt);
     blood.draw();
     centerCamera();
