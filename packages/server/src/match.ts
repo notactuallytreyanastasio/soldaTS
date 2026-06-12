@@ -219,6 +219,15 @@ export class Match {
       if (msg.clientTick <= (last?.clientTick ?? p.acked)) return;
       if (p.queue.length >= QUEUE_MAX) p.queue.shift();
       p.queue.push(msg);
+      return;
+    }
+    if (msg.kind === 'voice') {
+      // Voice-chat signaling (goal node 522): relay the already-validated
+      // frame VERBATIM to the opposite player. The server never inspects the
+      // SDP/ICE payload and the audio itself flows peer-to-peer.
+      const other = this.players[p.num === 1 ? 1 : 0]!;
+      if (other.connected) other.sock.send(data);
+      return;
     }
     // Anything else (late hello, chat) is ignored in v1.
   }

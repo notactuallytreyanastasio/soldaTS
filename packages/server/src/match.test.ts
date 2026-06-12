@@ -255,3 +255,31 @@ describe('Match — disconnect', () => {
     expect(b.sent.length).toBe(sentBefore);
   });
 });
+
+describe('Match — voice signaling relay', () => {
+  it('relays a voice frame to the OTHER player only, verbatim', () => {
+    const a = new FakeSocket();
+    const b = new FakeSocket();
+    new Match(a, b, OPTS);
+    const sentBeforeA = a.sent.length;
+    const sentBeforeB = b.sent.length;
+
+    a.emit({ kind: 'voice', data: '{"sdp":"offer-from-a"}' });
+    expect(b.sent[b.sent.length - 1]).toEqual({ kind: 'voice', data: '{"sdp":"offer-from-a"}' });
+    expect(a.sent.length).toBe(sentBeforeA); // never echoed to the sender
+
+    b.emit({ kind: 'voice', data: '{"candidate":"from-b"}' });
+    expect(a.sent[a.sent.length - 1]).toEqual({ kind: 'voice', data: '{"candidate":"from-b"}' });
+    expect(b.sent.length).toBe(sentBeforeB + 1); // only the relayed offer above
+  });
+
+  it('drops voice frames after the peer disconnects', () => {
+    const a = new FakeSocket();
+    const b = new FakeSocket();
+    new Match(a, b, OPTS);
+    b.close();
+    const sentBeforeB = b.sent.length;
+    a.emit({ kind: 'voice', data: '{"sdp":"too-late"}' });
+    expect(b.sent.length).toBe(sentBeforeB);
+  });
+});
