@@ -193,10 +193,18 @@ export class EntityRenderer {
       // Aim point = COM + the control's relative aim vector.
       const aimX = x + sprite.control.mouseAimX;
       const aimY = y + sprite.control.mouseAimY;
-      // Real team when assigned (red 1 / blue 2, goal node 154); FFA falls
-      // back to the old player-red / bots-blue convention.
+      // Real team when assigned (red 1 / blue 2, goal node 154). In FFA the
+      // human (if any) is red and the bots SPLIT red/blue by slot parity, so a
+      // uniform-engine spectate match reads as red vs blue instead of all-blue
+      // (user report: "the bots in some matches are all blue").
       const team =
-        sprite.team > 0 ? sprite.team : i === this.playerIndex ? 1 : 2;
+        sprite.team > 0
+          ? sprite.team
+          : i === this.playerIndex
+            ? 1
+            : i % 2 === 0
+              ? 1
+              : 2;
       const facing = sprite.direction >= 0 ? 1 : -1;
 
       const pooled = this.texturedReady ? this.gostekPool[i] : undefined;
