@@ -268,6 +268,17 @@ time of writing: **1,100+ matches, ~35 M rows, ~1.1 GB**, growing
 Everything below is **zero-npm-dependency** node — the trainers
 hand-roll the MLP, backprop, and Adam.
 
+**Where the replay blobs live:** `match-*.replay.jsonl.gz` files older
+than 24 h auto-offload to Hetzner Object Storage (bucket
+`bobbby-media`, prefix `soldat/replays/<datasetDir>/`) — the autopilot
+runs `tools/offload-replays.mjs` (`make offload`) each training cycle,
+deleting a local file only after a size+MD5-verified upload and an
+append to the recovery index `datasets/OFFLOADED.jsonl`. Manifests,
+summaries, events and telemetry never leave disk. To re-pull a dataset
+for training: `node tools/fetch-replays.mjs <datasetDir>`. Credentials
+come from `S3_ACCESS_KEY`/`S3_SECRET_KEY` (env or the blog repo's
+`.env`).
+
 ### Imitation (behavior cloning)
 
 ```sh

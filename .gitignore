@@ -62,6 +62,8 @@ packages/modding/node_modules/
 packages/protocol/node_modules/
 
 datasets/
+# explicit: the replay-offload recovery index stays local (large, machine-specific)
+datasets/OFFLOADED.jsonl
 arena-live/site/data.json
 
 # autopilot runtime state (the ledger tools/autopilot-ledger.jsonl IS tracked)

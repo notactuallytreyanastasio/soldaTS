@@ -70,6 +70,9 @@ train: ## imitation training from datasets
 evolve: ## evolutionary tuning (60 gens, 8 jobs)
 	node tools/evolve.mjs --generations 60 --jobs 8
 
+offload: ## move >24h replay blobs to the bucket (verified), free the disk
+	node tools/offload-replays.mjs
+
 fight: ## make fight A=fights/x.json B=fights/y.json [ARENA=n]
 	@test -n "$(A)" && test -n "$(B)" || { echo "usage: make fight A=fights/x.json B=fights/y.json [ARENA=n]"; exit 1; }
 	pnpm arena fight $(A) $(B) --matches 3 $(if $(ARENA),--arena $(ARENA),)

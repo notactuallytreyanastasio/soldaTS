@@ -19,6 +19,9 @@
 //      overlaps the previous one; if one is still running we skip):
 //        a. pull server datasets additively (rsync --ignore-existing from the
 //           Hetzner box; unreachable → log + skip),
+//        a2. offload >24h replay blobs to Hetzner Object Storage (verified
+//           upload, then delete local — tools/offload-replays.mjs) so the
+//           corpus stays bounded; manifests/summaries/events stay forever,
 //        b. retrain the disciple (tools/train-disciple.mjs; teacher "auto" =
 //           top hand-written engine on the latest board, fallback cuadrilla),
 //        c. GATE the new weights — tools/evaluate.mjs gauntlet when present,
@@ -437,6 +440,7 @@ async function trainingCycle(cfg) {
   const summary = {
     at: new Date().toISOString(),
     pulled: null,
+    offload: null,
     teacher: null,
     train: null,
     gate: null,
@@ -464,6 +468,17 @@ async function trainingCycle(cfg) {
       summary.pulled = false;
       oops('pull', e);
     }
+  }
+
+  // (a2) offload >24h replay blobs to the bucket — keeps the corpus bounded forever.
+  // Verified upload before any delete; manifests/summaries/events/telemetry untouched.
+  try {
+    const r = await run('node', [join(ROOT, 'tools/offload-replays.mjs')], { timeout: 2 * 3600_000 });
+    summary.offload = r.code === 0 ? tail(r.out, 1) : `exit ${r.code}: ${tail(r.err, 1)}`;
+    log(`offload: ${summary.offload}`);
+  } catch (e) {
+    summary.offload = `FAILED: ${e.message}`;
+    oops('offload', e);
   }
 
   // (b) retrain the disciple from the corpus.
