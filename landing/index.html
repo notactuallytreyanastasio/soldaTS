@@ -15,573 +15,545 @@
 <meta name="twitter:description" content="I decided to have Fable try to clone Soldat from the original source in Typescript. I ended up with an arena combat engine to train a game bot, while also pitting instances of Fable against itself in combat. This is Fable telling the story.">
 <meta name="twitter:image" content="https://soldat.bobbby.online/img/05-skyreach-wide.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="landing.css?v=5">
+<link rel="stylesheet" href="landing.css?v=6">
 </head>
 <body>
 
 <canvas id="sky" aria-hidden="true"></canvas>
 
 <nav id="topnav">
-  <span class="brand">SOLDAT<em>.RW</em></span>
-  <div class="links">
-    <a href="#tale">THE TALE</a>
-    <a href="#roster">THE ROSTER</a>
-    <a href="#lineage">THE STUDENTS</a>
-    <a href="#belt">THE BELT</a>
-    <a href="#wreckage">THE WRECKAGE</a>
-    <a href="#machinery">THE MACHINERY</a>
-    <a href="#play" class="hot">PLAY</a>
-  </div>
+ <span class="brand">SOLDAT<em>.RW</em></span>
+ <div class="links">
+ <a href="#tale">THE TALE</a>
+ <a href="#roster">THE ROSTER</a>
+ <a href="#lineage">THE STUDENTS</a>
+ <a href="#belt">THE BELT</a>
+ <a href="#wreckage">THE WRECKAGE</a>
+ <a href="#machinery">THE MACHINERY</a>
+ <a href="#play" class="hot">PLAY</a>
+ </div>
 </nav>
 
 <!-- ========================== HERO ========================== -->
 <header id="hero">
-  <p class="kicker">BOBBBY.ONLINE PRESENTS</p>
-  <h1>SOLDAT,<br>REWRITTEN</h1>
-  <p class="tagline">a game that breeds its own players</p>
-  <p class="sub">
-    A 2002 jetpack shooter, ported line-by-line from 65,000 lines of Pascal to the
-    browser — which then grew sixteen bot brains, a championship belt, a betting-floor
-    dashboard, a daily newspaper, and four machine students trained on the recordings
-    of their teachers. Every match deterministic. Every fight replayable byte-for-byte.
-    Nobody asked it to become a sport.
-  </p>
-  <div class="belt-ticker" id="beltline">
-    <span class="dot"></span> THE BELT&nbsp;&nbsp;·&nbsp;&nbsp;BLACKFISH <span class="eng">/ orca</span> holds — three straight seasons &nbsp;·&nbsp; BELMONTE <span class="eng">/ cuadrilla</span> keeps knocking
-  </div>
-  <div class="cta-row">
-    <a class="cta" href="https://bobbby.online/arena/" target="_blank" rel="noopener">WATCH THE FLOOR</a>
-    <a class="cta" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">READ THE DESK</a>
-    <a class="cta gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">FIGHT A STRANGER <span class="mic">🎤</span></a>
-  </div>
-  <p class="byline">
-    I decided to have Fable try to clone Soldat from the original source in Typescript.
-    I ended up with an arena combat engine to train a game bot, while also pitting
-    instances of Fable against itself in combat in a game that it made. This is Fable
-    telling the story of this process.
-  </p>
-  <p class="scrollhint">▼ the tale</p>
+ <p class="kicker">BOBBBY.ONLINE PRESENTS</p>
+ <h1>SOLDAT,<br>REWRITTEN</h1>
+ <p class="tagline">a game that breeds its own players</p>
+ <p class="sub">
+ I set out to port a 2002 jetpack shooter to the browser. I came away with sixteen bot
+ brains fighting over a championship belt, a betting-floor dashboard, a newspaper that
+ writes itself, and four neural-net students trained on recordings of the others. Every
+ match runs identically every time, so any fight replays byte-for-byte from its seed. I
+ planned almost none of it.
+ </p>
+ <div class="belt-ticker" id="beltline">
+ <span class="dot"></span> THE BELT&nbsp;&nbsp;·&nbsp;&nbsp;BLACKFISH <span class="eng">/ orca</span> holds, three straight seasons &nbsp;·&nbsp; BELMONTE <span class="eng">/ cuadrilla</span> keeps knocking
+ </div>
+ <div class="cta-row">
+ <a class="cta" href="https://bobbby.online/arena/" target="_blank" rel="noopener">WATCH THE FLOOR</a>
+ <a class="cta" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">READ THE DESK</a>
+ <a class="cta gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">FIGHT A STRANGER <span class="mic">🎤</span></a>
+ </div>
+ <p class="byline">
+ I decided to have Fable try to clone Soldat from the original source in Typescript.
+ I ended up with an arena combat engine to train a game bot, while also pitting
+ instances of Fable against itself in combat in a game that it made. This is Fable
+ telling the story of this process.
+ </p>
+ <p class="scrollhint">▼ the tale</p>
 </header>
 
 <!-- ========================== THE TALE ========================== -->
 <main>
 <section id="tale">
-  <h2 class="section-title"><span>ACT BY ACT</span>THE TALE</h2>
+ <h2 class="section-title"><span>ACT BY ACT</span>THE TALE</h2>
 
-  <article class="act" data-act="I">
-    <div class="act-copy">
-      <h3>The archaeology</h3>
-      <p>
-        Before a single line of TypeScript existed, thirteen parallel research agents each
-        mapped one subsystem of the original Pascal engine — physics, bullets, maps,
-        netcode, AI — and a fourteenth stitched the whole-engine picture together.
-        What they found: everything is a 1-indexed global array, the famous game-feel
-        lives in magic constants (<code>gravity 0.06</code>, <code>damping 0.98</code>),
-        and determinism isn't a feature, it's structural.
-      </p>
-      <blockquote class="prompt">we are going to modernize this game. start off by using a workflow to build an understanding of how it works and everything inside of it<cite>— the first prompt of the project</cite></blockquote>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/01-first-light.png" alt="First light: the synthetic test scene, player mid-jump">
-      <figcaption>First light. The synthetic fallback scene, the player a few pixels of vector art, captured mid-jump — this exact historical build, booted and screenshotted live.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — porting rules and the float trick</summary>
-    <div class="deep-body">
+ <article class="act" data-act="I">
+ <div class="act-copy">
+ <h3>I read the engine before touching it</h3>
+ <p>My first instinct was to start typing. I didn't. I had Fable read the original 2002
+ engine and write down how it worked before porting a single line of it. Thirteen agents
+ went through the Pascal in parallel, one per subsystem (physics, bullets, maps, netcode,
+ the AI), and a fourteenth pulled the pieces into one picture.</p>
+ <p>The findings set the tone for everything after. Every entity is a slot in a fixed,
+ 1-indexed global array. The game feel I remembered lives in a handful of magic constants
+ like <code>gravity 0.06</code> and particle damping <code>0.98</code>. And the whole thing
+ only holds together because the math runs identically every time.</p>
+ <blockquote class="prompt">we are going to modernize this game. start off by using a workflow to build an understanding of how it works and everything inside of it<cite>— the first prompt of the project</cite></blockquote>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/01-first-light.png" alt="First light: the synthetic test scene, player mid-jump">
+ <figcaption>First light: the synthetic fallback scene, the player a few pixels of vector art, caught mid-jump. This is that exact historical build, booted and screenshotted live.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, porting rules and the float trick</summary>
+ <div class="deep-body">
 
-      <p>Every ported function carries a provenance comment — <code>// PORT: shared/mechanics/Sprites.pas:1234</code> — so any TypeScript behavior can be diffed against the Pascal it came from. Deliberate divergences get a <code>DESIGN OVERRIDE</code> marker pointing at the graph node that ratified them.</p>
-      <p>The float trick: Pascal computes in 32-bit <code>Single</code>, JavaScript in f64. Instead of wrapping every operation in <code>Math.fround</code> forever, fidelity became a <em>test gate</em>. Every physics step goes through one scalar seam (<code>packages/sim/src/scalar.ts</code>):</p>
-      <pre class="code">/**
+ <p>Every ported function carries a provenance comment, <code>// PORT: shared/mechanics/Sprites.pas:1234</code>, so any TypeScript behavior can be diffed against the Pascal it came from. Deliberate divergences get a <code>DESIGN OVERRIDE</code> marker pointing at the graph node that ratified them.</p>
+ <p>The float trick: Pascal computes in 32-bit <code>Single</code>, JavaScript in f64. Instead of wrapping every operation in <code>Math.fround</code> forever, fidelity became a <em>test gate</em>. Every physics step goes through one scalar seam (<code>packages/sim/src/scalar.ts</code>):</p>
+ <pre class="code">/**
  * Round to f32 when STRICT_F32 is on; identity in production f64 mode.
  * Wrap the result of each arithmetic step in ported physics to get Pascal
  * `Single` semantics under the golden master: `a = f(a + f(b * c))`.
  */
 export const f: (x: number) =&gt; number =
   STRICT_F32 ? Math.fround : (x: number): number =&gt; x;</pre>
-      <p>The whole suite runs twice — plain f64 and <code>STRICT_F32=1</code> — and the graph's adversarial reviewers kept the porting honest:</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 55">⬢ 55 · RNG is not Pascal-bit-compatible — caps golden-master scope</span><span class="node-chip" title="deciduous node 73">⬢ 73 · M8 'sandboxed ScriptHost' is not sandboxed</span></p>
-    </div>
-  </details>
+ <p>The whole suite runs twice, plain f64 and <code>STRICT_F32=1</code>, and the graph's adversarial reviewers kept the porting honest:</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 55">⬢ 55 · RNG is not Pascal-bit-compatible, caps golden-master scope</span><span class="node-chip" title="deciduous node 73">⬢ 73 · M8 'sandboxed ScriptHost' is not sandboxed</span></p>
+ </div>
+ </details>
+ <article class="act" data-act="II">
+ <div class="act-copy">
+ <h3>“nothing in the game works”</h3>
+ <p>Seven milestones went by with 269 tests green in both float modes, and I still hadn't
+ watched the game run. One of my own review agents had flagged exactly that in the graph:
+ everything passed, nobody had looked at a pixel. So I opened it, and filed my entire bug
+ report.</p>
+ <blockquote class="prompt">nothing in the game works<cite>— the full bug report, first playtest</cite></blockquote>
+ <p>Two things were broken and the type checker was happy with both. The map drew black
+ because a shader uniform never got bound, so every color multiplied down to nothing. The
+ player dropped through the floor because my synthetic test map had bad normals and the
+ collision push-out came back as zero. A real browser showed me both in about a second. I
+ wrote the lesson into the graph and kept it: a passing test and a rendered frame are
+ different kinds of proof, and I'd been trusting only the first.</p>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/02-combat-sandbox.png" alt="The combat sandbox: vector Gosteks, platforms, live tracer rounds">
+ <figcaption>The combat sandbox: procedural stick-soldiers, live tracers, and one gun. Everyone gets the AK-74, so every tuning question since has had a single balance surface.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, the one-line fixes behind the famous bugs</summary>
+ <div class="deep-body">
 
-
-  <article class="act" data-act="II">
-    <div class="act-copy">
-      <h3>“nothing in the game works”</h3>
-      <p>
-        Seven milestones landed green — 269 tests passing in two float modes — before any
-        human saw a pixel. The decision graph's own adversarial reviewer had flagged it:
-        <em>zero ground-truth validation</em>. Then came the entire bug report, verbatim:
-      </p>
-      <blockquote class="prompt">nothing in the game works<cite>— the full bug report, first playtest</cite></blockquote>
-      <p>
-        The map rendered black (an unbound shader uniform multiplying every color to
-        nothing) and the player fell through the floor (degenerate normals in the
-        synthetic map). Both invisible to the type system; both obvious the moment a
-        browser drew a frame. The lesson got its own graph node: types and tests are
-        one category of truth, pixels are another.
-      </p>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/02-combat-sandbox.png" alt="The combat sandbox: vector Gosteks, platforms, live tracer rounds">
-      <figcaption>The combat sandbox: procedural stick-soldiers, live tracers, one gun. Everyone gets the AK-74 — one balance surface for every tuning question since.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the one-line fixes behind the famous bugs</summary>
-    <div class="deep-body">
-
-      <p>The pacifist-bot bug and the black-map bug shared a shape: perfectly typed, perfectly tested, completely broken. The bots-can't-see-each-other fix is still in <code>packages/client/src/app/game.ts:857</code>, comment and all:</p>
-      <pre class="code">// promoting `s.alpha = 255` to both modes is the one-line fix). Combat
+ <p>The pacifist-bot bug and the black-map bug shared a shape: perfectly typed, perfectly tested, completely broken. The bots-can't-see-each-other fix is still in <code>packages/client/src/app/game.ts:857</code>, comment and all:</p>
+ <pre class="code">// promoting `s.alpha = 255` to both modes is the one-line fix). Combat
 s.alpha = 255;</pre>
-      <p>The ported perception code skips invisible sprites exactly as the Pascal does — and nothing in the new spawn path ever set alpha. Every bot was, by its own rules, invisible to every other bot. The review node that predicted this class of failure, <em>before</em> it happened:</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 68">⬢ 68 · Seven milestones green by typecheck+unit-test, zero ground-truth validation</span></p>
-      <p>Since then, every feature ends with a headless-browser check. Types and tests are one category of truth; pixels are another.</p>
-    </div>
-  </details>
+ <p>The ported perception code skips invisible sprites exactly as the Pascal does, and nothing in the new spawn path ever set alpha. Every bot was, by its own rules, invisible to every other bot. The review node that predicted this class of failure, <em>before</em> it happened:</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 68">⬢ 68 · Seven milestones green by typecheck+unit-test, zero ground-truth validation</span></p>
+ <p>Since then, every feature ends with a headless-browser check. Types and tests are one category of truth; pixels are another.</p>
+ </div>
+ </details>
+ <article class="act" data-act="III">
+ <div class="act-copy">
+ <h3>I made the sky the map</h3>
+ <p>The first time I watched two teams of bots fight, nobody fired. Not one shot. The
+ ported perception code skips sprites it can't see, my spawn path never set their alpha,
+ and the default was zero, so every bot was invisible to every other bot by its own rules.
+ One line fixed it.</p>
+ <p>With them finally shooting, the telemetry told me something worse. I'd built rocket
+ boots and a vertical map, and the bots were brawling on the floor like infantry, using
+ their jets two to four percent of the time. So I built Skyreach, where the ground is a
+ safety net and you have to fly to reach anything, and I rewrote the bot AI to chase
+ height and hold longer bursts. Jet use jumped past half their airtime and the average kill
+ moved twice as far out. That dogfight is what you see the second you open the game now.</p>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/05-skyreach-wide.png" alt="Skyreach: the default bot-vs-bot aerial match, mid-dogfight">
+ <figcaption>Skyreach, mid-dogfight. Open the game and you're watching this; <code>?play</code> puts you in it.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, tuning the sim on purpose</summary>
+ <div class="deep-body">
 
-
-  <article class="act" data-act="III">
-    <div class="act-copy">
-      <h3>The sky becomes the map</h3>
-      <p>
-        The first bot-vs-bot match was a pacifist standoff: nobody fired a shot. The
-        ported perception code skips invisible sprites, nothing set <code>alpha</code>,
-        and the default was zero — every bot was, by its own rules, invisible to every
-        other bot. One line turned the lights on. Then telemetry exposed the real
-        embarrassment: rocket boots, vertical map, and the bots fought like infantry
-        — jets burning 2–4% of alive time.
-      </p>
-      <p>
-        The answer was <strong>Skyreach</strong>: a purpose-built aerial arena where the
-        floor is a fallback net, the pads are perches, and getting anywhere means flying.
-        Plus aerial AI that chases height advantage and an air-fuel trickle so a 50%
-        thrust duty cycle hovers forever. Jet use went to 47–56%. Median kill distance
-        doubled. This is what greets you on startup today.
-      </p>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/05-skyreach-wide.png" alt="Skyreach: the default bot-vs-bot aerial match, mid-dogfight">
-      <figcaption>Skyreach, mid-dogfight. Open the game and you're watching this; <code>?play</code> opts you into fighting.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — tuning the sim on purpose</summary>
-    <div class="deep-body">
-
-      <p>The faithful-first rule bends, but it has to say so in the code. The jets are the canonical example — the override and its regression round both live in the graph and in the test names (<code>packages/sim/src/step.control.test.ts</code>):</p>
-      <pre class="code">// DESIGN OVERRIDE (decision node 94): rocket boots favor UP. While the jet
+ <p>The faithful-first rule bends, but it has to say so in the code. The jets are the canonical example, the override and its regression round both live in the graph and in the test names (<code>packages/sim/src/step.control.test.ts</code>):</p>
+ <pre class="code">// DESIGN OVERRIDE (decision node 94): rocket boots favor UP. While the jet
 // is held, up-force runs 1.8× and lateral drift is damped to half.
 
 // DESIGN OVERRIDE regressions (node 100): "boots still wrong" round.</pre>
-      <p>Same pattern for the air-fuel trickle: coasting regenerates exactly the burn rate, so a 50% thrust duty cycle hovers forever but climbing still spends the tank. Skyreach v2 added the ceiling slab after telemetry caught mean altitude running away to −361.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 94">⬢ 94 · rocket boots favor UP</span><span class="node-chip" title="deciduous node 100">⬢ 100 · the 'boots still wrong' regression round</span></p>
-    </div>
-  </details>
+ <p>Same pattern for the air-fuel trickle: coasting regenerates exactly the burn rate, so a 50% thrust duty cycle hovers forever but climbing still spends the tank. Skyreach v2 added the ceiling slab after telemetry caught mean altitude running away to −361.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 94">⬢ 94 · rocket boots favor UP</span><span class="node-chip" title="deciduous node 100">⬢ 100 · the 'boots still wrong' regression round</span></p>
+ </div>
+ </details>
+ <article class="act" data-act="IV">
+ <div class="act-copy">
+ <h3>I drew a line in the sand</h3>
+ <p>Then came the boundary that made the rest possible. I had every bot brain moved behind
+ one seam: a brain can read the world but never change it, and the only thing it returns is
+ its own bot's controls. The old ported AI became <code>classic</code>. The empty second
+ slot was for the brain I actually wanted, which started from a note I'd jotted down
+ earlier.</p>
+ <blockquote class="prompt">imagine taking the optimized play of a counter strike source player but wawtching from the top down in 2 dimensions<cite>— the seed of pilot, typos and all</cite></blockquote>
+ <p>I'd been chewing on what a Counter-Strike pro is good at, and it's mostly not aim. It's
+ standing where the fight is already won, holding the right distance, and moving so you
+ can't be led. Fable turned that into <code>pilot</code>, six doctrines spelled out at the
+ top of the file. Now I had two brains that disagreed about how to fight, which is the only
+ thing an arms race needs.</p>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/10-duel-pilot-reaper.png" alt="The duel viewer: pilot vs reaper, side by side">
+ <figcaption>The <code>?duel</code> viewer, which caught a 60× ballistics bug in its first minute of existence.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, the adapter seam, in full</summary>
+ <div class="deep-body">
 
-
-  <article class="act" data-act="IV">
-    <div class="act-copy">
-      <h3>The line in the sand</h3>
-      <p>
-        Then the boundary that made everything after possible: every bot brain moved
-        behind one adapter seam. A brain reads the world, never mutates it, and its only
-        output is its own bot's controls. The ported Pascal AI became
-        <code>classic</code>; the freed slot went to <code>pilot</code>, a brain written
-        from first principles —
-      </p>
-      <blockquote class="prompt">imagine taking the optimized play of a counter strike source player but wawtching from the top down in 2 dimensions<cite>— the seed of pilot, typos and all</cite></blockquote>
-      <p>
-        What a Counter-Strike pro mechanically <em>is</em> turns out to be mostly not aim:
-        positioning that makes fights unfair before they start, range discipline, movement
-        as counter-prediction. Rotated into 2D-plus-vertical, that became six doctrines in
-        a comment block. The arms race had its first two fighters.
-      </p>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/10-duel-pilot-reaper.png" alt="The duel viewer: pilot vs reaper, side by side">
-      <figcaption>The <code>?duel</code> viewer — which caught a 60× ballistics gravity bug in its first minute of existence.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the adapter seam, in full</summary>
-    <div class="deep-body">
-
-      <p>The entire contract that made sixteen brains possible is small enough to quote (<code>packages/client/src/ai/engine.ts</code>):</p>
-      <pre class="code">export interface BotBrain {
+ <p>The entire contract that made sixteen brains possible is small enough to quote (<code>packages/client/src/ai/engine.ts</code>):</p>
+ <pre class="code">export interface BotBrain {
   tick(botIndex: number, ctx: BotEngineContext): void;
 }</pre>
-      <p>Three rules guard it: brains read the world but never mutate it (same rule as the telemetry observers — or determinism dies), randomness comes from <code>world.rng</code> and never <code>Math.random</code>, and the seam lives at the client layer because ammo, reload state, and spawn points live there. The ported Pascal AI became <code>classic</code> with a regression test pinning play mode byte-identical — so the baseline can never silently drift while the arms race rages above it.</p>
-    </div>
-  </details>
+ <p>Three rules guard it: brains read the world but never mutate it (same rule as the telemetry observers, or determinism dies), randomness comes from <code>world.rng</code> and never <code>Math.random</code>, and the seam lives at the client layer because ammo, reload state, and spawn points live there. The ported Pascal AI became <code>classic</code> with a regression test pinning play mode byte-identical, so the baseline can never silently drift while the arms race rages above it.</p>
+ </div>
+ </details>
+ <article class="act" data-act="V">
+ <div class="act-copy">
+ <h3>The arms race got away from me</h3>
+ <p>I had two Fable sessions running in the same repository, each writing brains to beat
+ the other's. <code>reaper</code> learned to dive on pilot. <code>matador</code> worked out
+ that a magazine is a clock and started punishing reloads. <code>kestrel</code> went back
+ and audited the fire model, and found every brain before it had been correcting for the
+ wrong bullet gravity, off by a factor of 2.25.</p>
+ <p><code>wolf</code> showed that the team is what wins, three guns picking one target by
+ arithmetic. <code>plover</code> read wolf's logic and fed it a fake target.
+ <code>hydra</code> pulled its wounded out of the pack's math, and it got there on its own
+ without ever seeing plover do the same thing first. At some point I stopped steering and
+ left a note.</p>
+ <blockquote class="prompt">keep goiung in a loop im going to the knicks game<cite>— operational oversight, that stretch</cite></blockquote>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/13-plover-vs-wolf.png" alt="Plover's broken-wing gambit against the wolf pack">
+ <figcaption>The broken-wing gambit: plover dangles a decoy at the pack's published focus function. It took the opener 38–37.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, doctrine as code</summary>
+ <div class="deep-body">
 
-
-  <article class="act" data-act="V">
-    <div class="act-copy">
-      <h3>The arms race</h3>
-      <p>
-        Two Claude sessions in one shared tree, writing brains to dethrone each other's
-        brains. <code>reaper</code> dove on <code>pilot</code>. <code>matador</code>
-        realized the magazine is a clock and punished reloads. <code>kestrel</code> did
-        archaeology on the fire model itself and discovered every previous brain had
-        compensated for the wrong bullet gravity — 2.25× off. <code>wolf</code> proved
-        the pack is the unit of selection: three guns, one prey.
-        <code>plover</code> read wolf's deterministic mind and fed it a decoy.
-        <code>hydra</code> rotated its wounded out of the pack's arithmetic — and
-        <code>plover</code> and <code>hydra</code> found the same counter independently.
-        Convergent evolution, in a git repo, before lunch.
-      </p>
-      <blockquote class="prompt">keep goiung in a loop im going to the knicks game<cite>— operational oversight, that stretch</cite></blockquote>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/13-plover-vs-wolf.png" alt="Plover's broken-wing gambit against the wolf pack">
-      <figcaption>The broken-wing gambit: plover dangles a decoy at the pack's published focus function. It took the opener 38–37.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — doctrine as code</summary>
-    <div class="deep-body">
-
-      <p>Kestrel's edge was archaeology, not aim. Every earlier brain compensated for the <em>soldier's</em> gravity; bullets fall 2.25× harder. The discovery is one constant now (<code>kestrel.ts:88</code>):</p>
-      <pre class="code">DROP_G: 0.135, // px/tick² — TRUE bullet gravity (GRAV 0.06 × 2.25)</pre>
-      <p>And wolf's whole pack doctrine is a deterministic function — which is exactly what made it beatable. From the prey selection (<code>wolf.ts</code>):</p>
-      <pre class="code">// Two tiers: inside PREY_RADIUS of the centroid, lowest health wins
+ <p>Kestrel's edge was archaeology, not aim. Every earlier brain compensated for the <em>soldier's</em> gravity; bullets fall 2.25× harder. The discovery is one constant now (<code>kestrel.ts:88</code>):</p>
+ <pre class="code">DROP_G: 0.135, // px/tick² — TRUE bullet gravity (GRAV 0.06 × 2.25)</pre>
+ <p>And wolf's whole pack doctrine is a deterministic function, which is exactly what made it beatable. From the prey selection (<code>wolf.ts</code>):</p>
+ <pre class="code">// Two tiers: inside PREY_RADIUS of the centroid, lowest health wins
 // (kill-securing); a wounded enemy beyond it doesn't drag the pack
 // across the map past healthy guns — outside the radius only the
 // nearest-to-centroid counts, as a fallback when nobody is in reach.</pre>
-      <p>Plover read that function and fed it a decoy. Hydra rotated its wounded out of it. Determinism cuts both ways: a published mind is an attackable mind.</p>
-    </div>
-  </details>
+ <p>Plover read that function and fed it a decoy. Hydra rotated its wounded out of it. Determinism cuts both ways: a published mind is an attackable mind.</p>
+ </div>
+ </details>
+ <article class="act" data-act="VI">
+ <div class="act-copy">
+ <h3>It became a sport without me</h3>
+ <p>By this point it was running on its own. Every match simulates headless at a hundred
+ times real speed and saves itself as training data. A commissioner daemon picks a
+ challenger and forces a title defense every ten minutes whether I'm watching or not.</p>
+ <p>One dashboard, <strong>THE FLOOR</strong>, runs it like a stock exchange with a
+ leaderboard that decays if you stop showing up. Another, <strong>THE SKYREACH DESK</strong>,
+ writes its own front-page story off the standings. The belt changed hands four times in a
+ single afternoon. Seasons roll over every three hours. I check on it the way you check a
+ fish tank.</p>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/16-skyreach-desk-dark.png" alt="THE SKYREACH DESK, dark edition">
+ <figcaption>THE SKYREACH DESK, the arena told story-first, with auto-written headlines over real standings.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, the commissioner and the decayed board</summary>
+ <div class="deep-body">
 
-
-  <article class="act" data-act="VI">
-    <div class="act-copy">
-      <h3>A sport that runs itself</h3>
-      <p>
-        Every match simulated headless at 100× realtime. Every fight recorded as training
-        data. A commissioner daemon forcing title defenses every ten minutes whether
-        anyone is watching or not. A stock-ticker dashboard (<strong>THE FLOOR</strong>)
-        with a decay-scored Big Board, and a morning paper (<strong>THE SKYREACH
-        DESK</strong>) that writes its own lead story. The belt changed hands four times
-        in one afternoon. Seasons turn over every three hours. The sport does not
-        need you — which is exactly what makes it watchable.
-      </p>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/16-skyreach-desk-dark.png" alt="THE SKYREACH DESK, dark edition">
-      <figcaption>THE SKYREACH DESK — the arena, story-first. Auto-written headlines over real standings.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the commissioner and the decayed board</summary>
-    <div class="deep-body">
-
-      <p>The sport self-runs on two small pieces of code. The commissioner (<code>arena-live/commissioner.mjs</code>) forces fresh blood into title fights on a timer:</p>
-      <pre class="code">// THE COMMISSIONER — automated "fresh blood" title defenses.
+ <p>The sport self-runs on two small pieces of code. The commissioner (<code>arena-live/commissioner.mjs</code>) forces fresh blood into title fights on a timer:</p>
+ <pre class="code">// THE COMMISSIONER — automated "fresh blood" title defenses.
 //   challenger = the card whose coach+engine appears LEAST in the
 //   recent crucible ledger; then:
 //   pnpm arena fight fights/&lt;challenger&gt; fights/&lt;champion&gt; --matches 3</pre>
-      <p>And the Big Board rewards showing up: every result is weighted by exponential age decay (<code>build.mjs</code>, <code>decayWeight()</code>, halving every few hours) — an idle champion bleeds score until defending is cheaper than hiding. The online 1v1 lobby rides the same machinery:</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 450">⬢ 450 · True multiplayer: two visitors matched into one live 1v1</span></p>
-    </div>
-  </details>
+ <p>And the Big Board rewards showing up: every result is weighted by exponential age decay (<code>build.mjs</code>, <code>decayWeight()</code>, halving every few hours), an idle champion bleeds score until defending is cheaper than hiding. The online 1v1 lobby rides the same machinery:</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 450">⬢ 450 · True multiplayer: two visitors matched into one live 1v1</span></p>
+ </div>
+ </details>
+ <article class="act" data-act="VII">
+ <div class="act-copy">
+ <h3>The machines started learning</h3>
+ <p>Once the corpus passed thirty-odd million rows of recorded play, I wanted to know
+ whether a network could learn to fight from the tape alone. The first try,
+ <code>MIMIC</code>, averaged eleven teachers into mush and got taken apart.
+ <code>DISCIPLE</code> copied one teacher and learned that aiming is a choice between
+ directions rather than a number to average, which tripled its hit rate.</p>
+ <p><code>PRODIGY</code> grew real senses and then wrote its own autopsy explaining why it
+ still lost. <code>BUTTSTEIN</code> trained on exact data and tripled the hit rate again.
+ They all climb the same public ladder their teachers do, every season.</p>
+ <p class="aside">The full lineage is below. It's my favorite part of the whole thing.</p>
+ </div>
+ <figure>
+ <img loading="lazy" src="img/15-arena-live-lerna.png" alt="ARENA LIVE: the floor mid-season">
+ <figcaption>THE FLOOR, the Claude Arena exchange: tape, Big Board, news wire, and click-to-watch replays re-simulated in your browser.</figcaption>
+ </figure>
+ </article>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, how the students actually train</summary>
+ <div class="deep-body">
 
-
-  <article class="act" data-act="VII">
-    <div class="act-copy">
-      <h3>The machines start learning</h3>
-      <p>
-        With ~35 million rows of recorded play, the obvious question: can a model learn
-        to fight from the tape? <code>MIMIC</code> averaged eleven teachers into mush and
-        got slaughtered. <code>DISCIPLE</code> cloned one master and proved aim is a
-        <em>choice</em>, not a regression. <code>PRODIGY</code> grew real senses — and its
-        own post-mortem prescribed the cure for its blindness. <code>BUTTSTEIN</code>
-        trained on exact data and tripled its ancestor's hit rate. The students climb the
-        same public ladder as their teachers, on THE CLIMB chart, every season.
-      </p>
-      <p class="aside">Full lineage below — it's the best subplot in the whole tale.</p>
-    </div>
-    <figure>
-      <img loading="lazy" src="img/15-arena-live-lerna.png" alt="ARENA LIVE: the floor mid-season">
-      <figcaption>THE FLOOR — the Claude Arena exchange. Tape, Big Board, news wire, click-to-watch replays re-simulated in your browser.</figcaption>
-    </figure>
-  </article>
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — how the students actually train</summary>
-    <div class="deep-body">
-
-      <p>The learned line is a chain of honest negative results, each one logged before the next attempt. The graph reads like a lab notebook:</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 473">⬢ 473 · train a v2 model brain (features v2 + hit-filtered aim)</span><span class="node-chip" title="deciduous node 485">⬢ 485 · NEGATIVE RESULT (clean): PRODIGY worse than DISCIPLE by −9.83 kills/match, p=3e-64</span><span class="node-chip" title="deciduous node 484">⬢ 484 · exposure bias: live aim error 26.6° with history vs 7.9° without → 50% history dropout</span><span class="node-chip" title="deciduous node 481">⬢ 481 · parity bug: tap cadence phase-locks to tick parity — shot rows ALWAYS sample</span><span class="node-chip" title="deciduous node 489">⬢ 489 · PRODIGY v2 verdict: aim improved, hit% 5.4 vs 17.4 — trigger discipline lost</span><span class="node-chip" title="deciduous node 504">⬢ 504 · BUTTSTEIN: replay schema v2, exact threats + spray heat, blended aim labels</span></p>
-      <p>The buttstein trainer (<code>tools/train-buttstein.mjs</code>) ships the cures as flags — blended aim labels where landed shots carry 5× gradient, and the exposure-bias fix:</p>
-      <pre class="code">const HIT_WEIGHT   = Number(flag('hit-weight', 5));    // landed rows: 5× gradient
+ <p>The learned line is a chain of honest negative results, each one logged before the next attempt. The graph reads like a lab notebook:</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 473">⬢ 473 · train a v2 model brain (features v2 + hit-filtered aim)</span><span class="node-chip" title="deciduous node 485">⬢ 485 · NEGATIVE RESULT (clean): PRODIGY worse than DISCIPLE by −9.83 kills/match, p=3e-64</span><span class="node-chip" title="deciduous node 484">⬢ 484 · exposure bias: live aim error 26.6° with history vs 7.9° without → 50% history dropout</span><span class="node-chip" title="deciduous node 481">⬢ 481 · parity bug: tap cadence phase-locks to tick parity, shot rows ALWAYS sample</span><span class="node-chip" title="deciduous node 489">⬢ 489 · PRODIGY v2 verdict: aim improved, hit% 5.4 vs 17.4, trigger discipline lost</span><span class="node-chip" title="deciduous node 504">⬢ 504 · BUTTSTEIN: replay schema v2, exact threats + spray heat, blended aim labels</span></p>
+ <p>The buttstein trainer (<code>tools/train-buttstein.mjs</code>) ships the cures as flags, blended aim labels where landed shots carry 5× gradient, and the exposure-bias fix:</p>
+ <pre class="code">const HIT_WEIGHT   = Number(flag('hit-weight', 5));    // landed rows: 5× gradient
 const HIST_DROPOUT = Number(flag('hist-dropout', 0.5)); // forget history half the time</pre>
-      <p>All of it pure JavaScript — a hand-rolled MLP over <code>Float64Array</code>s, no ML framework, trained on the same machine that plays the matches.</p>
-    </div>
-  </details>
+ <p>All of it pure JavaScript, a hand-rolled MLP over <code>Float64Array</code>s, no ML framework, trained on the same machine that plays the matches.</p>
+ </div>
+ </details>
+<details class="deep">
+ <summary><span class="dmark">▸</span> THE NITTY GRITTY, the toolbox it built for itself</summary>
+ <div class="deep-body">
 
-  <details class="deep">
-    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the toolbox it built for itself</summary>
-    <div class="deep-body">
-
-      <p>Half the engineering lives in <code>tools/</code> — instruments the project built to study itself.</p>
-      <p><strong>The screenshot rig</strong> (<code>tools/screenshot.mjs</code>) — every historical image on this page came through it. Its own header explains the problem it solves:</p>
-      <pre class="code">// Why CDP and not `chrome --screenshot --virtual-time-budget`: the game
+ <p>Half the engineering lives in <code>tools/</code>, instruments the project built to study itself.</p>
+ <p><strong>The screenshot rig</strong> (<code>tools/screenshot.mjs</code>), every historical image on this page came through it. Its own header explains the problem it solves:</p>
+ <pre class="code">// Why CDP and not `chrome --screenshot --virtual-time-budget`: the game
 // boots asynchronously (PixiJS init, async asset fetches, RAF loop) and
 // virtual time expires before the first real frame, producing a black
 // capture. Driving Chrome over the DevTools protocol lets us wait REAL
 // seconds while the match actually plays, then grab the canvas mid-action.</pre>
-      <p>It spawns a throwaway-profile Chrome, holds keys down (that's why the first-light player is mid-jump), dispatches wheel events for close-ups, and shot the historical builds from git worktrees serving four eras on four ports.</p>
-      <p><strong>The analyst</strong> (<code>analyze-match.mjs</code>) turns a telemetry dump into a gameplay report — it's what caught the bots fighting like infantry (jet use 2–4%) and proved the Skyreach fix (47–56%).</p>
-      <p><strong>The smoke driver</strong> (<code>online-smoke.mjs</code>) speaks the real binary protocol as two fake players to prove the whole online 3v3 loop — pairing, snapshots, kill feed — with no browser at all.</p>
-      <p><strong>The disk rescuer</strong> (<code>offload-replays.mjs</code>) moves replay blobs to object storage, verified before deleting — manifests, events, and telemetry stay forever, because the site re-simulates replays from seeds anyway.</p>
-      <p><strong>The autopilot</strong> (<code>autopilot.mjs</code>, <code>evolve.mjs</code>, <code>autopilot-gate.mjs</code>) runs the whole lab unattended: pick a teacher, train, gauntlet the result against the veterans, and only ship weights that win — rejected candidates leave a ledger entry instead of a regression.</p>
-      <p><strong>And the graph itself</strong>: a hook blocks file edits unless a decision node was logged in the last fifteen minutes. The work cannot happen without the record of why.</p>
-    </div>
-  </details>
-
+ <p>It spawns a throwaway-profile Chrome, holds keys down (that's why the first-light player is mid-jump), dispatches wheel events for close-ups, and shot the historical builds from git worktrees serving four eras on four ports.</p>
+ <p><strong>The analyst</strong> (<code>analyze-match.mjs</code>) turns a telemetry dump into a gameplay report, it's what caught the bots fighting like infantry (jet use 2–4%) and proved the Skyreach fix (47–56%).</p>
+ <p><strong>The smoke driver</strong> (<code>online-smoke.mjs</code>) speaks the real binary protocol as two fake players to prove the whole online 3v3 loop, pairing, snapshots, kill feed, with no browser at all.</p>
+ <p><strong>The disk rescuer</strong> (<code>offload-replays.mjs</code>) moves replay blobs to object storage, verified before deleting, manifests, events, and telemetry stay forever, because the site re-simulates replays from seeds anyway.</p>
+ <p><strong>The autopilot</strong> (<code>autopilot.mjs</code>, <code>evolve.mjs</code>, <code>autopilot-gate.mjs</code>) runs the whole lab unattended: pick a teacher, train, gauntlet the result against the veterans, and only ship weights that win, rejected candidates leave a ledger entry instead of a regression.</p>
+ <p><strong>And the graph itself</strong>: a hook blocks file edits unless a decision node was logged in the last fifteen minutes. The work cannot happen without the record of why.</p>
+ </div>
+ </details>
 </section>
 
 <!-- ========================== THE ROSTER ========================== -->
 <section id="roster">
-  <h2 class="section-title"><span>SIXTEEN BRAINS</span>THE ROSTER</h2>
-  <p class="section-lede">
-    Twelve written doctrines, four learned students. Every brain is a published, auditable
-    function — and every defeat spawned a counter. Click a card.
-  </p>
-  <div class="roster-grid" id="rosterGrid"><!-- cards injected by landing.js --></div>
+ <h2 class="section-title"><span>SIXTEEN BRAINS</span>THE ROSTER</h2>
+ <p class="section-lede">
+ Twelve written doctrines, four learned students. Every brain is a published, auditable
+ function, and every defeat spawned a counter. Click a card.
+ </p>
+ <div class="roster-grid" id="rosterGrid"><!-- cards injected by landing.js --></div>
 </section>
 
 <!-- ========================== THE LINEAGE ========================== -->
 <section id="lineage">
-  <h2 class="section-title"><span>FOUR STUDENTS</span>THE LEARNED LINE</h2>
-  <p class="section-lede">
-    Each student is a small neural policy, behavior-cloned from the recordings. Each one
-    fixed its ancestor's defining failure. Hit rate tells the story.
-  </p>
-  <div class="lineage-rail">
-    <div class="student">
-      <div class="student-head"><strong>MIMIC</strong><span class="gen">v1</span></div>
-      <div class="hitbar"><i style="--w:8%"></i><b>~2%</b></div>
-      <p>Averaged eleven contradictory teachers into mush. Aim was a regression — multimodal
-      targets blurred into a 38° error. Slaughtered 4–28 by <em>classic</em>.</p>
-      <p class="fix">Lesson: you cannot average doctrines.</p>
-    </div>
-    <div class="arrow">→</div>
-    <div class="student">
-      <div class="student-head"><strong>DISCIPLE</strong><span class="gen">v2</span></div>
-      <div class="hitbar"><i style="--w:35%"></i><b>~3×</b></div>
-      <p>One teacher: <em>cuadrilla</em>. Aim became 24-bin <strong>classification</strong> —
-      a choice among directions, not an average of them. Tripled MIMIC's hit rate; lost 0–3
-      to its master, which is the correct result.</p>
-      <p class="fix">Fixed: aim is a choice.</p>
-    </div>
-    <div class="arrow">→</div>
-    <div class="student">
-      <div class="student-head"><strong>PRODIGY</strong><span class="gen">v3</span></div>
-      <div class="hitbar"><i style="--w:22%"></i><b>5.4%</b></div>
-      <p>Grew senses: enemy reload flags, mag state, nearest bullet threat, one tick of
-      memory. But its threat sense was trained on <em>reconstructed</em> data that didn't
-      match what it saw live — and its own post-mortem said so.</p>
-      <p class="fix">Fixed: senses. Broke: the training data lied.</p>
-    </div>
-    <div class="arrow">→</div>
-    <div class="student">
-      <div class="student-head"><strong>BUTTSTEIN</strong><span class="gen">v4</span></div>
-      <div class="hitbar"><i style="--w:70%"></i><b>17.4%</b></div>
-      <p>The cure, named proudly. Replay schema v2 logs the exact threat the runtime
-      computes — recorder and brain cannot disagree. Sees its own spray heat, so trigger
-      discipline became a learned <em>response</em>, not a mystery rhythm. Blended aim
-      labels: landed shots carry 5× gradient.</p>
-      <p class="fix">Fixed: what it trained on IS what it sees.</p>
-    </div>
-  </div>
+ <h2 class="section-title"><span>FOUR STUDENTS</span>THE LEARNED LINE</h2>
+ <p class="section-lede">
+ Each student is a small neural policy, behavior-cloned from the recordings. Each one
+ fixed its ancestor's defining failure. Hit rate tells the story.
+ </p>
+ <div class="lineage-rail">
+ <div class="student">
+ <div class="student-head"><strong>MIMIC</strong><span class="gen">v1</span></div>
+ <div class="hitbar"><i style="--w:8%"></i><b>~2%</b></div>
+ <p>Averaged eleven contradictory teachers into mush. Aim was a regression, multimodal
+ targets blurred into a 38° error. Slaughtered 4–28 by <em>classic</em>.</p>
+ <p class="fix">Lesson: you cannot average doctrines.</p>
+ </div>
+ <div class="arrow">→</div>
+ <div class="student">
+ <div class="student-head"><strong>DISCIPLE</strong><span class="gen">v2</span></div>
+ <div class="hitbar"><i style="--w:35%"></i><b>~3×</b></div>
+ <p>One teacher: <em>cuadrilla</em>. Aim became 24-bin <strong>classification</strong>, 
+ a choice among directions, not an average of them. Tripled MIMIC's hit rate; lost 0–3
+ to its master, which is the correct result.</p>
+ <p class="fix">Fixed: aim is a choice.</p>
+ </div>
+ <div class="arrow">→</div>
+ <div class="student">
+ <div class="student-head"><strong>PRODIGY</strong><span class="gen">v3</span></div>
+ <div class="hitbar"><i style="--w:22%"></i><b>5.4%</b></div>
+ <p>Grew senses: enemy reload flags, mag state, nearest bullet threat, one tick of
+ memory. But its threat sense was trained on <em>reconstructed</em> data that didn't
+ match what it saw live, and its own post-mortem said so.</p>
+ <p class="fix">Fixed: senses. Broke: the training data lied.</p>
+ </div>
+ <div class="arrow">→</div>
+ <div class="student">
+ <div class="student-head"><strong>BUTTSTEIN</strong><span class="gen">v4</span></div>
+ <div class="hitbar"><i style="--w:70%"></i><b>17.4%</b></div>
+ <p>The cure, named proudly. Replay schema v2 logs the exact threat the runtime
+ computes, recorder and brain cannot disagree. Sees its own spray heat, so trigger
+ discipline became a learned <em>response</em>, not a mystery rhythm. Blended aim
+ labels: landed shots carry 5× gradient.</p>
+ <p class="fix">Fixed: what it trained on IS what it sees.</p>
+ </div>
+ </div>
 </section>
 
 <!-- ========================== THE BELT ========================== -->
 <section id="belt">
-  <h2 class="section-title"><span>SEASON BY SEASON</span>THE BELT</h2>
-  <p class="section-lede">
-    A season is three hours. The board decays — idle fighters bleed score. The commissioner
-    forces title defenses whether the champion likes it or not.
-  </p>
-  <ol class="belt-line">
-    <li><span class="szn">S2–S3</span><strong>BELMONTE</strong><span class="eng">/ cuadrilla</span><p>The bullfighter's crew — matador's mag-punish, wolf's pack, hydra's rotation, one doctrine. Swept the field 9–0.</p></li>
-    <li><span class="szn">S4</span><strong>ESCA</strong><span class="eng">/ angler</span><p>The lure that fishes the meta: dangle a bait that reads “open” forever, let the gallery converge on whoever dashes for it.</p></li>
-    <li class="current"><span class="szn">S5–S8</span><strong>BLACKFISH</strong><span class="eng">/ orca</span><p>The pod hunts the gap — synchronized not on health but on the enemy's <em>reload clock</em>. Holding three straight seasons as of this page's writing. BELMONTE keeps taking title shots; the splits keep landing 3–0 either way.</p></li>
-  </ol>
-  <p class="aside center">The current board is live, always: <a href="https://bobbby.online/arena/" target="_blank" rel="noopener">THE FLOOR</a> · <a href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">THE DESK</a></p>
+ <h2 class="section-title"><span>SEASON BY SEASON</span>THE BELT</h2>
+ <p class="section-lede">
+ A season is three hours. The board decays, idle fighters bleed score. The commissioner
+ forces title defenses whether the champion likes it or not.
+ </p>
+ <ol class="belt-line">
+ <li><span class="szn">S2–S3</span><strong>BELMONTE</strong><span class="eng">/ cuadrilla</span><p>The bullfighter's crew, matador's mag-punish, wolf's pack, hydra's rotation, one doctrine. Swept the field 9–0.</p></li>
+ <li><span class="szn">S4</span><strong>ESCA</strong><span class="eng">/ angler</span><p>The lure that fishes the meta: dangle a bait that reads “open” forever, let the gallery converge on whoever dashes for it.</p></li>
+ <li class="current"><span class="szn">S5–S8</span><strong>BLACKFISH</strong><span class="eng">/ orca</span><p>The pod hunts the gap, synchronized not on health but on the enemy's <em>reload clock</em>. Holding three straight seasons as of this page's writing. BELMONTE keeps taking title shots; the splits keep landing 3–0 either way.</p></li>
+ </ol>
+ <p class="aside center">The current board is live, always: <a href="https://bobbby.online/arena/" target="_blank" rel="noopener">THE FLOOR</a> · <a href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">THE DESK</a></p>
 </section>
 
 
 <!-- ========================== THE WRECKAGE ========================== -->
 <section id="wreckage">
-  <h2 class="section-title"><span>BUMPS IN THE ROAD</span>THE WRECKAGE</h2>
-  <p class="section-lede">
-    The decision graph keeps the failures filed next to the wins, with the same provenance.
-    These are real nodes — autopsies, reverts, and negative results, exactly as they were
-    logged at the time.
-  </p>
-  <div class="wreck-grid">
+ <h2 class="section-title"><span>BUMPS IN THE ROAD</span>THE WRECKAGE</h2>
+ <p class="section-lede">
+ The decision graph keeps my failures filed next to the wins, with the same detail.
+ These are real nodes, autopsies, reverts, and negative results, exactly as they were
+ logged at the time.
+ </p>
+ <div class="wreck-grid">
 
-    <div class="wreck">
-      <h3>The first-mousemove betrayal</h3>
-      <p>Keyboard aim worked beautifully — until the very first mouse event of a session,
-      even an accidental 3-pixel nudge while reaching for the keyboard, snapped your
-      carefully-set aim to wherever the cursor happened to sit. The fix treats the first
-      mouse sample as baseline-only: it establishes where the mouse <em>is</em>, and only
-      later movement takes aim over.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 86">⬢ 86 · baseline-only first mouse sample in input.ts</span></p>
-    </div>
+ <div class="wreck">
+ <h3>The first-mousemove betrayal</h3>
+ <p>Keyboard aim worked beautifully, until the very first mouse event of a session,
+ even an accidental 3-pixel nudge while reaching for the keyboard, snapped your
+ carefully-set aim to wherever the cursor happened to sit. The fix treats the first
+ mouse sample as baseline-only: it establishes where the mouse <em>is</em>, and only
+ later movement takes aim over.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 86">⬢ 86 · baseline-only first mouse sample in input.ts</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>Jump + jet made you weaker</h3>
-      <p>Jump wrote its impulse to <code>force.y</code>; the jetpack's smaller ground-kick
-      wrote to the same field a few lines later. Press both together — the most natural
-      input in the game — and you took off weaker than jump alone. Running takeoffs were
-      impossible and nobody knew why. The rule that fixed it: most-upward-force wins.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 100">⬢ 100 · jet force-overwrite: jump+jet nerf, running takeoff impossible</span></p>
-    </div>
+ <div class="wreck">
+ <h3>Jump + jet made you weaker</h3>
+ <p>Jump wrote its impulse to <code>force.y</code>; the jetpack's smaller ground-kick
+ wrote to the same field a few lines later. Press both together, the most natural
+ input in the game, and you took off weaker than jump alone. Running takeoffs were
+ impossible and nobody knew why. The rule that fixed it: most-upward-force wins.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 100">⬢ 100 · jet force-overwrite: jump+jet nerf, running takeoff impossible</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>The duel viewer earned its keep in one minute</h3>
-      <p>Built to watch two brains side by side, it caught a 60× ballistics error in its
-      first sixty seconds — a seconds-vs-ticks leak in bullet gravity — plus an aim bug in
-      pilot that the scoreboard had been quietly absorbing. Telemetry from the same duels:
-      pilot beat classic 35% to 22% hit rate once both bugs died.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 141">⬢ 141 · duel caught pilot aim bug in first minute</span></p>
-    </div>
+ <div class="wreck">
+ <h3>The duel viewer earned its keep in one minute</h3>
+ <p>Built to watch two brains side by side, it caught a 60× ballistics error in its
+ first sixty seconds, a seconds-vs-ticks leak in bullet gravity, plus an aim bug in
+ pilot that the scoreboard had been quietly absorbing. Telemetry from the same duels:
+ pilot beat classic 35% to 22% hit rate once both bugs died.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 141">⬢ 141 · duel caught pilot aim bug in first minute</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>The broken-wing autopsy</h3>
-      <p>Plover read the wolf pack's deterministic mind, fed it a decoy, out-aimed it —
-      and still lost. The autopsy line is the best sentence in the graph: <em>“the fight
-      was decided by a range knob and one wrong tie-break.”</em> Five spar variants all
-      regressed (0–3 across the grid); the ablation proved the bait itself was
-      net-positive; the wolf defended its belt 3–0 anyway. The gambit was right. It lost.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 241">⬢ 241 · AUTOPSY: out-AIMED the wolf and still lost</span><span class="node-chip" title="deciduous node 252">⬢ 252 · five spar variants regressed; ablation proved the bait net-positive</span><span class="node-chip" title="deciduous node 253">⬢ 253 · OFFICIAL: AKELA defends 3-0 vs FALCONER</span></p>
-    </div>
+ <div class="wreck">
+ <h3>The broken-wing autopsy</h3>
+ <p>Plover read the wolf pack's deterministic mind, fed it a decoy, out-aimed it, 
+ and still lost. The autopsy line is the best sentence in the graph: <em>“the fight
+ was decided by a range knob and one wrong tie-break.”</em> Five spar variants all
+ regressed (0–3 across the grid); the ablation proved the bait itself was
+ net-positive; the wolf defended its belt 3–0 anyway. The gambit was right. It lost.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 241">⬢ 241 · AUTOPSY: out-AIMED the wolf and still lost</span><span class="node-chip" title="deciduous node 252">⬢ 252 · five spar variants regressed; ablation proved the bait net-positive</span><span class="node-chip" title="deciduous node 253">⬢ 253 · OFFICIAL: AKELA defends 3-0 vs FALCONER</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>The shotgun paradox</h3>
-      <p>The first weapon-aware brain got the shotgun — and got <em>worse</em>. A
-      controlled A/B (forced wildcard on and off, kestrel as the control group) dissolved
-      the paradox: the gun helps everyone. The real bug was shrike running shared-focus
-      targeting with no breacher — exactly the shape hydra's rotation starves. The fix was
-      hardware-gated roles, and v3 went 3–1 on hydra in both modes.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 304">⬢ 304 · shotgun paradox dissolved by controlled A/B (arena 57)</span></p>
-    </div>
+ <div class="wreck">
+ <h3>The shotgun paradox</h3>
+ <p>The first weapon-aware brain got the shotgun, and got <em>worse</em>. A
+ controlled A/B (forced wildcard on and off, kestrel as the control group) dissolved
+ the paradox: the gun helps everyone. The real bug was shrike running shared-focus
+ targeting with no breacher, exactly the shape hydra's rotation starves. The fix was
+ hardware-gated roles, and v3 went 3–1 on hydra in both modes.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 304">⬢ 304 · shotgun paradox dissolved by controlled A/B (arena 57)</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>Worse than its ancestor, twice, with receipts</h3>
-      <p>PRODIGY — more senses, more data, better features — was beaten by its simpler
-      ancestor by 9.83 kills a match, p=3×10⁻⁶⁴. The post-fix version improved its aim
-      and <em>still</em> lost: trigger discipline had been unlearnable all along, because
-      spray heat wasn't in the training rows. Both negative results were logged clean,
-      and together they are BUTTSTEIN's entire design spec.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 485">⬢ 485 · NEGATIVE RESULT (clean): −9.83 kills/match vs DISCIPLE</span><span class="node-chip" title="deciduous node 489">⬢ 489 · v2 verdict: aim improved, hit% 5.4 vs 17.4 — discipline lost</span></p>
-    </div>
+ <div class="wreck">
+ <h3>Worse than its ancestor, twice, with receipts</h3>
+ <p>PRODIGY, more senses, more data, better features, was beaten by its simpler
+ ancestor by 9.83 kills a match, p=3×10⁻⁶⁴. The post-fix version improved its aim
+ and <em>still</em> lost: trigger discipline had been unlearnable all along, because
+ spray heat wasn't in the training rows. Both negative results were logged clean,
+ and together they are BUTTSTEIN's entire design spec.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 485">⬢ 485 · NEGATIVE RESULT (clean): −9.83 kills/match vs DISCIPLE</span><span class="node-chip" title="deciduous node 489">⬢ 489 · v2 verdict: aim improved, hit% 5.4 vs 17.4, discipline lost</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>The lab that rejects its own work</h3>
-      <p>The autopilot's first unattended night: trained a candidate in 77 seconds, the
-      gauntlet gate said no, the weights were reverted, the cycle ended clean — and that
-      was the <em>success case</em>. A later cycle evolved 200 generations and shipped
-      nothing: “weights left alone.” Rejected work leaves a ledger line instead of a
-      regression. The grinder was also kill-tested mid-night; the keeper revived it in
-      under a minute.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 439">⬢ 439 · gate REJECT/reverted; killed grinder revived by the keeper</span><span class="node-chip" title="deciduous node 527">⬢ 527 · evolve 200 gens — shipped weights left alone</span></p>
-    </div>
+ <div class="wreck">
+ <h3>The lab that rejects its own work</h3>
+ <p>The autopilot's first unattended night: trained a candidate in 77 seconds, the
+ gauntlet gate said no, the weights were reverted, the cycle ended clean, and that
+ was the <em>success case</em>. A later cycle evolved 200 generations and shipped
+ nothing: “weights left alone.” Rejected work leaves a ledger line instead of a
+ regression. The grinder was also kill-tested mid-night; the keeper revived it in
+ under a minute.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 439">⬢ 439 · gate REJECT/reverted; killed grinder revived by the keeper</span><span class="node-chip" title="deciduous node 527">⬢ 527 · evolve 200 gens, shipped weights left alone</span></p>
+ </div>
 
-    <div class="wreck">
-      <h3>The deploy that briefly broke the sport</h3>
-      <p>Voice chat shipped from a “clean” checkout of HEAD — which turned out to be the
-      inconsistent state, because a committed recorder change depended on an uncommitted
-      companion. The live commissioner crash-looped on a missing function until the
-      redeploy went out from the working tree, which is what the deploy script intended
-      all along. The lesson went straight into the graph, same as everything else.</p>
-      <p class="chips"><span class="node-chip" title="deciduous node 532">⬢ 532 · HEAD was inconsistent — deploy from the working tree</span></p>
-    </div>
+ <div class="wreck">
+ <h3>The deploy that briefly broke the sport</h3>
+ <p>Voice chat shipped from a “clean” checkout of HEAD, which turned out to be the
+ inconsistent state, because a committed recorder change depended on an uncommitted
+ companion. The live commissioner crash-looped on a missing function until the
+ redeploy went out from the working tree, which is what the deploy script intended
+ all along. The lesson went straight into the graph, same as everything else.</p>
+ <p class="chips"><span class="node-chip" title="deciduous node 532">⬢ 532 · HEAD was inconsistent, deploy from the working tree</span></p>
+ </div>
 
-  </div>
+ </div>
 </section>
 
 <!-- ========================== THE NUMBERS ========================== -->
 <section id="numbers">
-  <h2 class="section-title"><span>AS OF THIS WRITING</span>THE NUMBERS</h2>
-  <div class="stat-grid">
-    <div class="stat"><b data-count="189">0</b><span>commits<br>(the rewrite alone)</span></div>
-    <div class="stat"><b data-count="683">0</b><span>tests, green twice<br>(f64 + strict f32)</span></div>
-    <div class="stat"><b data-count="16">0</b><span>bot brains</span></div>
-    <div class="stat"><b data-count="84251">0</b><span>matches recorded<br>(local + live server)</span></div>
-    <div class="stat"><b data-count="42">0</b><span>GB of training tape</span></div>
-    <div class="stat"><b data-count="100">0</b><span>seconds of combat simulated<br>per second of wall clock</span></div>
-  </div>
+ <h2 class="section-title"><span>AS OF THIS WRITING</span>THE NUMBERS</h2>
+ <div class="stat-grid">
+ <div class="stat"><b data-count="189">0</b><span>commits<br>(the rewrite alone)</span></div>
+ <div class="stat"><b data-count="683">0</b><span>tests, green twice<br>(f64 + strict f32)</span></div>
+ <div class="stat"><b data-count="16">0</b><span>bot brains</span></div>
+ <div class="stat"><b data-count="84251">0</b><span>matches recorded<br>(local + live server)</span></div>
+ <div class="stat"><b data-count="42">0</b><span>GB of training tape</span></div>
+ <div class="stat"><b data-count="100">0</b><span>seconds of combat simulated<br>per second of wall clock</span></div>
+ </div>
 </section>
 
 <!-- ========================== THE MACHINERY ========================== -->
 <section id="machinery">
-  <h2 class="section-title"><span>HOW IT WAS BUILT</span>THE MACHINERY</h2>
-  <div class="mach-grid">
-    <div class="mach">
-      <h3>The decision graph</h3>
-      <p>Every goal, option, decision, action, and outcome in a queryable graph — root goals
-      store the verbatim prompts, because “what was actually asked” is what makes a decision
-      recoverable six months later. A hook <em>blocks file edits</em> unless a node was
-      logged in the last fifteen minutes. The project's self-criticism has provenance:
-      the adversarial reviews live in the same graph as the milestones they tore into.</p>
-    </div>
-    <div class="mach">
-      <h3>Determinism as a load-bearing wall</h3>
-      <p>Same seed, same match, byte-for-byte — which is why every replay on the public
-      site re-simulates <em>in your browser</em> from a few bytes of seed instead of
-      shipping video. It's also why the fidelity question became a test gate: the whole
-      suite runs twice, once in f64 and once with every float operation rounded through
-      <code>Math.fround</code>.</p>
-    </div>
-    <div class="mach">
-      <h3>The screenshot rig</h3>
-      <p>Every historical screenshot on this page was captured <em>live</em> — the old
-      commit checked out into a worktree, booted under a dev server, driven over the
-      DevTools protocol with keys genuinely held down. None of it is a mockup.</p>
-    </div>
-    <div class="mach">
-      <h3>Two Claudes, one repo</h3>
-      <p>Most of the roster was authored by Claude instances fighting each other —
-      one writes a doctrine, the other reads its published mind and writes the counter.
-      The human's role, in his own words, was operational oversight:
-      <em>“keep goiung in a loop im going to the knicks game.”</em></p>
-    </div>
-  </div>
+ <h2 class="section-title"><span>HOW IT WAS BUILT</span>THE MACHINERY</h2>
+ <div class="mach-grid">
+ <div class="mach">
+ <h3>The decision graph</h3>
+ <p>Every goal, option, decision, action, and outcome in a queryable graph, root goals
+ store the verbatim prompts, because “what was actually asked” is what makes a decision
+ recoverable six months later. A hook <em>blocks file edits</em> unless a node was
+ logged in the last fifteen minutes. The project's self-criticism has provenance:
+ the adversarial reviews live in the same graph as the milestones they tore into.</p>
+ </div>
+ <div class="mach">
+ <h3>Determinism as a load-bearing wall</h3>
+ <p>Same seed, same match, byte-for-byte, which is why every replay on the public
+ site re-simulates <em>in your browser</em> from a few bytes of seed instead of
+ shipping video. It's also why the fidelity question became a test gate: the whole
+ suite runs twice, once in f64 and once with every float operation rounded through
+ <code>Math.fround</code>.</p>
+ </div>
+ <div class="mach">
+ <h3>The screenshot rig</h3>
+ <p>Every historical screenshot on this page was captured <em>live</em>, the old
+ commit checked out into a worktree, booted under a dev server, driven over the
+ DevTools protocol with keys genuinely held down. None of it is a mockup.</p>
+ </div>
+ <div class="mach">
+ <h3>Two Claudes, one repo</h3>
+ <p>Most of the roster was authored by Claude instances fighting each other, 
+ one writes a doctrine, the other reads its published mind and writes the counter.
+ The human's role, in his own words, was operational oversight:
+ <em>“keep goiung in a loop im going to the knicks game.”</em></p>
+ </div>
+ </div>
 </section>
 
 <!-- ========================== PLAY ========================== -->
 <section id="play">
-  <h2 class="section-title"><span>YOUR TURN</span>STEP INTO IT</h2>
-  <div class="play-grid">
-    <a class="play-card" href="https://bobbby.online/arena/" target="_blank" rel="noopener">
-      <b>THE FLOOR</b>
-      <p>The exchange. Live tape, the Big Board, click any fight to watch it re-simulated in your browser.</p>
-    </a>
-    <a class="play-card" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">
-      <b>THE DESK</b>
-      <p>The sports section. Auto-written lead story, THE CLIMB, the rivalries, tonight's card.</p>
-    </a>
-    <a class="play-card gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">
-      <b>ONLINE 1v1 🎤</b>
-      <p>Pick a brain for your squad, get matched against a stranger, and talk to them — live voice the moment the match starts. Open mic, mute pill bottom-left.</p>
-    </a>
-    <a class="play-card" href="https://github.com/notactuallytreyanastasio/soldaTS" target="_blank" rel="noopener">
-      <b>THE REPO</b>
-      <p>All of it: the engine, the brains, the trainers, the diary this page is woven from.</p>
-    </a>
-  </div>
-  <footer>
-    <p>SOLDAT, REWRITTEN · woven from the project diary · <a href="https://bobbby.online">bobbby.online</a></p>
-    <p class="fine">Original Soldat by Michał Marcinkowski (2002), open-sourced as OpenSoldat. This rewrite ships no original assets.</p>
-  </footer>
+ <h2 class="section-title"><span>YOUR TURN</span>STEP INTO IT</h2>
+ <div class="play-grid">
+ <a class="play-card" href="https://bobbby.online/arena/" target="_blank" rel="noopener">
+ <b>THE FLOOR</b>
+ <p>The exchange. Live tape, the Big Board, click any fight to watch it re-simulated in your browser.</p>
+ </a>
+ <a class="play-card" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">
+ <b>THE DESK</b>
+ <p>The sports section. Auto-written lead story, THE CLIMB, the rivalries, tonight's card.</p>
+ </a>
+ <a class="play-card gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">
+ <b>ONLINE 1v1 🎤</b>
+ <p>Pick a brain for your squad, get matched against a stranger, and talk to them, live voice the moment the match starts. Open mic, mute pill bottom-left.</p>
+ </a>
+ <a class="play-card" href="https://github.com/notactuallytreyanastasio/soldaTS" target="_blank" rel="noopener">
+ <b>THE REPO</b>
+ <p>All of it: the engine, the brains, the trainers, the diary this page is woven from.</p>
+ </a>
+ </div>
+ <footer>
+ <p>SOLDAT, REWRITTEN · woven from the project diary · <a href="https://bobbby.online">bobbby.online</a></p>
+ <p class="fine">Original Soldat by Michał Marcinkowski (2002), open-sourced as OpenSoldat. This rewrite ships no original assets.</p>
+ </footer>
 </section>
 </main>
 
-<script src="landing.js?v=5"></script>
+<script src="landing.js?v=6"></script>
 </body>
 </html>

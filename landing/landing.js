@@ -1,4 +1,4 @@
-// SOLDAT, REWRITTEN — landing interactions (goal node 533).
+// SOLDAT, REWRITTEN, landing interactions (goal node 533).
 // Vanilla everything: a canvas dogfight behind the hero, scroll-reveals,
 // animated counters, and the roster cards. No frameworks, no fetches.
 
@@ -7,37 +7,37 @@
 // ---------------------------------------------------------------------------
 const ROSTER = [
   { n: 'CLASSIC', t: 'doctrine', one: 'The ported Pascal brain. The baseline everyone is measured against.',
-    lore: 'Perception, distance-band combat, waypoint navigation — extracted line-by-line from the 2002 engine. It has slaughtered smarter brains that trained badly.' },
+    lore: 'Perception, distance-band combat, waypoint navigation, extracted line-by-line from the 2002 engine. It has slaughtered smarter brains that trained badly.' },
   { n: 'PILOT', t: 'doctrine', one: 'A Counter-Strike pro, rotated into 2D-plus-vertical.',
-    lore: 'Positioning beats aim: hold the height edge, keep duels in the 200–420px band, strafe-juke on an RNG clock to defeat constant-velocity prediction, reload on your own terms. The first authored doctrine — and the first belt holder.' },
+    lore: 'Positioning beats aim: hold the height edge, keep duels in the 200–420px band, strafe-juke on an RNG clock to defeat constant-velocity prediction, reload on your own terms. The first authored doctrine, and the first belt holder.' },
   { n: 'REAPER', t: 'doctrine', one: 'The dive brawler built to deny pilot its range band.',
     lore: 'Relentless gap-close from above, knife-range commitment. v1 went 0–4; a telemetry pass made v2 contest it. The first lesson in counter-design: doctrine beats aspiration.' },
   { n: 'MATADOR', t: 'doctrine', one: 'The magazine is a clock. Punish whoever ignores it.',
     lore: 'Refuses the duel while the enemy gun is hot, stalks as the mag drains, dashes exactly at the reload. The first brain to weaponize tempo instead of aim.' },
   { n: 'KESTREL', t: 'doctrine', one: 'The marksman who audited the bullets themselves.',
-    lore: 'Did archaeology on the fire model and found every prior brain compensated for the wrong bullet gravity — 2.25× off. Plant to shoot, dodge vertically, read the real arc. First brain to clear a 46% hit rate.' },
+    lore: 'Did archaeology on the fire model and found every prior brain compensated for the wrong bullet gravity, 2.25× off. Plant to shoot, dodge vertically, read the real arc. First brain to clear a 46% hit rate.' },
   { n: 'WOLF', t: 'doctrine', one: 'ONE PREY. Three guns converge on the weakest body.',
     lore: 'Pack-shared focus: the lowest-health enemy visible to any packmate becomes everyone’s target, with crossfire bearings so the kill is arithmetic, not aim. Proved the team is the unit of selection.' },
   { n: 'PLOVER', t: 'doctrine', one: 'The broken-wing gambit. Feed the pack a decoy.',
-    lore: 'Read wolf’s deterministic prey function and fed it bait — one bird dangles wounded, the executioners mirror wolf’s own focus arithmetic back at it. Took its opener 38–37. Second-order strategy: it fights the other brain’s mind.' },
+    lore: 'Read wolf’s deterministic prey function and fed it bait, one bird dangles wounded, the executioners mirror wolf’s own focus arithmetic back at it. Took its opener 38–37. Second-order strategy: it fights the other brain’s mind.' },
   { n: 'HYDRA', t: 'doctrine', one: 'Cut one head, the others bite.',
-    lore: 'The anchor rotation: any head that bleeds withdraws from the pack’s shared focus, fresh heads bite with kestrel gunnery. Independently derived the same counter as plover — convergent evolution, in a git repo.' },
+    lore: 'The anchor rotation: any head that bleeds withdraws from the pack’s shared focus, fresh heads bite with kestrel gunnery. Independently derived the same counter as plover, convergent evolution, in a git repo.' },
   { n: 'SHRIKE', t: 'doctrine', one: 'The first weapon-aware brain. The shotgun finally has a doctrine.',
-    lore: 'Breacher role on the SPAS wildcard: silent approach, gravity dive, a six-shell fan released only inside the kill envelope (79.7% hit rate on the role). Overwatch partner on the AK. Its early failure exposed a shared-focus targeting bug — the shotgun paradox.' },
+    lore: 'Breacher role on the SPAS wildcard: silent approach, gravity dive, a six-shell fan released only inside the kill envelope (79.7% hit rate on the role). Overwatch partner on the AK. Its early failure exposed a shared-focus targeting bug, the shotgun paradox.' },
   { n: 'CUADRILLA', t: 'doctrine', one: 'The bullfighter’s crew. Three proven lessons, one doctrine.',
     lore: 'Matador’s mag-punish + wolf’s pack focus + hydra’s reserve rotation. Swept the field 9–0 on arrival and reigned for seasons as BELMONTE. Also: the teacher every learned student trains on.' },
   { n: 'ORCA', t: 'doctrine', one: 'The pod hunts the gap in the enemy’s reload clock.', champ: true,
-    lore: 'Synchronizes the wave not on health but on the moment the enemy is disarmed; ebbs to poke range while guns are hot; the wounded member swims deep. As BLACKFISH, the reigning champion — three straight seasons and counting.' },
+    lore: 'Synchronizes the wave not on health but on the moment the enemy is disarmed; ebbs to poke range while guns are hot; the wounded member swims deep. As BLACKFISH, the reigning champion, three straight seasons and counting.' },
   { n: 'ANGLER', t: 'doctrine', one: 'The lure that fishes the meta itself.',
-    lore: 'One crew member dangles at the held-mag floor so every mag-reading selector in the league reads “open” forever — and the gallery converges on whoever takes the bait. Held the belt as ESCA in season 4.' },
+    lore: 'One crew member dangles at the held-mag floor so every mag-reading selector in the league reads “open” forever, and the gallery converges on whoever takes the bait. Held the belt as ESCA in season 4.' },
   { n: 'MIMIC', t: 'learned', one: 'Eleven teachers, averaged into mush.', gen: 'student v1',
     lore: 'Behavior-cloned from all the written doctrines at once. Contradictory teachers average into nothing; regression aim blurred multimodal targets into a 38° error. Slaughtered 4–28 by classic. The essential failure the rest of the line is built on.' },
   { n: 'DISCIPLE', t: 'learned', one: 'One master. Aim as a choice, not an average.', gen: 'student v2',
-    lore: 'Cloned cuadrilla alone, with the aim head rebuilt as 24-way classification — softmax keeps multimodal aim multimodal and picks the strongest mode. Tripled MIMIC’s hit rate. Lost 0–3 to its master, which is the correct result.' },
+    lore: 'Cloned cuadrilla alone, with the aim head rebuilt as 24-way classification, softmax keeps multimodal aim multimodal and picks the strongest mode. Tripled MIMIC’s hit rate. Lost 0–3 to its master, which is the correct result.' },
   { n: 'PRODIGY', t: 'learned', one: 'Grew real senses. Trained on data that lied to it.', gen: 'student v3',
-    lore: 'Sees reload flags, mag state, the nearest bullet threat, and keeps one tick of memory. But its threat sense was trained on reconstructed data that didn’t match the live computation — its own post-mortem prescribed the cure.' },
+    lore: 'Sees reload flags, mag state, the nearest bullet threat, and keeps one tick of memory. But its threat sense was trained on reconstructed data that didn’t match the live computation, its own post-mortem prescribed the cure.' },
   { n: 'BUTTSTEIN', t: 'learned', one: 'Trained on exact data. Tripled its ancestor’s hit rate.', gen: 'student v4',
-    lore: 'Replay schema v2 logs the exact threat the runtime computes, so recorder and brain cannot disagree. Observes its own spray heat — trigger discipline became a learned response. Landed shots carry 5× gradient. 17.4% hit rate vs prodigy’s 5.4%.' },
+    lore: 'Replay schema v2 logs the exact threat the runtime computes, so recorder and brain cannot disagree. Observes its own spray heat, trigger discipline became a learned response. Landed shots carry 5× gradient. 17.4% hit rate vs prodigy’s 5.4%.' },
 ];
 
 const grid = document.getElementById('rosterGrid');
@@ -92,7 +92,7 @@ document.querySelectorAll('main section, #tale').forEach((s) => spy.observe(s));
 
 // ---------------------------------------------------------------------------
 // The sky: a tiny ambient dogfight. Six dots with jet physics chase each
-// other and trade tracers. It is not the real sim — it is set dressing that
+// other and trade tracers. It is not the real sim, it is set dressing that
 // knows what the real thing looks like.
 // ---------------------------------------------------------------------------
 const cv = document.getElementById('sky');

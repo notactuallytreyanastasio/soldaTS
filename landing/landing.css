@@ -345,5 +345,10 @@ footer .fine { font-size: 10.5px; margin-top: 8px; opacity: 0.7; }
   .act:nth-child(even) .act-copy { order: 0; }
   .lineage-rail { grid-template-columns: 1fr; }
   .lineage-rail .arrow { transform: rotate(90deg); justify-self: center; }
-  #topnav .links { gap: 12px; font-size: 11px; }
+  #topnav { padding: 9px 16px; }
+  #topnav .links { gap: 16px; font-size: 11px; }
+  /* the 7-link row wraps into an overlapping mess on phones; keep only PLAY */
+  #topnav .links a:not(.hot) { display: none; }
+  #hero { padding-top: 70px; }
+  #hero .byline { font-size: clamp(17px, 4.6vw, 22px); }
 }
