@@ -1,5 +1,45 @@
 [
   {
+    "hash": "6c7fb20ff6e3ff6ebd765d122e9a074cedd30fa7",
+    "short_hash": "6c7fb20",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T21:50:01-04:00",
+    "message": "feat: BUTTSTEIN card carries the full verdict — factory 0.2 sustains, card 0.15 calibrates\n\nFull paired gauntlet (clean tree): BUTTSTEIN - DISCIPLE = -3.78/match,\n95% CI [-4.61, -2.98] at card FIRE_THRESH 0.15; factory 0.2 measured\n-5.28 [-6.09, -4.51] but is the only threshold that sustained kills on\nall 5 probed seeds (0.25 zeroed seed 7, 0.15 zeroed seed 42) — the\ndisciple card pattern. Teacher gap -43.25 quick [-45.61, -40.83]\n(prodigy was -47.03). MANUAL: schema-v2 row docs + learned-engine rows.\nCaveat on the card: hit% 2.94 vs disciple 17.4 — survives by\nexact-threat dodging; hit rate is the next student's assignment.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "05ff75e6431a30d186b1e77597d74c4bbd900f45",
+    "short_hash": "05ff75e",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T20:25:30-04:00",
+    "message": "fix: offload abort threshold is rate-based (25+ AND >5%) — sparse network transients retry next run, only systematic failure aborts\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 1
+  },
+  {
+    "hash": "5ab86d05f91ba15d47257d2e5df3346af1a1e543",
+    "short_hash": "5ab86d0",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T20:14:40-04:00",
+    "message": "feat: BRAIN-CAM — per-brain live detail page (brain.html?engine=<id>)\n\nOne brain under glass: live vitals strip (rank/score/form/streak/HELD,\nflash-on-change, red LIVE banner when the subject is in the running\nfight), rank-over-time with the field ghosted, W-L win-bars by opponent\n(click → latest meeting), per-gun kills dealt/taken, last-15 fights\ntable, and a 30-deep kill tape — every number a door (data-watch).\n\nbuild.mjs grows a brains{engine} slim aggregation in desk-data.json\n(kill tape, recent fights, gun splits, coaches, doctrine header) plus\nlearned-bot provenance parsed from *Weights.ts headers (training date,\nteacher, samples, val metrics) and the last eval-ledger gauntlet\nentries. Engine names on the floor and the desk (big board, hero, gun\nboards, prospectus, swipe deck, pyramid, rivalries, tonight's card) are\nnow dotted-underline links into the brain-cam; both pages grew a 🧠 nav\nchip. Both themes, ≤700px pocket edition, 5s poll with in-flight guard.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "34b979775922097e8da418bcf5ad758be3ca3865",
+    "short_hash": "34b9797",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T20:03:00-04:00",
+    "message": "feat: replay-blob offload to Hetzner Object Storage — disk rescue + bounded corpus\n\n- tools/s3.mjs: zero-dep SigV4 client (PUT/HEAD/GET/LIST/DELETE, path-style,\n  keep-alive, retries) for fsn1.your-objectstorage.com / bobbby-media\n- tools/offload-replays.mjs: move match-*.replay.jsonl.gz from datasets >24h\n  old; per file upload -> size+MD5 verify -> append datasets/OFFLOADED.jsonl\n  -> only then delete. Resumable, concurrency 8, never touches manifests/\n  summaries/events/telemetry. Aborts after 25 failures; no unverified deletes.\n- tools/fetch-replays.mjs: restore any dataset's replays from the bucket\n  (lists the prefix, size-verified downloads)\n- autopilot.mjs: offload step (a2) each training cycle, after the data pull\n- Makefile: `make offload`; MANUAL.md §5: where the replay blobs live\n- .gitignore: explicit datasets/OFFLOADED.jsonl entry\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 7
+  },
+  {
+    "hash": "972b54fe35b9c45905f22088c18271976ba4fa49",
+    "short_hash": "972b54f",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T19:52:26-04:00",
+    "message": "feat: prodigy card carries the full verdict + PRODIGY menu badge\n\nCard now states the whole experiment truthfully: pooled census (22,640\ndatasets / 56k matches), the exposure-bias lesson (prev-aim history\nself-confirmation, fixed with 50% training dropout), the bullet-threat\nreconstruction caveat, and THE VERDICT — gauntlet -34.51, paired vs\nDISCIPLE -7.82/match CI [-8.51,-7.12], teacher gap -47.03 (quick).\nPost-mortem: better aim (24.5° vs 42.8° live) lost to lost trigger\ndiscipline (hit% 5.4 vs 17.4 — spray heat is unobservable in rows).\nLedger gains the quick PRODIGY-vs-BELMONTE teacher-gap line; the menu\nbadges the third student. 670/670 tests, typecheck clean.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
     "hash": "d8ad2fc87f6f3f3cc635a9b1d6b10c32e499ee22",
     "short_hash": "d8ad2fc",
     "author": "Robert Grayson",
