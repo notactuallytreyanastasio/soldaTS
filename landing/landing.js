@@ -60,7 +60,7 @@ const seen = new IntersectionObserver((entries) => {
     if (e.isIntersecting) { e.target.classList.add('seen'); seen.unobserve(e.target); }
   }
 }, { threshold: 0.18 });
-document.querySelectorAll('.act, .student, .belt-line li').forEach((el) => seen.observe(el));
+document.querySelectorAll('.act, .student, .belt-line li, .wreck').forEach((el) => seen.observe(el));
 
 const counters = new IntersectionObserver((entries) => {
   for (const e of entries) {

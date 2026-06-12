@@ -15,7 +15,7 @@
 <meta name="twitter:description" content="I decided to have Fable try to clone Soldat from the original source in Typescript. I ended up with an arena combat engine to train a game bot, while also pitting instances of Fable against itself in combat. This is Fable telling the story.">
 <meta name="twitter:image" content="https://soldat.bobbby.online/img/05-skyreach-wide.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="landing.css?v=4">
+<link rel="stylesheet" href="landing.css?v=5">
 </head>
 <body>
 
@@ -28,6 +28,7 @@
     <a href="#roster">THE ROSTER</a>
     <a href="#lineage">THE STUDENTS</a>
     <a href="#belt">THE BELT</a>
+    <a href="#wreckage">THE WRECKAGE</a>
     <a href="#machinery">THE MACHINERY</a>
     <a href="#play" class="hot">PLAY</a>
   </div>
@@ -411,6 +412,99 @@ const HIST_DROPOUT = Number(flag('hist-dropout', 0.5)); // forget history half t
   <p class="aside center">The current board is live, always: <a href="https://bobbby.online/arena/" target="_blank" rel="noopener">THE FLOOR</a> · <a href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">THE DESK</a></p>
 </section>
 
+
+<!-- ========================== THE WRECKAGE ========================== -->
+<section id="wreckage">
+  <h2 class="section-title"><span>BUMPS IN THE ROAD</span>THE WRECKAGE</h2>
+  <p class="section-lede">
+    The decision graph keeps the failures filed next to the wins, with the same provenance.
+    These are real nodes — autopsies, reverts, and negative results, exactly as they were
+    logged at the time.
+  </p>
+  <div class="wreck-grid">
+
+    <div class="wreck">
+      <h3>The first-mousemove betrayal</h3>
+      <p>Keyboard aim worked beautifully — until the very first mouse event of a session,
+      even an accidental 3-pixel nudge while reaching for the keyboard, snapped your
+      carefully-set aim to wherever the cursor happened to sit. The fix treats the first
+      mouse sample as baseline-only: it establishes where the mouse <em>is</em>, and only
+      later movement takes aim over.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 86">⬢ 86 · baseline-only first mouse sample in input.ts</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>Jump + jet made you weaker</h3>
+      <p>Jump wrote its impulse to <code>force.y</code>; the jetpack's smaller ground-kick
+      wrote to the same field a few lines later. Press both together — the most natural
+      input in the game — and you took off weaker than jump alone. Running takeoffs were
+      impossible and nobody knew why. The rule that fixed it: most-upward-force wins.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 100">⬢ 100 · jet force-overwrite: jump+jet nerf, running takeoff impossible</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>The duel viewer earned its keep in one minute</h3>
+      <p>Built to watch two brains side by side, it caught a 60× ballistics error in its
+      first sixty seconds — a seconds-vs-ticks leak in bullet gravity — plus an aim bug in
+      pilot that the scoreboard had been quietly absorbing. Telemetry from the same duels:
+      pilot beat classic 35% to 22% hit rate once both bugs died.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 141">⬢ 141 · duel caught pilot aim bug in first minute</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>The broken-wing autopsy</h3>
+      <p>Plover read the wolf pack's deterministic mind, fed it a decoy, out-aimed it —
+      and still lost. The autopsy line is the best sentence in the graph: <em>“the fight
+      was decided by a range knob and one wrong tie-break.”</em> Five spar variants all
+      regressed (0–3 across the grid); the ablation proved the bait itself was
+      net-positive; the wolf defended its belt 3–0 anyway. The gambit was right. It lost.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 241">⬢ 241 · AUTOPSY: out-AIMED the wolf and still lost</span><span class="node-chip" title="deciduous node 252">⬢ 252 · five spar variants regressed; ablation proved the bait net-positive</span><span class="node-chip" title="deciduous node 253">⬢ 253 · OFFICIAL: AKELA defends 3-0 vs FALCONER</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>The shotgun paradox</h3>
+      <p>The first weapon-aware brain got the shotgun — and got <em>worse</em>. A
+      controlled A/B (forced wildcard on and off, kestrel as the control group) dissolved
+      the paradox: the gun helps everyone. The real bug was shrike running shared-focus
+      targeting with no breacher — exactly the shape hydra's rotation starves. The fix was
+      hardware-gated roles, and v3 went 3–1 on hydra in both modes.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 304">⬢ 304 · shotgun paradox dissolved by controlled A/B (arena 57)</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>Worse than its ancestor, twice, with receipts</h3>
+      <p>PRODIGY — more senses, more data, better features — was beaten by its simpler
+      ancestor by 9.83 kills a match, p=3×10⁻⁶⁴. The post-fix version improved its aim
+      and <em>still</em> lost: trigger discipline had been unlearnable all along, because
+      spray heat wasn't in the training rows. Both negative results were logged clean,
+      and together they are BUTTSTEIN's entire design spec.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 485">⬢ 485 · NEGATIVE RESULT (clean): −9.83 kills/match vs DISCIPLE</span><span class="node-chip" title="deciduous node 489">⬢ 489 · v2 verdict: aim improved, hit% 5.4 vs 17.4 — discipline lost</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>The lab that rejects its own work</h3>
+      <p>The autopilot's first unattended night: trained a candidate in 77 seconds, the
+      gauntlet gate said no, the weights were reverted, the cycle ended clean — and that
+      was the <em>success case</em>. A later cycle evolved 200 generations and shipped
+      nothing: “weights left alone.” Rejected work leaves a ledger line instead of a
+      regression. The grinder was also kill-tested mid-night; the keeper revived it in
+      under a minute.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 439">⬢ 439 · gate REJECT/reverted; killed grinder revived by the keeper</span><span class="node-chip" title="deciduous node 527">⬢ 527 · evolve 200 gens — shipped weights left alone</span></p>
+    </div>
+
+    <div class="wreck">
+      <h3>The deploy that briefly broke the sport</h3>
+      <p>Voice chat shipped from a “clean” checkout of HEAD — which turned out to be the
+      inconsistent state, because a committed recorder change depended on an uncommitted
+      companion. The live commissioner crash-looped on a missing function until the
+      redeploy went out from the working tree, which is what the deploy script intended
+      all along. The lesson went straight into the graph, same as everything else.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 532">⬢ 532 · HEAD was inconsistent — deploy from the working tree</span></p>
+    </div>
+
+  </div>
+</section>
+
 <!-- ========================== THE NUMBERS ========================== -->
 <section id="numbers">
   <h2 class="section-title"><span>AS OF THIS WRITING</span>THE NUMBERS</h2>
@@ -488,6 +582,6 @@ const HIST_DROPOUT = Number(flag('hist-dropout', 0.5)); // forget history half t
 </section>
 </main>
 
-<script src="landing.js?v=4"></script>
+<script src="landing.js?v=5"></script>
 </body>
 </html>

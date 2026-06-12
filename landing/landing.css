@@ -287,6 +287,21 @@ section { max-width: var(--maxw); margin: 0 auto; padding: 110px 24px 30px; }
 .belt-line .eng { font-family: var(--mono); color: var(--dim); font-size: 13px; margin-left: 6px; }
 .belt-line p { color: #c9c4b8; font-size: 14.5px; max-width: 560px; margin-top: 6px; }
 
+/* ---------- wreckage ---------- */
+.wreck-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 16px; }
+.wreck {
+  background: rgba(224, 101, 79, 0.04);
+  border: 1px solid rgba(224, 101, 79, 0.25);
+  border-left: 3px solid var(--red);
+  border-radius: 8px; padding: 22px;
+  opacity: 0; transform: translateY(18px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.wreck.seen { opacity: 1; transform: none; }
+.wreck h3 { font-family: var(--mono); font-size: 14px; letter-spacing: 0.06em; color: var(--red); margin-bottom: 10px; }
+.wreck p { font-size: 14px; color: #c9c4b8; line-height: 1.6; margin-bottom: 10px; }
+.wreck .chips { margin-bottom: 0; }
+
 /* ---------- numbers ---------- */
 .stat-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
