@@ -52,6 +52,7 @@ export const LEARNED_MODELS: Record<string, string> = {
   neural: 'MIMIC',
   disciple: 'DISCIPLE',
   prodigy: 'PRODIGY',
+  buttstein: 'BUTTSTEIN',
 };
 
 /** Random int in [1, max] — fine here: menu picks are never recorded. */

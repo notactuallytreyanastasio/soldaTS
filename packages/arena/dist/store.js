@@ -11,7 +11,7 @@ import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as zlib from 'node:zlib';
 import { eventsToJsonl } from './replay';
-export const MANIFEST_SCHEMA = 'soldat-arena-replay/1'; // dataset format id
+export const MANIFEST_SCHEMA = 'soldat-arena-replay/2'; // dataset format id
 export const SUMMARY_SCHEMA = 'soldat-arena-summary/1';
 /** `YYYYMMDD-HHMMSS-<a>-vs-<b>[-<suffix>]` (UTC; `now` injectable for tests). */
 export function makeRunId(teamA, teamB, suffix, now) {

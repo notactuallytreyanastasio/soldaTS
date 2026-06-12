@@ -1,5 +1,5 @@
-import type { Game } from '@soldat/client/headless';
-export declare const REPLAY_SCHEMA = "soldat-arena-replay/1";
+import { type Game } from '@soldat/client/headless';
+export declare const REPLAY_SCHEMA = "soldat-arena-replay/2";
 export interface ReplayControl {
     left: boolean;
     right: boolean;
@@ -28,6 +28,23 @@ export interface ReplayRow {
     ammo: number;
     reloading: boolean;
     onGround: boolean;
+    /** v2: held weapon label ('AK74' | 'SPAS12' | 'BARRETT' | 'ROCKET' |
+     *  'RICOCHET' | 'CHAINSAW') — exact, no magazine-size sleuthing. */
+    weapon: string;
+    /** v2: own spray bloom (radians, 0..0.16), 4 decimals — the heat the
+     *  written brains' tap cadence manages, finally visible to students. */
+    heat: number;
+    /** v2: nearest-incoming-bullet-threat present flag. The winner of the SAME
+     *  closest-approach scan the runtime dodge organs run (nearestThreatBullet,
+     *  neuralFeaturesV3.ts) over live enemy bullets at the post-think seam.
+     *  When true, btx/bty/btvx/btvy carry the bullet's kinematics RELATIVE to
+     *  this bot (px and px/tick, 2 decimals); when false they are absent —
+     *  rows stay compact, like the kill event's optional weapon tag. */
+    btt: boolean;
+    btx?: number;
+    bty?: number;
+    btvx?: number;
+    btvy?: number;
     control: ReplayControl;
 }
 export type ArenaEvent = {

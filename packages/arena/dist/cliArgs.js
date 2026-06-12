@@ -1,6 +1,7 @@
 // Pure CLI-argument helpers (goal node 170) — no fs, no process, fully
 // unit-tested. cli.ts owns parseArgs/printing/exit codes; everything that can
 // throw a user-facing usage error lives here so the messages are testable.
+import { WILDCARD_WEAPONS } from '@soldat/client/headless';
 const TEAMS_USAGE = "expected --teams \"<a> vs <b>\" or --teams <a>,<b> (e.g. --teams \"pilot vs reaper\")";
 /**
  * Resolve the two team engines from `--teams` plus any positionals (the
@@ -51,11 +52,13 @@ export function parseTweaks(list) {
     }
     return out;
 }
-/** Known opt-in wildcards (the match-rule mutators a run may arm). */
-export const WILDCARDS = ['shotgun', 'rifle'];
+/** Known opt-in wildcards (the match-rule mutators a run may arm).
+ *  Single source of truth: the client's WILDCARD_WEAPONS (wildcardChance.ts)
+ *  — shotgun, rifle, rocket, ricochet, chainsaw. */
+export const WILDCARDS = WILDCARD_WEAPONS;
 /** Wildcard MODES a run may request: a specific wildcard forced on every
  *  match, 'none' (stock), or 'chance' — each match rolls the seeded chance
- *  (client wildcardChance.ts: 35% armed, then shotgun-or-rifle 50/50 from a
+ *  (client wildcardChance.ts: 35% armed, then an even weapon pick from a
  *  separate seeded hash) so ALL games may incorporate wildcard play. */
 export const WILDCARD_MODES = [...WILDCARDS, 'none', 'chance'];
 /** Validate --wildcard; absent defaults to 'chance' (every run gets a shot

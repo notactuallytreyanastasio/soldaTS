@@ -18,6 +18,7 @@ import { createNeuralEngine } from './neural';
 import { createAnglerEngine } from './angler';
 import { createDiscipleEngine } from './disciple';
 import { createProdigyEngine } from './prodigy';
+import { createButtsteinEngine } from './buttstein';
 
 registerEngine('classic', createClassicEngine);
 registerEngine('pilot', createPilotEngine);
@@ -34,6 +35,7 @@ registerEngine('neural', createNeuralEngine);
 registerEngine('angler', createAnglerEngine);
 registerEngine('disciple', createDiscipleEngine);
 registerEngine('prodigy', createProdigyEngine);
+registerEngine('buttstein', createButtsteinEngine);
 
 export * from './engine';
 export { CLASSIC_DEFAULTS, type ClassicConfig } from './classic';
@@ -58,3 +60,9 @@ export {
 export { ANGLER_DEFAULTS, type AnglerConfig } from './angler';
 export { DISCIPLE_DEFAULTS, type DiscipleConfig } from './disciple';
 export { PRODIGY_DEFAULTS, type ProdigyConfig } from './prodigy';
+export { BUTTSTEIN_DEFAULTS, type ButtsteinConfig } from './buttstein';
+// v3 sense helpers: the replay recorder (packages/arena/src/replay.ts) runs
+// the SAME threat scan the runtime brains do — exported so the schema-v2
+// rows and the engines can never disagree on the winner.
+export { nearestBulletThreat, type RelativeBullet } from './neuralFeaturesV2';
+export { nearestThreatBullet } from './neuralFeaturesV3';

@@ -1,7 +1,12 @@
 // Replay row builder + JSONL serializer (goal node 170).
 
 import { describe, it, expect } from 'vitest';
-import { ARENA_SPAWNS, Game, buildArena } from '@soldat/client/headless';
+import {
+  ARENA_SPAWNS,
+  Game,
+  buildArena,
+  nearestBulletThreat,
+} from '@soldat/client/headless';
 import { buildReplayRow, rowsToJsonl, type ReplayRow } from './replay';
 
 function tinyGame(): Game {
@@ -38,10 +43,49 @@ describe('buildReplayRow', () => {
     expect(Number.isInteger(r.ammo)).toBe(true);
     expect(typeof r.reloading).toBe('boolean');
     expect(typeof r.onGround).toBe('boolean');
+    // v2 fields: weapon label, spray heat (4 decimals), threat present flag.
+    expect(r.weapon).toBe(game.weaponNameOf(bot));
+    expect(r.heat).toBe(Number(r.heat.toFixed(4)));
+    expect(r.heat).toBeGreaterThanOrEqual(0);
+    expect(typeof r.btt).toBe('boolean');
+    if (r.btt) {
+      for (const v of [r.btx, r.bty, r.btvx, r.btvy]) {
+        expect(v).toBe(Number((v as number).toFixed(2)));
+      }
+    } else {
+      expect(r.btx).toBeUndefined();
+    }
     expect(Object.keys(r.control)).toEqual([
       'left', 'right', 'up', 'down', 'fire', 'jetpack', 'reload', 'aimX', 'aimY',
     ]);
     expect(Number.isFinite(r.control.aimX)).toBe(true);
+  });
+
+  it('logs the nearest bullet threat once bullets fly (and it matches the runtime scan)', () => {
+    const game = tinyGame();
+    // Run until some row carries a threat — two hostile bots trade fire well
+    // within 600 ticks.
+    let threatRow: ReplayRow | null = null;
+    for (let t = 0; t < 600 && threatRow === null; t++) {
+      game.tick(1 / 60);
+      for (const i of game.botIndices()) {
+        const row = buildReplayRow(game, i, game.world.mainTickCounter);
+        if (row !== null && row.btt) {
+          threatRow = row;
+          break;
+        }
+      }
+    }
+    expect(threatRow).not.toBeNull();
+    const r = threatRow!;
+    // The logged winner re-derives the exact BulletThreat the runtime scan
+    // (nearestBulletThreat over all live bullets) would produce — the
+    // single-winner identity that makes schema v2 lossless for training.
+    const single = nearestBulletThreat([
+      { rx: r.btx!, ry: r.bty!, vx: r.btvx!, vy: r.btvy! },
+    ]);
+    expect(single).not.toBeNull();
+    expect(Math.hypot(single!.dx - r.btx!, single!.dy - r.bty!)).toBe(0);
   });
 
   it('returns null for dead or inactive sprites', () => {

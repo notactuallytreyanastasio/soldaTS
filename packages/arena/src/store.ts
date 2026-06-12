@@ -15,7 +15,7 @@ import type { GameTuning } from '@soldat/client/headless';
 import { eventsToJsonl } from './replay';
 import type { MatchResult, TeamSpec } from './runner';
 
-export const MANIFEST_SCHEMA = 'soldat-arena-replay/1'; // dataset format id
+export const MANIFEST_SCHEMA = 'soldat-arena-replay/2'; // dataset format id
 export const SUMMARY_SCHEMA = 'soldat-arena-summary/1';
 
 export interface TeamManifest {

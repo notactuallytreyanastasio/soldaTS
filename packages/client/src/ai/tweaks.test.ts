@@ -16,6 +16,7 @@ import { SHRIKE_DEFAULTS } from './shrike';
 import { NEURAL_DEFAULTS } from './neural';
 import { DISCIPLE_DEFAULTS } from './disciple';
 import { PRODIGY_DEFAULTS } from './prodigy';
+import { BUTTSTEIN_DEFAULTS } from './buttstein';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -308,6 +309,18 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
   it('PRODIGY_DEFAULTS', () => {
     expect(PRODIGY_DEFAULTS).toEqual({
       FIRE_THRESH: 0.15, // base-rate calibrated (teacher fires ~12% of ticks)
+      MOVE_THRESH: 0.5,
+      UPDOWN_THRESH: 0.5,
+      JET_THRESH: 0.5,
+      RELOAD_THRESH: 0.5,
+      AIM_DIST: 300,
+      TEMP: 1,
+    });
+  });
+
+  it('BUTTSTEIN_DEFAULTS', () => {
+    expect(BUTTSTEIN_DEFAULTS).toEqual({
+      FIRE_THRESH: 0.2, // probed at factory over 5 seeds — see buttstein.ts
       MOVE_THRESH: 0.5,
       UPDOWN_THRESH: 0.5,
       JET_THRESH: 0.5,

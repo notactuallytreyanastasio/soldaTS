@@ -7,13 +7,15 @@ import type { TeamSpec } from './runner';
 export declare function parseTeams(teamsOpt: string | undefined, positionals: readonly string[]): [string, string] | null;
 /** `['RANGE_MAX=500', ...]` → `{RANGE_MAX: 500, ...}`; throws on malformed. */
 export declare function parseTweaks(list: readonly string[] | undefined): Record<string, number>;
-/** Known opt-in wildcards (the match-rule mutators a run may arm). */
-export declare const WILDCARDS: readonly ["shotgun", "rifle"];
+/** Known opt-in wildcards (the match-rule mutators a run may arm).
+ *  Single source of truth: the client's WILDCARD_WEAPONS (wildcardChance.ts)
+ *  — shotgun, rifle, rocket, ricochet, chainsaw. */
+export declare const WILDCARDS: readonly ["shotgun", "rifle", "rocket", "ricochet", "chainsaw"];
 /** Wildcard MODES a run may request: a specific wildcard forced on every
  *  match, 'none' (stock), or 'chance' — each match rolls the seeded chance
- *  (client wildcardChance.ts: 35% armed, then shotgun-or-rifle 50/50 from a
+ *  (client wildcardChance.ts: 35% armed, then an even weapon pick from a
  *  separate seeded hash) so ALL games may incorporate wildcard play. */
-export declare const WILDCARD_MODES: readonly ["shotgun", "rifle", "none", "chance"];
+export declare const WILDCARD_MODES: readonly ["shotgun", "rifle", "rocket", "ricochet", "chainsaw", "none", "chance"];
 /** Validate --wildcard; absent defaults to 'chance' (every run gets a shot
  *  at wildcard play — pass --wildcard none for guaranteed-stock runs). */
 export declare function parseWildcard(raw: string | undefined): string;

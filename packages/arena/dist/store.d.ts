@@ -1,6 +1,6 @@
 import type { GameTuning } from '@soldat/client/headless';
 import type { MatchResult, TeamSpec } from './runner';
-export declare const MANIFEST_SCHEMA = "soldat-arena-replay/1";
+export declare const MANIFEST_SCHEMA = "soldat-arena-replay/2";
 export declare const SUMMARY_SCHEMA = "soldat-arena-summary/1";
 export interface TeamManifest {
     team: 1 | 2;

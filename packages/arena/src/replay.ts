@@ -12,9 +12,13 @@
 // (JSON.stringify preserves insertion order) and round floats with toFixed —
 // never reorder keys or change rounding without bumping REPLAY_SCHEMA.
 
-import type { Game } from '@soldat/client/headless';
+import {
+  nearestThreatBullet,
+  type Game,
+  type RelativeBullet,
+} from '@soldat/client/headless';
 
-export const REPLAY_SCHEMA = 'soldat-arena-replay/1';
+export const REPLAY_SCHEMA = 'soldat-arena-replay/2';
 
 export interface ReplayControl {
   left: boolean;
@@ -45,6 +49,23 @@ export interface ReplayRow {
   ammo: number; // rounds left in magazine
   reloading: boolean;
   onGround: boolean;
+  /** v2: held weapon label ('AK74' | 'SPAS12' | 'BARRETT' | 'ROCKET' |
+   *  'RICOCHET' | 'CHAINSAW') — exact, no magazine-size sleuthing. */
+  weapon: string;
+  /** v2: own spray bloom (radians, 0..0.16), 4 decimals — the heat the
+   *  written brains' tap cadence manages, finally visible to students. */
+  heat: number;
+  /** v2: nearest-incoming-bullet-threat present flag. The winner of the SAME
+   *  closest-approach scan the runtime dodge organs run (nearestThreatBullet,
+   *  neuralFeaturesV3.ts) over live enemy bullets at the post-think seam.
+   *  When true, btx/bty/btvx/btvy carry the bullet's kinematics RELATIVE to
+   *  this bot (px and px/tick, 2 decimals); when false they are absent —
+   *  rows stay compact, like the kill event's optional weapon tag. */
+  btt: boolean;
+  btx?: number;
+  bty?: number;
+  btvx?: number;
+  btvy?: number;
   control: ReplayControl;
 }
 
@@ -74,13 +95,38 @@ export function buildReplayRow(game: Game, botIndex: number, tick: number): Repl
   const parts = game.world.spriteParts;
   if (s === undefined || parts === null || !s.active || s.deadMeat) return null;
   const c = s.control;
+  const px = parts.posX[botIndex] ?? 0;
+  const py = parts.posY[botIndex] ?? 0;
+  // v2 threat scan — the EXACT bullet set every brain saw this tick (rows
+  // sample post-think, pre-firing: no bullet has spawned or moved since the
+  // brains ran). Same filters as the runtime engines (skip own bullets and,
+  // in team games, teammates'), same winner selection (nearestThreatBullet).
+  const world = game.world;
+  const bp = world.bulletParts;
+  const rel: RelativeBullet[] = [];
+  if (bp !== null) {
+    for (let i = 1; i < world.bullets.length; i++) {
+      const b = world.bullets[i];
+      if (b === undefined || !b.active) continue;
+      if (b.owner === botIndex) continue;
+      const owner = world.sprites[b.owner];
+      if (owner !== undefined && s.team > 0 && owner.team === s.team) continue;
+      rel.push({
+        rx: (bp.posX[b.num] ?? 0) - px,
+        ry: (bp.posY[b.num] ?? 0) - py,
+        vx: bp.velocityX[b.num] ?? 0,
+        vy: bp.velocityY[b.num] ?? 0,
+      });
+    }
+  }
+  const bt = nearestThreatBullet(rel);
   return {
     tick,
     bot: botIndex,
     team: game.teamOf(botIndex),
     engine: game.engineOf(botIndex),
-    x: Number((parts.posX[botIndex] ?? 0).toFixed(2)),
-    y: Number((parts.posY[botIndex] ?? 0).toFixed(2)),
+    x: Number(px.toFixed(2)),
+    y: Number(py.toFixed(2)),
     vx: Number((parts.velocityX[botIndex] ?? 0).toFixed(2)),
     vy: Number((parts.velocityY[botIndex] ?? 0).toFixed(2)),
     fuel: s.jetsCount,
@@ -88,6 +134,17 @@ export function buildReplayRow(game: Game, botIndex: number, tick: number): Repl
     ammo: game.ammoOf(botIndex),
     reloading: game.reloadingOf(botIndex),
     onGround: s.onGround,
+    weapon: game.weaponNameOf(botIndex),
+    heat: Number(game.sprayHeatOf(botIndex).toFixed(4)),
+    btt: bt !== null,
+    ...(bt !== null
+      ? {
+          btx: Number(bt.rx.toFixed(2)),
+          bty: Number(bt.ry.toFixed(2)),
+          btvx: Number(bt.vx.toFixed(2)),
+          btvy: Number(bt.vy.toFixed(2)),
+        }
+      : {}),
     control: {
       left: c.left,
       right: c.right,

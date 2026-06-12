@@ -1,0 +1,7 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "BUTTSTEIN",
+  "engine": "buttstein",
+  "tweaks": {},
+  "rationale": "Fourth student, first to train on exact data: replay schema v2 records spray heat and real bullet threats into every row, so what BUTTSTEIN learned from is what BUTTSTEIN sees. Blended hit-weighted aim labels, history dropout, stride-1 shot sampling — every lesson the failed siblings paid for. Val: fire 93.9%, aim cos 0.887."
+}

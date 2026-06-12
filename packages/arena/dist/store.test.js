@@ -64,7 +64,7 @@ describe('writeRun + buildManifest + buildSummary', () => {
     });
     it('manifest carries full provenance', () => {
         const parsed = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'));
-        expect(parsed.schema).toBe('soldat-arena-replay/1');
+        expect(parsed.schema).toBe('soldat-arena-replay/2');
         expect(parsed.gitRev.length).toBeGreaterThan(0);
         expect(parsed.cli).toBe('--teams pilot vs reaper');
         // Resolved tweaks = the engines' full configs, overrides applied.
