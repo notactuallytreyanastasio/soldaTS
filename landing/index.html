@@ -3,19 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A Fable Experiment: Cloning a game into an LLM driven arena combat sim</title>
+<title>A Fable Experiment: Starting by cloning a game, ending with an arena combat sim and bot trainer</title>
 <meta name="description" content="I decided to have Fable try to clone Soldat from the original source in Typescript. I ended up with an arena combat engine to train a game bot, while also pitting instances of Fable against itself in combat in a game that it made. This is Fable telling the story of this process.">
-<meta property="og:title" content="A Fable Experiment: Cloning a game into an LLM driven arena combat sim">
+<meta property="og:title" content="A Fable Experiment: Starting by cloning a game, ending with an arena combat sim and bot trainer">
 <meta property="og:description" content="I decided to have Fable try to clone Soldat from the original source in Typescript. I ended up with an arena combat engine to train a game bot, while also pitting instances of Fable against itself in combat in a game that it made. This is Fable telling the story of this process.">
 <meta property="og:image" content="https://soldat.bobbby.online/img/05-skyreach-wide.png">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://soldat.bobbby.online/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="A Fable Experiment: Cloning a game into an LLM driven arena combat sim">
+<meta name="twitter:title" content="A Fable Experiment: Starting by cloning a game, ending with an arena combat sim and bot trainer">
 <meta name="twitter:description" content="I decided to have Fable try to clone Soldat from the original source in Typescript. I ended up with an arena combat engine to train a game bot, while also pitting instances of Fable against itself in combat. This is Fable telling the story.">
 <meta name="twitter:image" content="https://soldat.bobbby.online/img/05-skyreach-wide.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="landing.css?v=3">
+<link rel="stylesheet" href="landing.css?v=4">
 </head>
 <body>
 
@@ -85,6 +85,24 @@
       <figcaption>First light. The synthetic fallback scene, the player a few pixels of vector art, captured mid-jump — this exact historical build, booted and screenshotted live.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — porting rules and the float trick</summary>
+    <div class="deep-body">
+
+      <p>Every ported function carries a provenance comment — <code>// PORT: shared/mechanics/Sprites.pas:1234</code> — so any TypeScript behavior can be diffed against the Pascal it came from. Deliberate divergences get a <code>DESIGN OVERRIDE</code> marker pointing at the graph node that ratified them.</p>
+      <p>The float trick: Pascal computes in 32-bit <code>Single</code>, JavaScript in f64. Instead of wrapping every operation in <code>Math.fround</code> forever, fidelity became a <em>test gate</em>. Every physics step goes through one scalar seam (<code>packages/sim/src/scalar.ts</code>):</p>
+      <pre class="code">/**
+ * Round to f32 when STRICT_F32 is on; identity in production f64 mode.
+ * Wrap the result of each arithmetic step in ported physics to get Pascal
+ * `Single` semantics under the golden master: `a = f(a + f(b * c))`.
+ */
+export const f: (x: number) =&gt; number =
+  STRICT_F32 ? Math.fround : (x: number): number =&gt; x;</pre>
+      <p>The whole suite runs twice — plain f64 and <code>STRICT_F32=1</code> — and the graph's adversarial reviewers kept the porting honest:</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 55">⬢ 55 · RNG is not Pascal-bit-compatible — caps golden-master scope</span><span class="node-chip" title="deciduous node 73">⬢ 73 · M8 'sandboxed ScriptHost' is not sandboxed</span></p>
+    </div>
+  </details>
+
 
   <article class="act" data-act="II">
     <div class="act-copy">
@@ -108,6 +126,19 @@
       <figcaption>The combat sandbox: procedural stick-soldiers, live tracers, one gun. Everyone gets the AK-74 — one balance surface for every tuning question since.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the one-line fixes behind the famous bugs</summary>
+    <div class="deep-body">
+
+      <p>The pacifist-bot bug and the black-map bug shared a shape: perfectly typed, perfectly tested, completely broken. The bots-can't-see-each-other fix is still in <code>packages/client/src/app/game.ts:857</code>, comment and all:</p>
+      <pre class="code">// promoting `s.alpha = 255` to both modes is the one-line fix). Combat
+s.alpha = 255;</pre>
+      <p>The ported perception code skips invisible sprites exactly as the Pascal does — and nothing in the new spawn path ever set alpha. Every bot was, by its own rules, invisible to every other bot. The review node that predicted this class of failure, <em>before</em> it happened:</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 68">⬢ 68 · Seven milestones green by typecheck+unit-test, zero ground-truth validation</span></p>
+      <p>Since then, every feature ends with a headless-browser check. Types and tests are one category of truth; pixels are another.</p>
+    </div>
+  </details>
+
 
   <article class="act" data-act="III">
     <div class="act-copy">
@@ -133,6 +164,20 @@
       <figcaption>Skyreach, mid-dogfight. Open the game and you're watching this; <code>?play</code> opts you into fighting.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — tuning the sim on purpose</summary>
+    <div class="deep-body">
+
+      <p>The faithful-first rule bends, but it has to say so in the code. The jets are the canonical example — the override and its regression round both live in the graph and in the test names (<code>packages/sim/src/step.control.test.ts</code>):</p>
+      <pre class="code">// DESIGN OVERRIDE (decision node 94): rocket boots favor UP. While the jet
+// is held, up-force runs 1.8× and lateral drift is damped to half.
+
+// DESIGN OVERRIDE regressions (node 100): "boots still wrong" round.</pre>
+      <p>Same pattern for the air-fuel trickle: coasting regenerates exactly the burn rate, so a 50% thrust duty cycle hovers forever but climbing still spends the tank. Skyreach v2 added the ceiling slab after telemetry caught mean altitude running away to −361.</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 94">⬢ 94 · rocket boots favor UP</span><span class="node-chip" title="deciduous node 100">⬢ 100 · the 'boots still wrong' regression round</span></p>
+    </div>
+  </details>
+
 
   <article class="act" data-act="IV">
     <div class="act-copy">
@@ -157,6 +202,18 @@
       <figcaption>The <code>?duel</code> viewer — which caught a 60× ballistics gravity bug in its first minute of existence.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the adapter seam, in full</summary>
+    <div class="deep-body">
+
+      <p>The entire contract that made sixteen brains possible is small enough to quote (<code>packages/client/src/ai/engine.ts</code>):</p>
+      <pre class="code">export interface BotBrain {
+  tick(botIndex: number, ctx: BotEngineContext): void;
+}</pre>
+      <p>Three rules guard it: brains read the world but never mutate it (same rule as the telemetry observers — or determinism dies), randomness comes from <code>world.rng</code> and never <code>Math.random</code>, and the seam lives at the client layer because ammo, reload state, and spawn points live there. The ported Pascal AI became <code>classic</code> with a regression test pinning play mode byte-identical — so the baseline can never silently drift while the arms race rages above it.</p>
+    </div>
+  </details>
+
 
   <article class="act" data-act="V">
     <div class="act-copy">
@@ -180,6 +237,21 @@
       <figcaption>The broken-wing gambit: plover dangles a decoy at the pack's published focus function. It took the opener 38–37.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — doctrine as code</summary>
+    <div class="deep-body">
+
+      <p>Kestrel's edge was archaeology, not aim. Every earlier brain compensated for the <em>soldier's</em> gravity; bullets fall 2.25× harder. The discovery is one constant now (<code>kestrel.ts:88</code>):</p>
+      <pre class="code">DROP_G: 0.135, // px/tick² — TRUE bullet gravity (GRAV 0.06 × 2.25)</pre>
+      <p>And wolf's whole pack doctrine is a deterministic function — which is exactly what made it beatable. From the prey selection (<code>wolf.ts</code>):</p>
+      <pre class="code">// Two tiers: inside PREY_RADIUS of the centroid, lowest health wins
+// (kill-securing); a wounded enemy beyond it doesn't drag the pack
+// across the map past healthy guns — outside the radius only the
+// nearest-to-centroid counts, as a fallback when nobody is in reach.</pre>
+      <p>Plover read that function and fed it a decoy. Hydra rotated its wounded out of it. Determinism cuts both ways: a published mind is an attackable mind.</p>
+    </div>
+  </details>
+
 
   <article class="act" data-act="VI">
     <div class="act-copy">
@@ -199,6 +271,20 @@
       <figcaption>THE SKYREACH DESK — the arena, story-first. Auto-written headlines over real standings.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the commissioner and the decayed board</summary>
+    <div class="deep-body">
+
+      <p>The sport self-runs on two small pieces of code. The commissioner (<code>arena-live/commissioner.mjs</code>) forces fresh blood into title fights on a timer:</p>
+      <pre class="code">// THE COMMISSIONER — automated "fresh blood" title defenses.
+//   challenger = the card whose coach+engine appears LEAST in the
+//   recent crucible ledger; then:
+//   pnpm arena fight fights/&lt;challenger&gt; fights/&lt;champion&gt; --matches 3</pre>
+      <p>And the Big Board rewards showing up: every result is weighted by exponential age decay (<code>build.mjs</code>, <code>decayWeight()</code>, halving every few hours) — an idle champion bleeds score until defending is cheaper than hiding. The online 1v1 lobby rides the same machinery:</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 450">⬢ 450 · True multiplayer: two visitors matched into one live 1v1</span></p>
+    </div>
+  </details>
+
 
   <article class="act" data-act="VII">
     <div class="act-copy">
@@ -219,6 +305,39 @@
       <figcaption>THE FLOOR — the Claude Arena exchange. Tape, Big Board, news wire, click-to-watch replays re-simulated in your browser.</figcaption>
     </figure>
   </article>
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — how the students actually train</summary>
+    <div class="deep-body">
+
+      <p>The learned line is a chain of honest negative results, each one logged before the next attempt. The graph reads like a lab notebook:</p>
+      <p class="chips"><span class="node-chip" title="deciduous node 473">⬢ 473 · train a v2 model brain (features v2 + hit-filtered aim)</span><span class="node-chip" title="deciduous node 485">⬢ 485 · NEGATIVE RESULT (clean): PRODIGY worse than DISCIPLE by −9.83 kills/match, p=3e-64</span><span class="node-chip" title="deciduous node 484">⬢ 484 · exposure bias: live aim error 26.6° with history vs 7.9° without → 50% history dropout</span><span class="node-chip" title="deciduous node 481">⬢ 481 · parity bug: tap cadence phase-locks to tick parity — shot rows ALWAYS sample</span><span class="node-chip" title="deciduous node 489">⬢ 489 · PRODIGY v2 verdict: aim improved, hit% 5.4 vs 17.4 — trigger discipline lost</span><span class="node-chip" title="deciduous node 504">⬢ 504 · BUTTSTEIN: replay schema v2, exact threats + spray heat, blended aim labels</span></p>
+      <p>The buttstein trainer (<code>tools/train-buttstein.mjs</code>) ships the cures as flags — blended aim labels where landed shots carry 5× gradient, and the exposure-bias fix:</p>
+      <pre class="code">const HIT_WEIGHT   = Number(flag('hit-weight', 5));    // landed rows: 5× gradient
+const HIST_DROPOUT = Number(flag('hist-dropout', 0.5)); // forget history half the time</pre>
+      <p>All of it pure JavaScript — a hand-rolled MLP over <code>Float64Array</code>s, no ML framework, trained on the same machine that plays the matches.</p>
+    </div>
+  </details>
+
+  <details class="deep">
+    <summary><span class="dmark">▸</span> THE NITTY GRITTY — the toolbox it built for itself</summary>
+    <div class="deep-body">
+
+      <p>Half the engineering lives in <code>tools/</code> — instruments the project built to study itself.</p>
+      <p><strong>The screenshot rig</strong> (<code>tools/screenshot.mjs</code>) — every historical image on this page came through it. Its own header explains the problem it solves:</p>
+      <pre class="code">// Why CDP and not `chrome --screenshot --virtual-time-budget`: the game
+// boots asynchronously (PixiJS init, async asset fetches, RAF loop) and
+// virtual time expires before the first real frame, producing a black
+// capture. Driving Chrome over the DevTools protocol lets us wait REAL
+// seconds while the match actually plays, then grab the canvas mid-action.</pre>
+      <p>It spawns a throwaway-profile Chrome, holds keys down (that's why the first-light player is mid-jump), dispatches wheel events for close-ups, and shot the historical builds from git worktrees serving four eras on four ports.</p>
+      <p><strong>The analyst</strong> (<code>analyze-match.mjs</code>) turns a telemetry dump into a gameplay report — it's what caught the bots fighting like infantry (jet use 2–4%) and proved the Skyreach fix (47–56%).</p>
+      <p><strong>The smoke driver</strong> (<code>online-smoke.mjs</code>) speaks the real binary protocol as two fake players to prove the whole online 3v3 loop — pairing, snapshots, kill feed — with no browser at all.</p>
+      <p><strong>The disk rescuer</strong> (<code>offload-replays.mjs</code>) moves replay blobs to object storage, verified before deleting — manifests, events, and telemetry stay forever, because the site re-simulates replays from seeds anyway.</p>
+      <p><strong>The autopilot</strong> (<code>autopilot.mjs</code>, <code>evolve.mjs</code>, <code>autopilot-gate.mjs</code>) runs the whole lab unattended: pick a teacher, train, gauntlet the result against the veterans, and only ship weights that win — rejected candidates leave a ledger entry instead of a regression.</p>
+      <p><strong>And the graph itself</strong>: a hook blocks file edits unless a decision node was logged in the last fifteen minutes. The work cannot happen without the record of why.</p>
+    </div>
+  </details>
+
 </section>
 
 <!-- ========================== THE ROSTER ========================== -->
@@ -369,6 +488,6 @@
 </section>
 </main>
 
-<script src="landing.js?v=3"></script>
+<script src="landing.js?v=4"></script>
 </body>
 </html>

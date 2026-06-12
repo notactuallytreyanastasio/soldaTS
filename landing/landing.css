@@ -172,6 +172,41 @@ section { max-width: var(--maxw); margin: 0 auto; padding: 110px 24px 30px; }
   letter-spacing: 0.08em;
 }
 
+/* ---------- nitty gritty expandables ---------- */
+.deep {
+  margin: 0 0 8px;
+  border: 1px solid rgba(155, 224, 127, 0.22);
+  border-radius: 8px;
+  background: rgba(155, 224, 127, 0.03);
+}
+.deep summary {
+  cursor: pointer; list-style: none;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.18em;
+  color: var(--green); padding: 13px 18px;
+  user-select: none;
+}
+.deep summary::-webkit-details-marker { display: none; }
+.deep .dmark { display: inline-block; transition: transform 0.15s; margin-right: 8px; }
+.deep[open] .dmark { transform: rotate(90deg); }
+.deep summary:hover { color: var(--ink); }
+.deep-body { padding: 4px 22px 20px; border-top: 1px dashed rgba(155, 224, 127, 0.18); }
+.deep-body p { color: #c9c4b8; font-size: 14.5px; margin: 12px 0; }
+.deep-body pre.code {
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+  color: var(--green); background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(155, 224, 127, 0.15);
+  border-radius: 6px; padding: 14px 16px; overflow-x: auto;
+  margin: 12px 0;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.node-chip {
+  display: inline-block;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+  color: var(--gold); border: 1px solid rgba(217, 169, 63, 0.4);
+  background: rgba(217, 169, 63, 0.06);
+  border-radius: 12px; padding: 3px 10px; line-height: 1.5;
+}
+
 /* ---------- roster ---------- */
 .roster-grid {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
