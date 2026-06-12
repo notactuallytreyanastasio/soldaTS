@@ -67,6 +67,7 @@ import { START_HEALTH } from '../ui/helpers';
 import { applyKill, type KillBoard } from './director';
 import { generateArena } from './arena';
 import { DEFAULT_TUNING } from './game';
+import { VoiceChat } from './voice';
 
 const TICK_HZ = 60;
 const TICK_DT = 1 / TICK_HZ;
@@ -431,6 +432,7 @@ export async function onlineMain(): Promise<void> {
 
   let booted = false;
   let matchOver = false;
+  let voice: VoiceChat | null = null;
 
   ws.addEventListener('open', () => {
     overlay.set(
@@ -458,6 +460,7 @@ export async function onlineMain(): Promise<void> {
     );
   });
   ws.addEventListener('close', () => {
+    voice?.dispose();
     if (!matchOver) {
       overlay.set(
         booted
@@ -556,6 +559,18 @@ export async function onlineMain(): Promise<void> {
     showTeamBanner(myTeam, myEngine, oppEngine);
     overlay.hide();
 
+    // Voice chat (goal node 522): open mic + mute pill, signaling relayed by
+    // the match server. Slot 2 (blue) is the perfect-negotiation polite peer.
+    voice = new VoiceChat({
+      polite: myNum === 2,
+      sendSignal: (data): void => {
+        if (!matchOver && ws.readyState === WebSocket.OPEN) {
+          ws.send(encodeMessage({ kind: 'voice', data }));
+        }
+      },
+    });
+    void voice.start();
+
     // --- Net state ---------------------------------------------------------
     const nameOf = (i: number): string => spriteLabel(i, myNum, e1, e2);
     const board: KillBoard = { kills: new Map(), feed: [] };
@@ -599,12 +614,17 @@ export async function onlineMain(): Promise<void> {
         for (const row of msg.players) board.kills.set(row.num, row.kills);
         return;
       }
+      if (msg.kind === 'voice') {
+        void voice?.onSignal(msg.data);
+        return;
+      }
       if (msg.kind === 'chat') {
         const ev = parseServerChat(msg.text);
         if (ev.type === 'kill') {
           applyKill(board, ev.killer, ev.victim, nameOf, myNum, ev.weapon);
         } else if (ev.type === 'end') {
           matchOver = true;
+          voice?.dispose();
           const won = ev.winnerNum === myNum;
           overlay.set(
             won
