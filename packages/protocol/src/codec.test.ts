@@ -171,6 +171,10 @@ const cases: Record<string, Message> = {
       serverTick: 100000,
     },
   },
+  voice: {
+    kind: "voice",
+    data: '{"sdp":{"type":"offer","sdp":"v=0 o=- 46117 2 IN IP4 127.0.0.1"}}',
+  },
   handshakeWelcomeReject: {
     kind: "handshake",
     handshake: {

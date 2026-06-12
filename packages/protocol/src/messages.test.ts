@@ -7,6 +7,7 @@ import {
   envelope,
 } from "./messages";
 import type {
+  Voice,
   Message,
   MessageKind,
   Envelope,
@@ -138,6 +139,11 @@ const chatMsg: Message = {
   text: "gg",
 };
 
+const voiceMsg: Message = {
+  kind: "voice",
+  data: '{"candidate":{"candidate":"candidate:1 1 udp 2122260223 192.0.2.1 54400 typ host"}}',
+};
+
 const helloMsg: Message = {
   kind: "handshake",
   handshake: {
@@ -210,6 +216,11 @@ describe("Message discriminated union narrowing", () => {
           expect(typeof c.text).toBe("string");
           break;
         }
+        case "voice": {
+          const v: Voice = m;
+          expect(typeof v.data).toBe("string");
+          break;
+        }
         case "handshake": {
           const hs: Handshake = m.handshake;
           if (hs.kind === "hello") {
@@ -238,14 +249,15 @@ describe("Message discriminated union narrowing", () => {
       thingMsg,
       heartbeatMsg,
       chatMsg,
+      voiceMsg,
       helloMsg,
       welcomeMsg,
     ];
     all.forEach(visit);
 
-    // Both hello and welcome are `kind: "handshake"`, so all 8 fixtures are
-    // visited but only 7 distinct kinds appear.
-    expect(seen).toHaveLength(8);
+    // Both hello and welcome are `kind: "handshake"`, so all 9 fixtures are
+    // visited but only 8 distinct kinds appear.
+    expect(seen).toHaveLength(9);
     expect([...new Set(seen)]).toEqual([
       "inputFrame",
       "spriteSnapshot",
@@ -253,6 +265,7 @@ describe("Message discriminated union narrowing", () => {
       "thingSnapshot",
       "heartbeat",
       "chat",
+      "voice",
       "handshake",
     ]);
   });

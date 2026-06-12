@@ -61,6 +61,7 @@ import type {
   SpriteSnapshotFull,
   ThingSnapshot,
   Vec2,
+  Voice,
   WeaponState,
 } from "./messages.js";
 import {
@@ -104,6 +105,7 @@ const KindTag = {
   heartbeat: 5,
   chat: 6,
   handshake: 7,
+  voice: 8,
 } as const satisfies Record<Message["kind"], number>;
 
 // Sub-tags for the nested snapshot / handshake oneofs.
@@ -711,6 +713,15 @@ function readChat(r: Reader): Chat {
   return { senderNum, channel, text };
 }
 
+// --- Voice (WebRTC signaling relay) ---
+function writeVoice(w: Writer, v: Voice): void {
+  w.string(v.data);
+}
+
+function readVoice(r: Reader): Voice {
+  return { data: r.string() };
+}
+
 // --- Handshake (hello | welcome) ---
 function writeHandshakeHello(w: Writer, h: HandshakeHello): void {
   w.uvarint(h.protocolVersion);
@@ -837,6 +848,10 @@ export function encodeMessage(msg: Message): ArrayBuffer {
       w.u8(KindTag.chat);
       writeChat(w, msg);
       break;
+    case "voice":
+      w.u8(KindTag.voice);
+      writeVoice(w, msg);
+      break;
     case "handshake":
       w.u8(KindTag.handshake);
       writeHandshake(w, msg.handshake);
@@ -882,6 +897,9 @@ export function decodeMessage(buf: ArrayBuffer): Message {
       break;
     case KindTag.chat:
       msg = { kind: "chat", ...readChat(r) };
+      break;
+    case KindTag.voice:
+      msg = { kind: "voice", ...readVoice(r) };
       break;
     case KindTag.handshake:
       msg = { kind: "handshake", handshake: readHandshake(r) };

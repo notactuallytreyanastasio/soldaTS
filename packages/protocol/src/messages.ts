@@ -290,6 +290,19 @@ export interface Chat {
   text: string; // PORT: Text: array[0..0] of WideChar (UTF-16 LE)
 }
 
+
+/**
+ * Bidirectional WebRTC voice-chat signaling (goal node 522). The payload is
+ * an opaque JSON string (SDP offer/answer or ICE candidate) the server relays
+ * VERBATIM to the opposite player of a match — it never inspects or stores
+ * it. Identity is implicit: in a 1v1 match the receiver knows the only other
+ * possible sender. Audio itself never touches the server (peer-to-peer RTP).
+ */
+export interface Voice {
+  /** JSON-encoded signaling payload ({sdp} or {candidate}); opaque to the server. */
+  data: string;
+}
+
 /**
  * Client → Server connection request (first reliable message after connect).
  * PORT: TMsg_RequestGame (wire-protocol.md ID=58) combined with the identity
@@ -368,6 +381,7 @@ export type Message =
   | ({ kind: "thingSnapshot" } & ThingSnapshot)
   | ({ kind: "heartbeat" } & Heartbeat)
   | ({ kind: "chat" } & Chat)
+  | ({ kind: "voice" } & Voice)
   | ({ kind: "handshake" } & { handshake: Handshake });
 
 /** The discriminant literal of {@link Message}. */

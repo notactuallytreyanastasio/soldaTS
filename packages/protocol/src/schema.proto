@@ -234,6 +234,11 @@ message Handshake {
 // Versioned envelope + top-level union
 // ---------------------------------------------------------------------------
 
+// WebRTC voice signaling, relayed verbatim to the opposite match player.
+message Voice {
+  string data = 1; // opaque JSON: SDP offer/answer or ICE candidate
+}
+
 // PORT: modern replacement for the 8-bit TMsgHeader.ID switch.
 message Message {
   oneof kind {
@@ -244,6 +249,7 @@ message Message {
     Heartbeat heartbeat = 5;
     Chat chat = 6;
     Handshake handshake = 7;
+    Voice voice = 8;
   }
 }
 
