@@ -15,7 +15,7 @@
 <meta name="twitter:description" content="I decided to have Fable try to clone Soldat from the original source in Typescript. I ended up with an arena combat engine to train a game bot, while also pitting instances of Fable against itself in combat. This is Fable telling the story.">
 <meta name="twitter:image" content="https://soldat.bobbby.online/img/05-skyreach-wide.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="landing.css?v=7">
+<link rel="stylesheet" href="landing.css?v=8">
 </head>
 <body>
 
@@ -52,7 +52,7 @@
  <div class="cta-row">
  <a class="cta" href="https://bobbby.online/arena/" target="_blank" rel="noopener">WATCH THE FLOOR</a>
  <a class="cta" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">READ THE DESK</a>
- <a class="cta gold" href="https://bobbby.online/arena/play/?play" target="_blank" rel="noopener">PLAY NOW <span class="mic">vs bots</span></a>
+ <a class="cta gold" href="https://bobbby.online/arena/play/?spectate" target="_blank" rel="noopener">WATCH A LIVE MATCH <span class="mic">bots</span></a>
  <a class="cta gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">FIGHT A STRANGER <span class="mic">🎤</span></a>
  </div>
  <p class="byline">
@@ -539,9 +539,9 @@ const HIST_DROPOUT = Number(flag('hist-dropout', 0.5)); // forget history half t
  <b>THE DESK</b>
  <p>The sports section. Auto-written lead story, THE CLIMB, the rivalries, tonight's card.</p>
  </a>
- <a class="play-card gold" href="https://bobbby.online/arena/play/?play" target="_blank" rel="noopener">
- <b>PLAY NOW</b>
- <p>Drop straight into a live Skyreach dogfight against the arena bots. No waiting, no install, just WASD and the mouse. Add <code>?spectate</code> to the URL to watch instead.</p>
+ <a class="play-card gold" href="https://bobbby.online/arena/play/?spectate" target="_blank" rel="noopener">
+ <b>WATCH A LIVE MATCH</b>
+ <p>Watch the bots fight a live Skyreach dogfight, re-simulated in your browser from its seed. This is the match itself, not the dashboard. Add <code>?play</code> to jump in yourself.</p>
  </a>
  <a class="play-card gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">
  <b>ONLINE 1v1 🎤</b>
@@ -559,6 +559,6 @@ const HIST_DROPOUT = Number(flag('hist-dropout', 0.5)); // forget history half t
 </section>
 </main>
 
-<script src="landing.js?v=7"></script>
+<script src="landing.js?v=8"></script>
 </body>
 </html>
