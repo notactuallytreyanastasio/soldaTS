@@ -105,6 +105,12 @@ em { color: inherit; }
 .cta:hover { border-color: var(--ink); text-decoration: none; transform: translateY(-1px); }
 .cta.gold { border-color: var(--gold); color: var(--gold); background: rgba(217, 169, 63, 0.08); }
 .cta.gold:hover { background: rgba(217, 169, 63, 0.18); }
+#hero .byline {
+  max-width: 620px; margin: 36px auto 0;
+  font-style: italic; font-size: 15px; line-height: 1.7; color: var(--dim);
+  border-top: 1px solid rgba(217, 169, 63, 0.25);
+  padding-top: 22px;
+}
 .scrollhint { margin-top: 60px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.3em; color: var(--dim); animation: bob 2.4s infinite; }
 @keyframes bob { 50% { transform: translateY(6px); } }
 
