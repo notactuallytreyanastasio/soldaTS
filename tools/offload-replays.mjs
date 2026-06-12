@@ -165,8 +165,10 @@ async function worker(queue) {
       await offloadOne(item);
     } catch (e) {
       failures.push(`${item.s3Key}: ${e.message ?? e}`);
-      if (failures.length >= 25) {
-        throw new Error('too many failures (25) — aborting; nothing unverified was deleted');
+      // Abort only on SYSTEMATIC failure (high rate), not sparse network transients —
+      // failed files are never deleted and are retried on the next run.
+      if (failures.length >= 25 && failures.length / Math.max(done, 1) > 0.05) {
+        throw new Error(`failure rate too high (${failures.length}/${done}) — aborting; nothing unverified was deleted`);
       }
     }
     done++;
