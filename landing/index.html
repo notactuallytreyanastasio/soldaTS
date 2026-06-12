@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOLDAT, REWRITTEN — a game that breeds its own players</title>
+<meta name="description" content="The tale of rewriting a 2002 jetpack shooter for the web — and watching it grow into a self-playing AI arena where fourteen bot brains fight for a belt.">
+<meta property="og:title" content="SOLDAT, REWRITTEN">
+<meta property="og:description" content="A game that breeds its own players. The entire tale.">
+<meta property="og:image" content="https://soldat.bobbby.online/img/05-skyreach-wide.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="landing.css">
+</head>
+<body>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<nav id="topnav">
+  <span class="brand">SOLDAT<em>.RW</em></span>
+  <div class="links">
+    <a href="#tale">THE TALE</a>
+    <a href="#roster">THE ROSTER</a>
+    <a href="#lineage">THE STUDENTS</a>
+    <a href="#belt">THE BELT</a>
+    <a href="#machinery">THE MACHINERY</a>
+    <a href="#play" class="hot">PLAY</a>
+  </div>
+</nav>
+
+<!-- ========================== HERO ========================== -->
+<header id="hero">
+  <p class="kicker">BOBBBY.ONLINE PRESENTS</p>
+  <h1>SOLDAT,<br>REWRITTEN</h1>
+  <p class="tagline">a game that breeds its own players</p>
+  <p class="sub">
+    A 2002 jetpack shooter, ported line-by-line from 65,000 lines of Pascal to the
+    browser — which then grew sixteen bot brains, a championship belt, a betting-floor
+    dashboard, a daily newspaper, and four machine students trained on the recordings
+    of their teachers. Every match deterministic. Every fight replayable byte-for-byte.
+    Nobody asked it to become a sport.
+  </p>
+  <div class="belt-ticker" id="beltline">
+    <span class="dot"></span> THE BELT&nbsp;&nbsp;·&nbsp;&nbsp;BLACKFISH <span class="eng">/ orca</span> holds — three straight seasons &nbsp;·&nbsp; BELMONTE <span class="eng">/ cuadrilla</span> keeps knocking
+  </div>
+  <div class="cta-row">
+    <a class="cta" href="https://bobbby.online/arena/" target="_blank" rel="noopener">WATCH THE FLOOR</a>
+    <a class="cta" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">READ THE DESK</a>
+    <a class="cta gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">FIGHT A STRANGER <span class="mic">🎤</span></a>
+  </div>
+  <p class="scrollhint">▼ the tale</p>
+</header>
+
+<!-- ========================== THE TALE ========================== -->
+<main>
+<section id="tale">
+  <h2 class="section-title"><span>ACT BY ACT</span>THE TALE</h2>
+
+  <article class="act" data-act="I">
+    <div class="act-copy">
+      <h3>The archaeology</h3>
+      <p>
+        Before a single line of TypeScript existed, thirteen parallel research agents each
+        mapped one subsystem of the original Pascal engine — physics, bullets, maps,
+        netcode, AI — and a fourteenth stitched the whole-engine picture together.
+        What they found: everything is a 1-indexed global array, the famous game-feel
+        lives in magic constants (<code>gravity 0.06</code>, <code>damping 0.98</code>),
+        and determinism isn't a feature, it's structural.
+      </p>
+      <blockquote class="prompt">we are going to modernize this game. start off by using a workflow to build an understanding of how it works and everything inside of it<cite>— the first prompt of the project</cite></blockquote>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/01-first-light.png" alt="First light: the synthetic test scene, player mid-jump">
+      <figcaption>First light. The synthetic fallback scene, the player a few pixels of vector art, captured mid-jump — this exact historical build, booted and screenshotted live.</figcaption>
+    </figure>
+  </article>
+
+  <article class="act" data-act="II">
+    <div class="act-copy">
+      <h3>“nothing in the game works”</h3>
+      <p>
+        Seven milestones landed green — 269 tests passing in two float modes — before any
+        human saw a pixel. The decision graph's own adversarial reviewer had flagged it:
+        <em>zero ground-truth validation</em>. Then came the entire bug report, verbatim:
+      </p>
+      <blockquote class="prompt">nothing in the game works<cite>— the full bug report, first playtest</cite></blockquote>
+      <p>
+        The map rendered black (an unbound shader uniform multiplying every color to
+        nothing) and the player fell through the floor (degenerate normals in the
+        synthetic map). Both invisible to the type system; both obvious the moment a
+        browser drew a frame. The lesson got its own graph node: types and tests are
+        one category of truth, pixels are another.
+      </p>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/02-combat-sandbox.png" alt="The combat sandbox: vector Gosteks, platforms, live tracer rounds">
+      <figcaption>The combat sandbox: procedural stick-soldiers, live tracers, one gun. Everyone gets the AK-74 — one balance surface for every tuning question since.</figcaption>
+    </figure>
+  </article>
+
+  <article class="act" data-act="III">
+    <div class="act-copy">
+      <h3>The sky becomes the map</h3>
+      <p>
+        The first bot-vs-bot match was a pacifist standoff: nobody fired a shot. The
+        ported perception code skips invisible sprites, nothing set <code>alpha</code>,
+        and the default was zero — every bot was, by its own rules, invisible to every
+        other bot. One line turned the lights on. Then telemetry exposed the real
+        embarrassment: rocket boots, vertical map, and the bots fought like infantry
+        — jets burning 2–4% of alive time.
+      </p>
+      <p>
+        The answer was <strong>Skyreach</strong>: a purpose-built aerial arena where the
+        floor is a fallback net, the pads are perches, and getting anywhere means flying.
+        Plus aerial AI that chases height advantage and an air-fuel trickle so a 50%
+        thrust duty cycle hovers forever. Jet use went to 47–56%. Median kill distance
+        doubled. This is what greets you on startup today.
+      </p>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/05-skyreach-wide.png" alt="Skyreach: the default bot-vs-bot aerial match, mid-dogfight">
+      <figcaption>Skyreach, mid-dogfight. Open the game and you're watching this; <code>?play</code> opts you into fighting.</figcaption>
+    </figure>
+  </article>
+
+  <article class="act" data-act="IV">
+    <div class="act-copy">
+      <h3>The line in the sand</h3>
+      <p>
+        Then the boundary that made everything after possible: every bot brain moved
+        behind one adapter seam. A brain reads the world, never mutates it, and its only
+        output is its own bot's controls. The ported Pascal AI became
+        <code>classic</code>; the freed slot went to <code>pilot</code>, a brain written
+        from first principles —
+      </p>
+      <blockquote class="prompt">imagine taking the optimized play of a counter strike source player but wawtching from the top down in 2 dimensions<cite>— the seed of pilot, typos and all</cite></blockquote>
+      <p>
+        What a Counter-Strike pro mechanically <em>is</em> turns out to be mostly not aim:
+        positioning that makes fights unfair before they start, range discipline, movement
+        as counter-prediction. Rotated into 2D-plus-vertical, that became six doctrines in
+        a comment block. The arms race had its first two fighters.
+      </p>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/10-duel-pilot-reaper.png" alt="The duel viewer: pilot vs reaper, side by side">
+      <figcaption>The <code>?duel</code> viewer — which caught a 60× ballistics gravity bug in its first minute of existence.</figcaption>
+    </figure>
+  </article>
+
+  <article class="act" data-act="V">
+    <div class="act-copy">
+      <h3>The arms race</h3>
+      <p>
+        Two Claude sessions in one shared tree, writing brains to dethrone each other's
+        brains. <code>reaper</code> dove on <code>pilot</code>. <code>matador</code>
+        realized the magazine is a clock and punished reloads. <code>kestrel</code> did
+        archaeology on the fire model itself and discovered every previous brain had
+        compensated for the wrong bullet gravity — 2.25× off. <code>wolf</code> proved
+        the pack is the unit of selection: three guns, one prey.
+        <code>plover</code> read wolf's deterministic mind and fed it a decoy.
+        <code>hydra</code> rotated its wounded out of the pack's arithmetic — and
+        <code>plover</code> and <code>hydra</code> found the same counter independently.
+        Convergent evolution, in a git repo, before lunch.
+      </p>
+      <blockquote class="prompt">keep goiung in a loop im going to the knicks game<cite>— operational oversight, that stretch</cite></blockquote>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/13-plover-vs-wolf.png" alt="Plover's broken-wing gambit against the wolf pack">
+      <figcaption>The broken-wing gambit: plover dangles a decoy at the pack's published focus function. It took the opener 38–37.</figcaption>
+    </figure>
+  </article>
+
+  <article class="act" data-act="VI">
+    <div class="act-copy">
+      <h3>A sport that runs itself</h3>
+      <p>
+        Every match simulated headless at 100× realtime. Every fight recorded as training
+        data. A commissioner daemon forcing title defenses every ten minutes whether
+        anyone is watching or not. A stock-ticker dashboard (<strong>THE FLOOR</strong>)
+        with a decay-scored Big Board, and a morning paper (<strong>THE SKYREACH
+        DESK</strong>) that writes its own lead story. The belt changed hands four times
+        in one afternoon. Seasons turn over every three hours. The sport does not
+        need you — which is exactly what makes it watchable.
+      </p>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/16-skyreach-desk-dark.png" alt="THE SKYREACH DESK, dark edition">
+      <figcaption>THE SKYREACH DESK — the arena, story-first. Auto-written headlines over real standings.</figcaption>
+    </figure>
+  </article>
+
+  <article class="act" data-act="VII">
+    <div class="act-copy">
+      <h3>The machines start learning</h3>
+      <p>
+        With ~35 million rows of recorded play, the obvious question: can a model learn
+        to fight from the tape? <code>MIMIC</code> averaged eleven teachers into mush and
+        got slaughtered. <code>DISCIPLE</code> cloned one master and proved aim is a
+        <em>choice</em>, not a regression. <code>PRODIGY</code> grew real senses — and its
+        own post-mortem prescribed the cure for its blindness. <code>BUTTSTEIN</code>
+        trained on exact data and tripled its ancestor's hit rate. The students climb the
+        same public ladder as their teachers, on THE CLIMB chart, every season.
+      </p>
+      <p class="aside">Full lineage below — it's the best subplot in the whole tale.</p>
+    </div>
+    <figure>
+      <img loading="lazy" src="img/15-arena-live-lerna.png" alt="ARENA LIVE: the floor mid-season">
+      <figcaption>THE FLOOR — the Claude Arena exchange. Tape, Big Board, news wire, click-to-watch replays re-simulated in your browser.</figcaption>
+    </figure>
+  </article>
+</section>
+
+<!-- ========================== THE ROSTER ========================== -->
+<section id="roster">
+  <h2 class="section-title"><span>SIXTEEN BRAINS</span>THE ROSTER</h2>
+  <p class="section-lede">
+    Twelve written doctrines, four learned students. Every brain is a published, auditable
+    function — and every defeat spawned a counter. Click a card.
+  </p>
+  <div class="roster-grid" id="rosterGrid"><!-- cards injected by landing.js --></div>
+</section>
+
+<!-- ========================== THE LINEAGE ========================== -->
+<section id="lineage">
+  <h2 class="section-title"><span>FOUR STUDENTS</span>THE LEARNED LINE</h2>
+  <p class="section-lede">
+    Each student is a small neural policy, behavior-cloned from the recordings. Each one
+    fixed its ancestor's defining failure. Hit rate tells the story.
+  </p>
+  <div class="lineage-rail">
+    <div class="student">
+      <div class="student-head"><strong>MIMIC</strong><span class="gen">v1</span></div>
+      <div class="hitbar"><i style="--w:8%"></i><b>~2%</b></div>
+      <p>Averaged eleven contradictory teachers into mush. Aim was a regression — multimodal
+      targets blurred into a 38° error. Slaughtered 4–28 by <em>classic</em>.</p>
+      <p class="fix">Lesson: you cannot average doctrines.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="student">
+      <div class="student-head"><strong>DISCIPLE</strong><span class="gen">v2</span></div>
+      <div class="hitbar"><i style="--w:35%"></i><b>~3×</b></div>
+      <p>One teacher: <em>cuadrilla</em>. Aim became 24-bin <strong>classification</strong> —
+      a choice among directions, not an average of them. Tripled MIMIC's hit rate; lost 0–3
+      to its master, which is the correct result.</p>
+      <p class="fix">Fixed: aim is a choice.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="student">
+      <div class="student-head"><strong>PRODIGY</strong><span class="gen">v3</span></div>
+      <div class="hitbar"><i style="--w:22%"></i><b>5.4%</b></div>
+      <p>Grew senses: enemy reload flags, mag state, nearest bullet threat, one tick of
+      memory. But its threat sense was trained on <em>reconstructed</em> data that didn't
+      match what it saw live — and its own post-mortem said so.</p>
+      <p class="fix">Fixed: senses. Broke: the training data lied.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="student">
+      <div class="student-head"><strong>BUTTSTEIN</strong><span class="gen">v4</span></div>
+      <div class="hitbar"><i style="--w:70%"></i><b>17.4%</b></div>
+      <p>The cure, named proudly. Replay schema v2 logs the exact threat the runtime
+      computes — recorder and brain cannot disagree. Sees its own spray heat, so trigger
+      discipline became a learned <em>response</em>, not a mystery rhythm. Blended aim
+      labels: landed shots carry 5× gradient.</p>
+      <p class="fix">Fixed: what it trained on IS what it sees.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================== THE BELT ========================== -->
+<section id="belt">
+  <h2 class="section-title"><span>SEASON BY SEASON</span>THE BELT</h2>
+  <p class="section-lede">
+    A season is three hours. The board decays — idle fighters bleed score. The commissioner
+    forces title defenses whether the champion likes it or not.
+  </p>
+  <ol class="belt-line">
+    <li><span class="szn">S2–S3</span><strong>BELMONTE</strong><span class="eng">/ cuadrilla</span><p>The bullfighter's crew — matador's mag-punish, wolf's pack, hydra's rotation, one doctrine. Swept the field 9–0.</p></li>
+    <li><span class="szn">S4</span><strong>ESCA</strong><span class="eng">/ angler</span><p>The lure that fishes the meta: dangle a bait that reads “open” forever, let the gallery converge on whoever dashes for it.</p></li>
+    <li class="current"><span class="szn">S5–S8</span><strong>BLACKFISH</strong><span class="eng">/ orca</span><p>The pod hunts the gap — synchronized not on health but on the enemy's <em>reload clock</em>. Holding three straight seasons as of this page's writing. BELMONTE keeps taking title shots; the splits keep landing 3–0 either way.</p></li>
+  </ol>
+  <p class="aside center">The current board is live, always: <a href="https://bobbby.online/arena/" target="_blank" rel="noopener">THE FLOOR</a> · <a href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">THE DESK</a></p>
+</section>
+
+<!-- ========================== THE NUMBERS ========================== -->
+<section id="numbers">
+  <h2 class="section-title"><span>AS OF THIS WRITING</span>THE NUMBERS</h2>
+  <div class="stat-grid">
+    <div class="stat"><b data-count="565">0</b><span>commits</span></div>
+    <div class="stat"><b data-count="683">0</b><span>tests, green twice<br>(f64 + strict f32)</span></div>
+    <div class="stat"><b data-count="16">0</b><span>bot brains</span></div>
+    <div class="stat"><b data-count="30085">0</b><span>recorded matches</span></div>
+    <div class="stat"><b data-count="37">0</b><span>GB of training tape</span></div>
+    <div class="stat"><b data-count="100">0</b><span>× realtime, headless</span></div>
+  </div>
+</section>
+
+<!-- ========================== THE MACHINERY ========================== -->
+<section id="machinery">
+  <h2 class="section-title"><span>HOW IT WAS BUILT</span>THE MACHINERY</h2>
+  <div class="mach-grid">
+    <div class="mach">
+      <h3>The decision graph</h3>
+      <p>Every goal, option, decision, action, and outcome in a queryable graph — root goals
+      store the verbatim prompts, because “what was actually asked” is what makes a decision
+      recoverable six months later. A hook <em>blocks file edits</em> unless a node was
+      logged in the last fifteen minutes. The project's self-criticism has provenance:
+      the adversarial reviews live in the same graph as the milestones they tore into.</p>
+    </div>
+    <div class="mach">
+      <h3>Determinism as a load-bearing wall</h3>
+      <p>Same seed, same match, byte-for-byte — which is why every replay on the public
+      site re-simulates <em>in your browser</em> from a few bytes of seed instead of
+      shipping video. It's also why the fidelity question became a test gate: the whole
+      suite runs twice, once in f64 and once with every float operation rounded through
+      <code>Math.fround</code>.</p>
+    </div>
+    <div class="mach">
+      <h3>The screenshot rig</h3>
+      <p>Every historical screenshot on this page was captured <em>live</em> — the old
+      commit checked out into a worktree, booted under a dev server, driven over the
+      DevTools protocol with keys genuinely held down. None of it is a mockup.</p>
+    </div>
+    <div class="mach">
+      <h3>Two Claudes, one repo</h3>
+      <p>Most of the roster was authored by Claude instances fighting each other —
+      one writes a doctrine, the other reads its published mind and writes the counter.
+      The human's role, in his own words, was operational oversight:
+      <em>“keep goiung in a loop im going to the knicks game.”</em></p>
+    </div>
+  </div>
+</section>
+
+<!-- ========================== PLAY ========================== -->
+<section id="play">
+  <h2 class="section-title"><span>YOUR TURN</span>STEP INTO IT</h2>
+  <div class="play-grid">
+    <a class="play-card" href="https://bobbby.online/arena/" target="_blank" rel="noopener">
+      <b>THE FLOOR</b>
+      <p>The exchange. Live tape, the Big Board, click any fight to watch it re-simulated in your browser.</p>
+    </a>
+    <a class="play-card" href="https://bobbby.online/arena/desk.html" target="_blank" rel="noopener">
+      <b>THE DESK</b>
+      <p>The sports section. Auto-written lead story, THE CLIMB, the rivalries, tonight's card.</p>
+    </a>
+    <a class="play-card gold" href="https://bobbby.online/arena/play/?online" target="_blank" rel="noopener">
+      <b>ONLINE 1v1 🎤</b>
+      <p>Pick a brain for your squad, get matched against a stranger, and talk to them — live voice the moment the match starts. Open mic, mute pill bottom-left.</p>
+    </a>
+    <a class="play-card" href="https://github.com/notactuallytreyanastasio/soldaTS" target="_blank" rel="noopener">
+      <b>THE REPO</b>
+      <p>All of it: the engine, the brains, the trainers, the diary this page is woven from.</p>
+    </a>
+  </div>
+  <footer>
+    <p>SOLDAT, REWRITTEN · woven from the project diary · <a href="https://bobbby.online">bobbby.online</a></p>
+    <p class="fine">Original Soldat by Michał Marcinkowski (2002), open-sourced as OpenSoldat. This rewrite ships no original assets.</p>
+  </footer>
+</section>
+</main>
+
+<script src="landing.js"></script>
+</body>
+</html>
