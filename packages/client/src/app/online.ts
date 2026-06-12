@@ -876,14 +876,14 @@ async function bootSpectator(recipe: string): Promise<Session> {
     i <= 2 ? `${TEAM_NAMES[i]} player` : (spriteTeam(i) === 1 ? e1 : e2).toUpperCase();
   const board: KillBoard = { kills: new Map(), feed: [] };
   let teamScore: [number, number] = [0, 0];
-  // Per-sprite position history for SNAPSHOT INTERPOLATION: render ~110 ms in
-  // the past, always between two real snapshots, so motion is fluid and never
-  // snaps back (frame-rate independent — no per-frame tick counter).
-  const buffers = new Map<number, { t: number; x: number; y: number; vx: number; vy: number }[]>();
-  const INTERP_DELAY_MS = 110;
+  // Latest snapshot per sprite + an eased render position that chases it each
+  // frame. Clock-free and can't freeze: it always moves toward the newest pos.
+  const latest = new Map<number, SpriteSnapshotFull>();
+  const eased = new Map<number, { x: number; y: number }>();
   let follow = 1;
   let auto = true;
   let alive = true;
+  let spectatorWarned = false;
 
   const cycleFollow = (dir: number): void => {
     auto = false;
@@ -909,47 +909,25 @@ async function bootSpectator(recipe: string): Promise<Session> {
     'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:30;font:11px ui-monospace,Menlo,monospace;letter-spacing:0.14em;color:#9aa3b2;background:rgba(10,12,16,0.6);padding:3px 11px;border-radius:6px;pointer-events:none';
   document.body.appendChild(hint);
 
-  const renderPositions = (now: number): void => {
+  const renderPositions = (): void => {
     const parts = world.spriteParts;
     if (parts === null) return;
-    const renderTime = now - INTERP_DELAY_MS;
-    for (const num of ONLINE_SPRITES) {
-      const buf = buffers.get(num);
-      if (buf === undefined || buf.length === 0) continue;
-      let s0 = buf[0]!;
-      let s1: { t: number; x: number; y: number; vx: number; vy: number } | undefined;
-      for (const e of buf) {
-        if (e.t <= renderTime) s0 = e;
-        else {
-          s1 = e;
-          break;
-        }
+    for (const [num, snap] of latest) {
+      let c = eased.get(num);
+      if (c === undefined) {
+        c = { x: snap.pos.x, y: snap.pos.y };
+        eased.set(num, c);
       }
-      let x: number;
-      let y: number;
-      let vx: number;
-      let vy: number;
-      if (s1 !== undefined) {
-        const a = Math.max(0, Math.min(1, (renderTime - s0.t) / Math.max(1, s1.t - s0.t)));
-        x = s0.x + (s1.x - s0.x) * a;
-        y = s0.y + (s1.y - s0.y) * a;
-        vx = s1.vx;
-        vy = s1.vy;
-      } else {
-        const last = buf[buf.length - 1]!;
-        const ticks = Math.min(((renderTime - last.t) / 1000) * TICK_HZ, EXTRAPOLATE_MAX_TICKS);
-        x = last.x + last.vx * ticks;
-        y = last.y + last.vy * ticks;
-        vx = last.vx;
-        vy = last.vy;
-      }
-      parts.posX[num] = x;
-      parts.posY[num] = y;
-      parts.oldX[num] = x - vx;
-      parts.oldY[num] = y - vy;
-      parts.velocityX[num] = vx;
-      parts.velocityY[num] = vy;
-      while (buf.length > 2 && (buf[1]?.t ?? Infinity) < renderTime - 500) buf.shift();
+      // Snap if teleported far (respawn); otherwise ease ~30% toward the target.
+      const far = Math.abs(snap.pos.x - c.x) + Math.abs(snap.pos.y - c.y) > 400;
+      c.x = far ? snap.pos.x : c.x + (snap.pos.x - c.x) * 0.3;
+      c.y = far ? snap.pos.y : c.y + (snap.pos.y - c.y) * 0.3;
+      parts.posX[num] = c.x;
+      parts.posY[num] = c.y;
+      parts.oldX[num] = c.x - snap.velocity.x;
+      parts.oldY[num] = c.y - snap.velocity.y;
+      parts.velocityX[num] = snap.velocity.x;
+      parts.velocityY[num] = snap.velocity.y;
     }
   };
 
@@ -1002,7 +980,7 @@ async function bootSpectator(recipe: string): Promise<Session> {
     if (!alive) return;
     const dt = Math.min((now - last) / 1000, 0.25);
     last = now;
-    renderPositions(now);
+    renderPositions();
     entityRenderer.render(world, 0);
     blood.update(dt);
     blood.draw();
@@ -1039,18 +1017,17 @@ async function bootSpectator(recipe: string): Promise<Session> {
       view.destroy();
     },
     onSnapshot(snap): void {
-      // Pose the full body (skeleton, weapon, health, facing) like the player
-      // path does for remotes; the render loop then interpolates COM position.
-      applySpriteSnapshot(world, snap);
+      latest.set(snap.num, snap);
       const s = world.sprites[snap.num];
       if (s !== undefined) s.deadMeat = snap.health <= 0;
-      let buf = buffers.get(snap.num);
-      if (buf === undefined) {
-        buf = [];
-        buffers.set(snap.num, buf);
+      try {
+        applySpriteSnapshot(world, snap); // pose skeleton/weapon/facing
+      } catch (err) {
+        if (!spectatorWarned) {
+          console.warn('[spectate] applySpriteSnapshot failed:', err);
+          spectatorWarned = true;
+        }
       }
-      buf.push({ t: performance.now(), x: snap.pos.x, y: snap.pos.y, vx: snap.velocity.x, vy: snap.velocity.y });
-      if (buf.length > 8) buf.shift();
     },
     onHeartbeat(score, kills): void {
       teamScore = score;
