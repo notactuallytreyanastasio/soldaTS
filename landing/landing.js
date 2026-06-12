@@ -102,7 +102,7 @@ const resize = () => { W = cv.width = innerWidth * devicePixelRatio; H = cv.heig
 addEventListener('resize', resize);
 resize();
 
-const TEAM = ['#e0654f', '#6fa8dc'];
+const TEAM = ['#ff5d5d', '#5da9ff'];
 const rand = (a, b) => a + Math.random() * (b - a);
 const fighters = Array.from({ length: 6 }, (_, i) => ({
   x: rand(0.1, 0.9) * W, y: rand(0.15, 0.7) * H,
@@ -158,7 +158,7 @@ function step() {
     const p = trails[i];
     p.a -= 0.02; p.y += 0.6 * devicePixelRatio;
     if (p.a <= 0) { trails.splice(i, 1); continue; }
-    cx.fillStyle = `rgba(217,169,63,${p.a * 0.5})`;
+    cx.fillStyle = `rgba(245,197,66,${p.a * 0.5})`;
     cx.fillRect(p.x, p.y, 2 * devicePixelRatio, 2 * devicePixelRatio);
   }
 
