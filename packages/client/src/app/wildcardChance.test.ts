@@ -1,8 +1,8 @@
 // Wildcard chance resolution: pure, seed-stable, and mode-correct — the
 // guarantee that "all games have a chance of wildcard play" never costs a
 // byte of replay determinism. Since the rifle era, an armed 'chance' match
-// picks its weapon from a SEPARATE seeded hash (now an even split over the
-// five WILDCARD_WEAPONS); the arming roll itself (rollWildcard) is the
+// picks its weapon from a SEPARATE seeded hash (now a weighted split over the
+// five WILDCARD_WEAPONS (rocket/ricochet/chainsaw 3x the shotgun/rifle)); the arming roll itself (rollWildcard) is the
 // unchanged shotgun-era hash.
 
 import { describe, it, expect } from 'vitest';
@@ -32,17 +32,25 @@ describe('rollWildcard', () => {
 });
 
 describe('pickWildcardWeapon', () => {
-  it('is a pure function of the seed and splits roughly evenly over all five guns', () => {
+  it('is a pure function of the seed and weights the spectacle guns 3x', () => {
     const counts = new Map<string, number>();
-    for (let s = 1; s <= 2000; s++) {
+    const N = 4000;
+    for (let s = 1; s <= N; s++) {
       expect(pickWildcardWeapon(s)).toBe(pickWildcardWeapon(s));
-      const w = pickWildcardWeapon(s);
-      counts.set(w, (counts.get(w) ?? 0) + 1);
+      counts.set(pickWildcardWeapon(s), (counts.get(pickWildcardWeapon(s)) ?? 0) + 1);
     }
+    // weights shotgun:1 rifle:1 rocket:3 ricochet:3 chainsaw:3 (total 11)
+    const expected: Record<string, number> = {
+      shotgun: 1 / 11, rifle: 1 / 11, rocket: 3 / 11, ricochet: 3 / 11, chainsaw: 3 / 11,
+    };
     for (const weapon of WILDCARD_WEAPONS) {
-      const pct = ((counts.get(weapon) ?? 0) / 2000) * 100;
-      expect(pct).toBeGreaterThan(20 - 8); // even split = 20% each
-      expect(pct).toBeLessThan(20 + 8);
+      const frac = (counts.get(weapon) ?? 0) / N;
+      expect(frac).toBeGreaterThan(expected[weapon]! - 0.05);
+      expect(frac).toBeLessThan(expected[weapon]! + 0.05);
+    }
+    // each spectacle gun beats either even-split baseline gun
+    for (const big of ['rocket', 'ricochet', 'chainsaw'] as const) {
+      expect(counts.get(big)!).toBeGreaterThan(counts.get('shotgun')!);
     }
   });
 });

@@ -60,9 +60,28 @@ export type WildcardWeapon = (typeof WILDCARD_WEAPONS)[number];
  * recorded manifest match / watch URL carries the RESOLVED weapon, never the
  * mode — replays force that value and never re-roll the pick).
  */
+/**
+ * Pick weights (decision: surface the spectacle guns). The three projectile/
+ * melee wildcards (rocket, ricochet, chainsaw) are drawn 3x as often as the
+ * shotgun and rifle, so an armed match is far more likely to show one of them.
+ * The order still follows WILDCARD_WEAPONS (append-only); only the effective
+ * modulus changed, which is safe for the same reason the 2->5 widening was.
+ */
+const WILDCARD_PICK_WEIGHTS: Record<WildcardWeapon, number> = {
+  shotgun: 1,
+  rifle: 1,
+  rocket: 3,
+  ricochet: 3,
+  chainsaw: 3,
+};
+
 export function pickWildcardWeapon(seed: number): WildcardWeapon {
   const h = Math.imul(seed ^ 0x85ebca6b, 0xc2b2ae35) >>> 0;
-  return WILDCARD_WEAPONS[h % WILDCARD_WEAPONS.length] ?? 'shotgun';
+  const bag: WildcardWeapon[] = [];
+  for (const w of WILDCARD_WEAPONS) {
+    for (let i = 0; i < WILDCARD_PICK_WEIGHTS[w]; i++) bag.push(w);
+  }
+  return bag[h % bag.length] ?? 'shotgun';
 }
 
 /**

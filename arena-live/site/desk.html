@@ -76,6 +76,9 @@
   .cred { color: var(--red); } .cblue { color: var(--blue); }
   .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
   .num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  /* engine names are doors into the BRAIN-CAM (brain.html?engine=…) */
+  .brainlink { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .brainlink:hover { color: var(--gold); text-decoration: none; border-bottom-color: var(--gold); }
 
   /* ---- masthead ------------------------------------------------------------ */
   .masthead { background: var(--head-bg); border-bottom: 3px double var(--rule); padding: 14px 22px 10px; }
@@ -154,7 +157,9 @@
 
   /* ---- rivalries + tonight grid ---------------------------------------------- */
   .row2 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 22px; border-bottom: 1px solid var(--line); }
-  @media (max-width: 980px) { .row2 { grid-template-columns: 1fr; } }
+  /* minmax(0,1fr), not bare 1fr — auto minimums let the widest child stretch
+     the page past a phone viewport (see the floor's .wrap note). */
+  @media (max-width: 980px) { .row2 { grid-template-columns: minmax(0, 1fr); } .row2 > .sec { min-width: 0; } }
   .row2 > .sec { border-bottom: none; }
   .row2 > aside.sec { border-left: 1px solid var(--line); padding-left: 22px; }
   @media (max-width: 980px) { .row2 > aside.sec { border-left: none; padding-left: 0; } }
@@ -189,6 +194,31 @@
   .passbar { height: 8px; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; background: var(--panel3); margin-top: 5px; }
   .passbar > div { height: 100%; background: var(--up); }
 
+  /* ---- the pyramid (tournament hierarchy) ----------------------------------- */
+  .pyr { display: flex; flex-direction: column; gap: 4px; align-items: center; padding: 4px 0 10px; }
+  .pyr-tier { font: 9px var(--mono); letter-spacing: 2.6px; color: var(--dim); text-transform: uppercase; text-align: center; margin-bottom: 4px; }
+  .pyr-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .pyr-cell {
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
+    padding: 7px 13px; cursor: pointer; min-width: 150px; text-align: center; position: relative;
+  }
+  .pyr-cell:hover { border-color: var(--gold); background: var(--hover); }
+  .pyr-cell .pc-who { font-family: var(--serif); font-weight: 800; font-size: 15px; color: var(--ink); }
+  .pyr-cell .pc-sub { font: 10px var(--mono); color: var(--dim); margin-top: 1px; }
+  .pyr-cell .pc-score { font: 700 11px var(--mono); color: var(--gold); }
+  .pyr-crown { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); background: var(--panel2); min-width: 250px; padding: 10px 20px; }
+  .pyr-crown .pc-who { font-size: 22px; letter-spacing: 1px; }
+  .pyr-cell.bout-win { border-color: var(--up); }
+  .pyr-cell.bout-loss { opacity: 0.85; }
+  .pyr-cell .pc-badge {
+    position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    font: 700 8.5px var(--mono); letter-spacing: 1.5px; border-radius: 8px;
+    padding: 1px 8px; background: var(--gold); color: var(--bg); white-space: nowrap;
+  }
+  .pyr-cell.pyr-learned { outline: 1px dashed var(--blue); outline-offset: 2px; }
+  .pyr-link { width: 1px; height: 14px; background: var(--line); }
+  .pyr-base { font: 10px var(--mono); color: var(--dim); letter-spacing: 1px; text-align: center; border-top: 1px dashed var(--line); padding-top: 7px; margin-top: 4px; width: 100%; }
+
   /* ---- gun meter ---------------------------------------------------------------- */
   .gunstrip { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
   .gcell { border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; background: var(--panel); position: relative; }
@@ -212,13 +242,57 @@
     border-radius: 6px; padding: 5px 9px; font: 11px/1.5 var(--mono); max-width: 320px;
     box-shadow: 0 4px 18px rgba(0,0,0,0.35); white-space: pre-line;
   }
+
+  /* ---- mobile (iPhone) overlay ---------------------------------------------
+     The pocket edition: the masthead folds, the banner goes 2×2, the pyramid
+     tiers and title bouts become horizontal swipe strips, and the climb chart
+     pans sideways at readable scale instead of shrinking to confetti. */
+  @media (max-width: 700px) {
+    body { font-size: 14px; }
+    .masthead { padding: 10px 12px 8px; }
+    .ears { gap: 8px; }
+    .ear { font-size: 9px; letter-spacing: 1px; }
+    .ear a, .ear button { padding: 3px 8px; font-size: 10px; letter-spacing: 1px; }
+    .mast-title { white-space: normal; letter-spacing: 2px; font-size: clamp(20px, 6.4vw, 28px); }
+    .mast-sub { font-size: 8.5px; letter-spacing: 1px; gap: 6px; }
+    .mast-sub span:first-child, .mast-sub span:last-child { display: none; }
+    .banner { padding: 0 12px; grid-template-columns: 1fr 1fr; }
+    .banner .cell { padding: 7px 10px; }
+    .banner .cell:nth-child(odd) { border-left: 1px solid var(--rule); }
+    .banner .cell:nth-child(1) { border-radius: 8px 0 0 0; }
+    .banner .cell:nth-child(2) { border-radius: 0 8px 0 0; }
+    .banner .cell:nth-child(3) { border-radius: 0 0 0 8px; border-top: none; }
+    .banner .cell:nth-child(4) { border-radius: 0 0 8px 0; border-top: none; }
+    .banner .v { font-size: 15px; }
+    .banner .v .num { font-size: 14px; }
+    .sheet { padding: 4px 12px 24px; }
+    .headline { font-size: clamp(24px, 7.6vw, 34px); }
+    .standfirst { font-size: 15px; }
+    .byline { flex-wrap: wrap; gap: 8px; }
+    .watchlink { padding: 6px 14px; }
+    /* the climb pans sideways at readable scale */
+    #ch-climb { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #ch-climb svg { min-width: 860px; }
+    /* pyramid tiers + title bouts swipe horizontally, one strip per tier */
+    .pyr > div { max-width: 100%; }
+    .pyr-row { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto;
+      -webkit-overflow-scrolling: touch; scroll-snap-type: x proximity;
+      max-width: 100%; padding: 10px 2px 4px; scrollbar-width: none; }
+    .pyr-row::-webkit-scrollbar { display: none; }
+    .pyr-cell { flex: 0 0 auto; scroll-snap-align: center; }
+    .pyr-crown { min-width: 210px; }
+    .rivgrid { grid-template-columns: 1fr; }
+    .gunstrip { grid-template-columns: 1fr; }
+    .livebox .who { font-size: 16px; }
+    .livebox .score { font-size: 21px; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
 <body>
 <header class="masthead">
   <div class="ears">
-    <span class="ear"><a href="index.html" title="the stock-ticker view">📈 THE FLOOR</a></span>
+    <span class="ear"><a href="index.html" title="the stock-ticker view">📈 THE FLOOR</a> <a href="brain.html" title="BRAIN-CAM — one brain, watched live">🧠 BRAIN-CAM</a></span>
     <div class="mast-title">The <span class="blade">Skyreach</span> Desk</div>
     <span class="ear"><button id="themeBtn" title="toggle light/dark">☀ / 🌙</button></span>
   </div>
@@ -233,6 +307,7 @@
     <div id="ch-climb"></div>
     <div class="chartnote" id="climbNote"></div>
   </section>
+  <section class="sec"><div class="sec-head"><h2>The Pyramid</h2><span class="deck">the tournament hierarchy, live — the belt on top, the gates below it, the field ranked by decayed score; every cell opens a replay</span></div><div id="pyramid"></div></section>
   <div class="row2">
     <section class="sec"><div class="sec-head"><h2>Rivalries</h2><span class="deck">who owns whom, and where nobody blinks — click a card to watch their latest meeting</span></div><div class="rivgrid" id="rivalries"></div></section>
     <aside class="sec"><div class="sec-head"><h2>Tonight's Card</h2></div><div id="tonight"></div></aside>
@@ -268,7 +343,20 @@ function fmtDur(ms) {
   if (h < 48) return h + 'h ' + (m % 60) + 'm';
   return Math.floor(h / 24) + 'd';
 }
-function openUrl(u) { if (u) window.open(u, '_blank'); }
+/** Open a watch URL. Local watch links point at localhost:5173 — when this
+ *  page is being read from ANOTHER device (a phone on the LAN hitting the
+ *  Mac's watcher), localhost is the phone, not the Mac; retarget the link at
+ *  the host that served this page so the replay actually opens. */
+function fixHost(u) {
+  try {
+    const here = location.hostname;
+    if (u && here && here !== 'localhost' && here !== '127.0.0.1') {
+      u = u.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5173/, `http://${here}:5173`);
+    }
+  } catch {}
+  return u;
+}
+function openUrl(u) { if (u) window.open(fixHost(u), '_blank'); }
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-watch]');
   if (!el) return;
@@ -283,6 +371,12 @@ function hashStr(s) {
   return h >>> 0;
 }
 const pickT = (arr, id) => arr[hashStr(id) % arr.length];
+// Every engine name is a door into the BRAIN-CAM — the per-brain live page.
+// The click delegation ignores anchors, so these links can sit inside
+// data-watch zones (rivalry cards, pyramid cells) without stealing the click.
+const brainLink = (e, txt) => e
+  ? `<a class="brainlink" href="brain.html?engine=${attr(encodeURIComponent(e))}" title="BRAIN-CAM: ${attr(e)}">${esc(txt ?? e)}</a>`
+  : '';
 
 // ---- theme (shared localStorage key with the ticker) --------------------------
 function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
@@ -622,21 +716,40 @@ function drawClimb(d) {
         if (best) openUrl(watchOf(d, best.trigger));
       });
   }
-  // weight-ship pins (evolve gates; ts = checkpoint mtime)
+  // weight-ship pins (evolve gates) — CLUSTERED: the autopilot runs gates
+  // every few minutes now (87+ and counting), so per-gate lines/labels
+  // became unreadable smear. One pin per x-proximity burst, count labels,
+  // gate-by-gate detail in the tooltip.
   const ships = ((d.desk && d.desk.evolveShips) || []).filter((e) => e.ts);
   const [t0, t1] = x.domain();
+  const inWin = ships.filter((e) => { const t = new Date(e.ts); return t >= t0 && t <= t1; })
+    .sort((a, b) => new Date(a.ts) - new Date(b.ts));
+  const clusters = [];
+  const PIN_PX = 26; // bursts closer than this merge into one pin
+  for (const e of inWin) {
+    const px = x(new Date(e.ts));
+    const last = clusters[clusters.length - 1];
+    if (last && px - last.px1 < PIN_PX) { last.gates.push(e); last.px1 = px; }
+    else clusters.push({ px0: px, px1: px, gates: [e] });
+  }
   let pin = 0;
-  for (const e of ships) {
-    const t = new Date(e.ts);
-    if (t < t0 || t > t1) continue;
-    const col = e.shipped ? P.up : P.down;
-    svg.append('line').attr('x1', x(t)).attr('x2', x(t)).attr('y1', m.t - 4).attr('y2', H - m.b)
-      .attr('stroke', col).attr('stroke-opacity', 0.45).attr('stroke-dasharray', '3,4');
-    svg.append('text').attr('x', x(t) + 3).attr('y', m.t + 10 + (pin % 3) * 11)
-      .attr('fill', col).attr('font-size', 9)
-      .text(`g${e.gen}${e.shipped ? ' ⚡shipped' : ' held'}`)
+  for (const c of clusters) {
+    const shipped = c.gates.filter((g) => g.shipped).length;
+    const held = c.gates.length - shipped;
+    const col = shipped > 0 ? P.up : P.down;
+    const cx = (c.px0 + c.px1) / 2;
+    svg.append('line').attr('x1', cx).attr('x2', cx).attr('y1', m.t - 4).attr('y2', H - m.b)
+      .attr('stroke', col).attr('stroke-opacity', 0.35).attr('stroke-dasharray', '3,4');
+    const label = c.gates.length === 1
+      ? `g${c.gates[0].gen}${c.gates[0].shipped ? ' ⚡' : ' ·held'}`
+      : `${shipped ? '⚡' + shipped : ''}${shipped && held ? '/' : ''}${held ? '·' + held : ''} ×${c.gates.length}`;
+    const lines = c.gates.slice(-12).map((g) =>
+      `g${g.gen}: ${g.shipped ? 'SHIPPED' : 'held'} — ${g.gate ?? ''} (${ago(g.ts)})`);
+    if (c.gates.length > 12) lines.unshift(`… ${c.gates.length - 12} earlier gates`);
+    svg.append('text').attr('x', cx + 3).attr('y', m.t + 10 + (pin % 2) * 11)
+      .attr('fill', col).attr('font-size', 9).text(label)
       .style('cursor', 'default')
-      .on('mousemove', (ev) => showTip(ev, `evolve gate — gen ${e.gen}\n${e.gate}\n${e.shipped ? 'weights SHIPPED to the neural engine' : 'gate failed — weights held back'}\n${ago(e.ts)}`))
+      .on('mousemove', (ev) => showTip(ev, `evolve gates ×${c.gates.length} (⚡${shipped} shipped, ${held} held)\n` + lines.join('\n')))
       .on('mouseleave', hideTip);
     pin += 1;
   }
@@ -680,6 +793,83 @@ function drawClimb(d) {
       ? `${learned.map((s) => `${s.coach} (${s.engine}): #${s.pts[0].r} at debut → #${s.pts[s.pts.length - 1].r} now`).join(' · ')}` + shipNote
       : 'no learned configs on the board yet — the climb starts when MIMIC or DISCIPLE files a card';
   }
+}
+
+// ============================ the pyramid =======================================
+// Tournament hierarchy, rebuilt on every wire refresh: the belt (champion or
+// the vacancy + strongest claim) on top, the latest title bouts at the gates,
+// then the board's contenders in decay-score tiers. Learned engines get a
+// dashed blue outline — watch them migrate up the pyramid.
+function pyramidHtml(d) {
+  const board = d.board || [];
+  if (!board.length) return '<div class="chartnote">no board yet — the pyramid builds itself from fight results</div>';
+  const bs = beltStatus(d);
+
+  // the crown
+  let crownWho, crownSub, crownWatch = '';
+  if (bs.champ) {
+    crownWho = `👑 ${esc(bs.champ)}`;
+    crownSub = bs.lastBout ? `last defense ${esc(ago(bs.lastBout.ts))}` : 'reigning champion';
+    crownWatch = bs.lastBout ? watchOf(d, bs.lastBout.dataset) : '';
+  } else if (bs.claim) {
+    crownWho = 'VACANT';
+    crownSub = `${esc(bs.claim.challenger.coach)}'s ${esc(claimScore(bs.claim))} claim is the strongest paper · ${esc(ago(bs.claim.ts))}`;
+    crownWatch = watchOf(d, bs.claim.dataset);
+  } else {
+    crownWho = 'VACANT';
+    crownSub = 'no claim on file — the belt waits';
+  }
+
+  // at the gates: the latest title bouts, newest first
+  const bouts = (d.crucibles || [])
+    .filter((c) => c.kind === 'title-bout' && c.series && c.series.winner)
+    .slice(-4).reverse();
+  const boutCells = bouts.map((c) => {
+    const won = c.series.winner === c.challenger.coach;
+    const split = !won && c.series.winner !== c.champion.coach;
+    const verdict = split ? 'SPLIT' : won ? 'TOOK THE SERIES' : 'DENIED';
+    const vcls = split ? 'flat' : won ? 'up' : 'down';
+    return `<div class="pyr-cell${won ? ' bout-win' : split ? '' : ' bout-loss'}" data-watch="${attr(watchOf(d, c.dataset))}">
+      <div class="pc-who">${esc(c.challenger.coach)} <span class="pc-sub">${brainLink(c.challenger.engine)}</span></div>
+      <div class="pc-sub">vs ${esc(c.champion.coach)} · <b class="${vcls}">${esc(claimScore(c))} ${verdict}</b> · ${esc(ago(c.ts))}</div>
+    </div>`;
+  }).join('');
+
+  // contender tiers straight off the decay board
+  const cellOf = (r) => {
+    const learned = r.engine === 'neural' || r.engine === 'disciple';
+    const sk = r.streak && r.streak.n > 1
+      ? ` · ${r.streak.n}${r.streak.res === 'w' ? 'W' : r.streak.res === 'l' ? 'L' : 'D'} run` : '';
+    return `<div class="pyr-cell${learned ? ' pyr-learned' : ''}" data-watch="${attr(r.lastUrl)}" title="open latest replay">
+      ${r.rank === 1 ? '<span class="pc-badge">TOP OF THE BOARD</span>' : ''}
+      <div class="pc-who">${esc(r.coach)}${learned ? ' 🧠' : ''} <span class="pc-sub">${brainLink(r.engine)}</span></div>
+      <div class="pc-sub"><span class="pc-score">${Number(r.score ?? 0).toFixed(2)}</span> · #${r.rank} · ${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''}${sk}</div>
+    </div>`;
+  };
+  const tiers = [
+    ['THE THRONE ROOM', 0, 1],
+    ['CONTENDERS', 1, 3],
+    ['THE HUNT', 3, 6],
+    ['THE PACK', 6, 10],
+  ];
+  const tierRows = tiers.map(([name, a, b]) => {
+    const cells = board.slice(a, b).map(cellOf).join('');
+    return cells ? `<div class="pyr-link"></div><div><div class="pyr-tier">${name}</div><div class="pyr-row">${cells}</div></div>` : '';
+  }).join('');
+
+  const rest = Math.max(0, board.length - 10);
+  const lg = d.desk && d.desk.league;
+  const base = `<div class="pyr-base">${rest ? `… ${rest} more configs grinding below the pyramid` : 'the whole field fits on the pyramid tonight'}` +
+    (lg && lg.pairings ? ` · the grinder feeds it: pairing ${lg.cycleInPass}/${lg.pairings} of the current pass` : '') + `</div>`;
+
+  return `<div class="pyr">
+    <div><div class="pyr-tier">THE BELT</div><div class="pyr-row">
+      <div class="pyr-cell pyr-crown"${crownWatch ? ` data-watch="${attr(crownWatch)}"` : ''}>
+        <div class="pc-who">${crownWho}</div><div class="pc-sub">${crownSub}</div></div></div></div>
+    ${bouts.length ? `<div class="pyr-link"></div><div><div class="pyr-tier">AT THE GATES — last ${bouts.length} title bouts</div><div class="pyr-row">${boutCells}</div></div>` : ''}
+    ${tierRows}
+    ${base}
+  </div>`;
 }
 
 // ============================ rivalries =========================================
@@ -727,16 +917,19 @@ function rivalriesHtml(d) {
   const U = (s) => String(s).toUpperCase();
   return picks.map((p) => {
     const id = `rv:${p.A}:${p.B}`;
+    // names are pre-escaped BRAIN-CAM links; the surrounding copy is static,
+    // so the title is injected without a second esc() pass.
+    const A = brainLink(p.A, U(p.A)), B = brainLink(p.B, U(p.B));
     const title = p.tag === 'even'
-      ? pickT([`${U(p.A)} vs ${U(p.B)}: DEAD EVEN`, `NOBODY BLINKS: ${U(p.A)} / ${U(p.B)}`, `COIN-FLIP SERIES: ${U(p.A)} × ${U(p.B)}`], id)
+      ? pickT([`${A} vs ${B}: DEAD EVEN`, `NOBODY BLINKS: ${A} / ${B}`, `COIN-FLIP SERIES: ${A} × ${B}`], id)
       : p.margin >= 0.7
-        ? pickT([`${U(p.A)} OWNS ${U(p.B)}`, `${U(p.B)} CANNOT SOLVE ${U(p.A)}`, `TOTAL OWNERSHIP: ${U(p.A)} OVER ${U(p.B)}`], id)
-        : pickT([`${U(p.A)} HAS ${U(p.B)}'S NUMBER`, `${U(p.A)} KEEPS BEATING ${U(p.B)}`, `EDGE: ${U(p.A)} OVER ${U(p.B)}`], id);
+        ? pickT([`${A} OWNS ${B}`, `${B} CANNOT SOLVE ${A}`, `TOTAL OWNERSHIP: ${A} OVER ${B}`], id)
+        : pickT([`${A} HAS ${B}'S NUMBER`, `${A} KEEPS BEATING ${B}`, `EDGE: ${A} OVER ${B}`], id);
     const meet = latestMeeting(d, p.A, p.B);
     const wp = (p.w / p.n * 100).toFixed(0), lp = (p.l / p.n * 100).toFixed(0), dp = (p.dr / p.n * 100).toFixed(0);
     return `<div class="rivcard"${meet && meet.url ? ` data-watch="${attr(meet.url)}"` : ''}>
       <span class="rivtag ${p.tag === 'even' ? 'even' : 'hot'}">${p.tag === 'even' ? 'CONTESTED' : 'LOPSIDED'}</span>
-      <div class="rt">${esc(title)}</div>
+      <div class="rt">${title}</div>
       <div class="rr num"><span class="cred">${p.w}</span>–<span class="cblue">${p.l}</span>${p.dr ? `–${p.dr}d` : ''} <span class="dim">over ${p.n} series</span></div>
       <div class="rivbar"><span class="w" style="flex:0 0 ${wp}%"></span><span class="d0" style="flex:0 0 ${dp}%"></span><span class="l" style="flex:0 0 ${lp}%"></span></div>
       <div class="rm">${meet ? `▶ latest meeting ${esc(ago(meet.at))} — click to watch` : 'no tape on file'}</div>
@@ -755,9 +948,9 @@ function tonightHtml(d) {
       `<span class="mchip">M${m.n} <b class="${m.winnerTeam === 1 ? 'cred' : m.winnerTeam === 2 ? 'cblue' : 'flat'}">${m.winnerTeam ? esc(m.winnerCoach ?? '') : 'DRAW'}</b> ${m.redKills}–${m.blueKills}</span>`).join('');
     liveBox = `<div class="livebox${running ? ' on' : ''}" data-watch="${attr(lv.watchUrl ?? '')}">
       <div class="tag">${running ? '<span class="reddot">●</span> <span class="down">LIVE NOW</span>' : '<span class="dim">LATEST SERIES — FINAL</span>'} <span class="dim">· arena #${esc(lv.arenaSeed)}</span></div>
-      <div class="names"><span class="who cred">${esc(lv.red.coach)}</span><span class="eng">${esc(lv.red.engine)}</span>
+      <div class="names"><span class="who cred">${esc(lv.red.coach)}</span><span class="eng">${brainLink(lv.red.engine)}</span>
         <span class="score">${s.red}–${s.blue}</span>
-        <span class="who cblue">${esc(lv.blue.coach)}</span><span class="eng">${esc(lv.blue.engine)}</span></div>
+        <span class="who cblue">${esc(lv.blue.coach)}</span><span class="eng">${brainLink(lv.blue.engine)}</span></div>
       <div class="mchips">${chips || '<span class="dim" style="font:11px var(--mono)">first match under way…</span>'}</div>
     </div>`;
   } else {
@@ -803,11 +996,14 @@ const GUNS = {
   AK74: { icon: '🔫', name: 'AK-74', note: 'the shared rifle' },
   SPAS12: { icon: '💥', name: 'SPAS-12', note: 'wildcard shotgun' },
   BARRETT: { icon: '🎯', name: 'Barrett', note: 'wildcard one-shot' },
+  ROCKET: { icon: '🚀', name: 'M79 Rocket', note: 'wildcard launcher' },
+  RICOCHET: { icon: '🟡', name: 'Ricochet', note: 'wildcard bank-shot' },
+  CHAINSAW: { icon: '🪚', name: 'Chainsaw', note: 'wildcard melee' },
 };
 function gunMeterHtml(d) {
   const g = d.gunBoards;
   if (!g) return '<div class="chartnote">no kill tape yet</div>';
-  const order = ['AK74', 'SPAS12', 'BARRETT'].filter((w) => g[w]);
+  const order = ['AK74', 'SPAS12', 'BARRETT', 'ROCKET', 'RICOCHET', 'CHAINSAW'].filter((w) => g[w]);
   if (!order.length) return '<div class="chartnote">no kill tape yet</div>';
   const total = order.reduce((n, w) => n + g[w].total, 0) || 1;
   const hour = (d.desk && d.desk.gunHour) || { tally: {}, top: null };
@@ -861,10 +1057,15 @@ function render(d) {
   } else wb.style.display = 'none';
   document.getElementById('banner').innerHTML = bannerHtml(d);
   document.getElementById('lead').innerHTML = leadHtml(d);
+  document.getElementById('pyramid').innerHTML = pyramidHtml(d);
   document.getElementById('rivalries').innerHTML = rivalriesHtml(d);
   document.getElementById('tonight').innerHTML = tonightHtml(d);
   document.getElementById('gunmeter').innerHTML = gunMeterHtml(d);
   document.getElementById('presses').innerHTML = pressesHtml(d);
+  // Anchors bypass openUrl — retarget any localhost watch hrefs for LAN readers.
+  for (const a of document.querySelectorAll('a[href^="http://localhost:5173"], a[href^="http://127.0.0.1:5173"]')) {
+    a.href = fixHost(a.getAttribute('href'));
+  }
   try { drawClimb(d); } catch (e) {
     const el = document.getElementById('ch-climb');
     if (el) el.innerHTML = `<div class="chartnote">chart failed: ${esc(e.message)}</div>`;

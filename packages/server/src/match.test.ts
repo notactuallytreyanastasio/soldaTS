@@ -98,10 +98,10 @@ describe('Match — team engines (3v3)', () => {
   });
 
   it('rolls the chance wildcard per match — bot carriers only, humans keep their slots', () => {
-    // Seed 7 rolls ARMED ('rifle'); the carriers are one bot per team.
+    // Seed 7 rolls ARMED ('ricochet' under the spectacle weighting); one carrier per team.
     const armed = new Match(new FakeSocket(), new FakeSocket(), OPTS);
     const carriers = armed.game.wildcardCarriers();
-    expect(armed.game.wildcard).toBe('rifle');
+    expect(armed.game.wildcard).toBe('ricochet');
     expect(carriers).toHaveLength(2);
     for (const c of carriers) {
       expect(c).toBeGreaterThanOrEqual(3); // never a human slot
