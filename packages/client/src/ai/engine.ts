@@ -28,6 +28,9 @@ export interface BotEngineContext {
    *  'RICOCHET' | 'CHAINSAW'); absent on hosts that predate the shotgun
    *  wildcard — treat missing as everyone-on-AK74. */
   weaponOf?(index: number): string;
+  /** Spray bloom of any sprite's current weapon (radians, 0..0.16); absent
+   *  on hosts that predate replay schema v2 — treat missing as 0 (cool). */
+  sprayHeatOf?(index: number): number;
 }
 
 /** Per-bot brain instance. tick() runs once per sim tick while alive. */

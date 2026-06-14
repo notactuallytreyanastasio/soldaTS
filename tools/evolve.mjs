@@ -541,7 +541,7 @@ async function main() {
         join(CKPT_DIR, `gen${gen}.json`),
         JSON.stringify(makeCheckpoint(gen, DIMS, mean, pastSelves, meanFitness, bestFitness)),
       );
-      console.log(`[ckpt] wrote tools/checkpoints/gen${gen}.json`);
+      console.log(`[ckpt] wrote ${join(CKPT_DIR, `gen${gen}.json`)}`);
     }
 
     if (gen % GATE_EVERY === 0 || last) {

@@ -643,6 +643,7 @@ export class Game {
       reloadingOf: (i: number): boolean => this.reloadingOf(i),
       magSize: this.tuning.magSize,
       weaponOf: (i: number): string => this.weaponNameOf(i),
+      sprayHeatOf: (i: number): number => this.sprayHeatOf(i),
     };
 
     // Engines/teams resolve FIRST (humans need their team assignment when
@@ -912,6 +913,12 @@ export class Game {
   /** Whether sprite `index`'s current weapon is mid-reload (for the HUD). */
   reloadingOf(index: number): boolean {
     return this.world.mainTickCounter < (this.reloadUntil[this.slotOf(index)][index] ?? 0);
+  }
+
+  /** `index`'s CURRENT weapon's spray bloom (radians, 0..SPREAD_HEAT_MAX) —
+   *  replay schema v2 logs it per row and v3-sense brains observe it. */
+  sprayHeatOf(index: number): number {
+    return this.sprayHeat[this.slotOf(index)][index] ?? 0;
   }
 
   /** Local player's rounds left (for the HUD). */

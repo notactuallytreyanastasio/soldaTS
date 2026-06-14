@@ -655,6 +655,12 @@ function bannerHtml(d) {
   cells.push(`<div class="cell"><div class="k">Last Season</div>
     <div class="v">${ls && ls.winner ? `${esc(ls.winner)}${ls.engine ? ` <span class="dim" style="font-size:13px">(${esc(ls.engine)})</span>` : ''}` : (ls && ls.note ? '<span style="font-size:13px">archived</span>' : '—')}</div>
     <div class="s">${ls ? (ls.winner ? `closed season 1 with the belt · ${esc(ls.source)}` : esc((ls.note || '').slice(0, 90))) : 'no archive found'}</div></div>`);
+  // THE ERA: which rules price the stats (the gate lives in build.mjs).
+  if (d.era) {
+    cells.push(`<div class="cell"><div class="k">The Era</div>
+    <div class="v">🔫 ${esc(d.era.label)}</div>
+    <div class="s">${esc(d.era.variant)}-rules fights only — stats restarted at the era turn (${d.era.eraFights} fights count)</div></div>`);
+  }
   return cells.join('');
 }
 
@@ -993,7 +999,7 @@ function tonightHtml(d) {
 
 // ============================ gun meter =========================================
 const GUNS = {
-  AK74: { icon: '🔫', name: 'AK-74', note: 'the shared rifle' },
+  AK74: { icon: '🔫', name: 'AK-74', note: 'the old shared rifle, a sidearm since the era turned' },
   SPAS12: { icon: '💥', name: 'SPAS-12', note: 'wildcard shotgun' },
   BARRETT: { icon: '🎯', name: 'Barrett', note: 'wildcard one-shot' },
   ROCKET: { icon: '🚀', name: 'M79 Rocket', note: 'wildcard launcher' },

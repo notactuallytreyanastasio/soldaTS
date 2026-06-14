@@ -158,11 +158,11 @@ const DUEL: StubBot[] = [
 ];
 
 describe('createMojojojoEngine', () => {
-  it("returns id 'mojojojo' with the seed-probed FIRE_THRESH 0.35 default", () => {
+  it("returns id 'mojojojo' with the seed-probed FIRE_THRESH 0.3 default", () => {
     const engine = createMojojojoEngine();
     expect(engine.id).toBe('mojojojo');
     expect(engine.tweaks).toEqual(MOJOJOJO_DEFAULTS);
-    expect(engine.tweaks.FIRE_THRESH).toBe(0.35);
+    expect(engine.tweaks.FIRE_THRESH).toBe(0.3);
   });
 
   it('runs against the 48-float v3 contract', () => {

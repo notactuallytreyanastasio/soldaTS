@@ -75,15 +75,14 @@ export type MojojojoConfig = {
 
 export const MOJOJOJO_DEFAULTS: Readonly<MojojojoConfig> = {
   // The lineage's base-rate lesson (disciple 0.25, prodigy 0.15, buttstein
-  // 0.2), re-probed because the OUTCOME-WEIGHTED head sits differently:
-  // miss rows at ×0.3 damp the fire logit across most of the contact
-  // window, so the probability mass concentrates and the sustaining band
-  // moved UP, not down. Over seeds {7,21,99,3,42} × 6000 ticks
-  // (sustainment-test conditions): 0.5 zeroed all 5 seeds, 0.25 and 0.2
-  // zeroed seed 99, 0.15 zeroed four — 0.35 was the ONLY threshold that
-  // sustained kills on EVERY probed seed. Ships at the value that
-  // genuinely sustains.
-  FIRE_THRESH: 0.35,
+  // 0.2), probed PER STAGE because the outcome-weighted head sits
+  // differently and evolution moved it again. Stage-1 seed: 0.35 was the
+  // only sustaining threshold (0.25/0.2 zeroed seed 99). Shipped stage-2
+  // weights (the gen-150 ES mean): re-probed over seeds {7,21,99,3,42} ×
+  // 6000 ticks — 0.3 is the ONLY threshold that sustains kills on EVERY
+  // probed seed (0.35 zeroed seed 7; ≥0.4 zeroed all five; ≤0.25 zeroed
+  // three). Ships at the value that genuinely sustains the SHIPPED net.
+  FIRE_THRESH: 0.3,
   MOVE_THRESH: 0.5, // p(left)/p(right) — strafe heads
   UPDOWN_THRESH: 0.5, // p(up)/p(down) — jump/crouch heads
   JET_THRESH: 0.5, // p(jetpack)

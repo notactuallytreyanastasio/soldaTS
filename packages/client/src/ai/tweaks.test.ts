@@ -333,7 +333,7 @@ describe('default configs (pinned — defaults ARE the pre-tweak constants)', ()
 
   it('MOJOJOJO_DEFAULTS', () => {
     expect(MOJOJOJO_DEFAULTS).toEqual({
-      FIRE_THRESH: 0.35, // probed at factory over 5 seeds — see mojojojo.ts
+      FIRE_THRESH: 0.3, // probed at factory over 5 seeds — see mojojojo.ts
       MOVE_THRESH: 0.5,
       UPDOWN_THRESH: 0.5,
       JET_THRESH: 0.5,

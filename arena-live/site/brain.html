@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BRAIN-CAM — one brain, watched live</title>
+<style>
+  /* ---- theme system --------------------------------------------------------
+     Same custom-property palette as the floor (index.template.html) and the
+     desk — the three pages share a theme via localStorage('arena-theme').
+     The brain-cam is an OBSERVATION ROOM: one subject, full instrumentation. */
+  :root, :root[data-theme="dark"] {
+    --bg: #04060a;
+    --bg-deep: #020407;
+    --head-bg: #070a10;
+    --panel: #0a0e16;
+    --panel2: #0f1521;
+    --panel3: #05080d;
+    --hover: #141c2c;
+    --line: #1c2536;
+    --line2: #131a29;
+    --text: #d6dbe6;
+    --dim: #6b7690;
+    --red: #ff5d5d;
+    --blue: #5da9ff;
+    --gold: #f5c542;
+    --up: #19d67c;
+    --down: #ff4d4d;
+    --warn-bg: #2a1d10;
+    --warn-border: #5a3d1a;
+    --warn-text: #e8b06a;
+    --rule: #2a3650;
+    --ink: #e7ebf4;
+    --flash-up: rgba(25, 214, 124, 0.30);
+    --flash-down: rgba(255, 77, 77, 0.30);
+    --flash-flat: rgba(245, 197, 66, 0.26);
+    --scanline: rgba(255, 255, 255, 0.022);
+    --mono: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    --serif: "Iowan Old Style", Georgia, "Times New Roman", serif;
+  }
+  :root[data-theme="light"] {
+    --bg: #efe9db;
+    --bg-deep: #e6ddc8;
+    --head-bg: #f7f2e4;
+    --panel: #f9f5ea;
+    --panel2: #efe8d5;
+    --panel3: #f3eddd;
+    --hover: #e8dfc8;
+    --line: #cfc3a6;
+    --line2: #ded3b9;
+    --text: #2b2722;
+    --dim: #84785f;
+    --red: #b3362a;
+    --blue: #1f5fa8;
+    --gold: #8f6e0e;
+    --up: #14743f;
+    --down: #b3362a;
+    --warn-bg: #f3e2bd;
+    --warn-border: #c9a35a;
+    --warn-text: #6b4d12;
+    --rule: #2b2722;
+    --ink: #1c1914;
+    --flash-up: rgba(20, 116, 63, 0.22);
+    --flash-down: rgba(179, 54, 42, 0.20);
+    --flash-flat: rgba(143, 110, 14, 0.22);
+    --scanline: transparent;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 13px/1.5 var(--mono); font-variant-numeric: tabular-nums;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 999;
+    background: repeating-linear-gradient(0deg, var(--scanline) 0 1px, transparent 1px 3px);
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .dim { color: var(--dim); }
+  .cred { color: var(--red); } .cblue { color: var(--blue); }
+  .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
+
+  /* ---- price-change flash (same contract as the floor: data-fk keys) ------- */
+  @keyframes flashfade { from { background-color: var(--fc); } to { background-color: transparent; } }
+  .flash-up { --fc: var(--flash-up); animation: flashfade 0.65s ease-out; }
+  .flash-down { --fc: var(--flash-down); animation: flashfade 0.65s ease-out; }
+  .flash-flat { --fc: var(--flash-flat); animation: flashfade 0.65s ease-out; }
+
+  /* ---- masthead ------------------------------------------------------------ */
+  header {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 8px 16px 6px; border-bottom: 1px solid var(--line);
+    background: var(--head-bg);
+  }
+  header h1 { font-size: 15px; margin: 0; letter-spacing: 4px; color: var(--gold); white-space: nowrap; }
+  header .navbtn, #themeBtn {
+    background: var(--panel2); color: var(--gold); border: 1px solid var(--line);
+    border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; letter-spacing: 1px;
+    cursor: pointer; white-space: nowrap;
+  }
+  header .navbtn:hover, #themeBtn:hover { border-color: var(--gold); text-decoration: none; }
+  #brainPick {
+    background: var(--panel3); color: var(--text); border: 1px solid var(--line);
+    border-radius: 6px; padding: 3px 8px; font: 12px var(--mono); max-width: 180px;
+  }
+  header .meta { color: var(--dim); font-size: 11px; margin-left: auto; }
+
+  .warnbar { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); border-radius: 8px; padding: 6px 14px; margin: 10px 16px 0; font-size: 12px; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 16px 30px; }
+
+  /* ---- LIVE banner ----------------------------------------------------------- */
+  .livebanner {
+    margin: 12px 0 0; border: 1px solid var(--down); border-radius: 10px;
+    background: var(--panel); box-shadow: 0 0 0 1px var(--down);
+    padding: 10px 16px; cursor: pointer; display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;
+  }
+  .livebanner .reddot { color: var(--down); animation: blink 1s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .livebanner .score { font-size: 24px; font-weight: bold; color: var(--gold); }
+  .livebanner .who { font-weight: bold; font-size: 16px; }
+  .livebanner .wl { margin-left: auto; border: 1px solid var(--gold); color: var(--gold); border-radius: 6px; padding: 3px 12px; letter-spacing: 2px; font-size: 11px; }
+
+  /* ---- subject header --------------------------------------------------------- */
+  .subject { padding: 16px 0 10px; border-bottom: 3px double var(--rule); }
+  .subject .row1 { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .subject h2 {
+    margin: 0; font-family: var(--serif); font-weight: 800; color: var(--ink);
+    font-size: clamp(30px, 5vw, 48px); letter-spacing: 1px; text-transform: uppercase; line-height: 1.05;
+  }
+  .badge {
+    font: 700 10px var(--mono); letter-spacing: 2px; border-radius: 9px; padding: 2px 9px;
+    border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+  }
+  .badge.learned { color: var(--blue); border-color: var(--blue); }
+  .badge.belt { color: var(--gold); border-color: var(--gold); }
+  .subject .tagline { font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--text); margin: 4px 0 0; }
+  .subject .strat { font-size: 12px; color: var(--dim); border-left: 2px solid var(--gold); padding-left: 9px; margin: 8px 0 0; max-width: 70rem; }
+  .subject .coaches { margin-top: 8px; font-size: 11px; color: var(--dim); }
+  .subject .coaches .chip { border: 1px solid var(--line); border-radius: 10px; padding: 1px 8px; margin-right: 5px; background: var(--panel2); display: inline-block; color: var(--text); }
+  details.fold { margin-top: 8px; }
+  details.fold summary { cursor: pointer; color: var(--gold); font-size: 11px; letter-spacing: 2px; }
+  details.fold pre {
+    white-space: pre-wrap; font-size: 11px; color: var(--dim); background: var(--panel3);
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; max-height: 320px; overflow-y: auto;
+  }
+  .provbox {
+    margin-top: 10px; border: 1px dashed var(--blue); border-radius: 8px;
+    background: var(--panel); padding: 9px 12px; font-size: 12px;
+  }
+  .provbox .ph { color: var(--blue); font-weight: 700; letter-spacing: 2px; font-size: 10px; text-transform: uppercase; }
+  .provbox .pline { padding: 2px 0; }
+  .provbox .pline b { color: var(--text); }
+  .evalrow { border-top: 1px dashed var(--line2); padding: 4px 0; font-size: 11.5px; }
+  .evalrow .sc { font-weight: 700; }
+
+  /* ---- vitals strip ------------------------------------------------------------ */
+  .vitals {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+    gap: 0; margin: 14px 0 0;
+  }
+  .vitals .cell {
+    border: 1px solid var(--rule); border-left: none; padding: 8px 12px; background: var(--panel);
+  }
+  .vitals .cell:first-child { border-left: 1px solid var(--rule); border-radius: 8px 0 0 8px; }
+  .vitals .cell:last-child { border-radius: 0 8px 8px 0; }
+  .vitals .k { font: 9.5px var(--mono); letter-spacing: 2.2px; color: var(--gold); text-transform: uppercase; }
+  .vitals .v { font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.3; }
+  .vitals .s { font-size: 10.5px; color: var(--dim); }
+  .configs { margin-top: 8px; font-size: 11.5px; }
+  .configs .cfg {
+    display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; cursor: pointer;
+    border-bottom: 1px dashed var(--line2); padding: 4px 2px;
+  }
+  .configs .cfg:hover { background: var(--hover); }
+  .configs .cfg .nm { font-weight: 700; }
+
+  /* ---- sections ----------------------------------------------------------------- */
+  .sec { padding: 16px 0 8px; border-bottom: 1px solid var(--line); }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+  .sec-head h3 {
+    margin: 0; font-family: var(--serif); font-size: 18px; font-weight: 800;
+    letter-spacing: 1px; color: var(--ink); text-transform: uppercase;
+    border-bottom: 3px solid var(--gold); padding-bottom: 2px;
+  }
+  .sec-head .deck { font-size: 12px; color: var(--dim); font-style: italic; }
+  .chartnote { color: var(--dim); font: 11px var(--mono); margin: 4px 0; }
+  #ch-rank svg { width: 100%; height: auto; display: block; background: var(--panel3); border: 1px solid var(--line); border-radius: 8px; }
+  #ch-rank svg text { font-family: var(--mono); }
+
+  .record2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+  @media (max-width: 920px) { .record2 { grid-template-columns: minmax(0, 1fr); } }
+
+  /* h2h win-bars */
+  .h2hrow { display: grid; grid-template-columns: 110px 1fr 86px; gap: 8px; align-items: center; padding: 3px 2px; cursor: pointer; border-radius: 4px; }
+  .h2hrow:hover { background: var(--hover); }
+  .h2hrow .opp { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .h2hbar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; border: 1px solid var(--line2); background: var(--panel3); }
+  .h2hbar .w { background: var(--up); } .h2hbar .l { background: var(--down); } .h2hbar .d0 { background: var(--dim); opacity: .5; }
+  .h2hrow .rec { text-align: right; font-size: 11.5px; }
+
+  /* gun split bars */
+  .gunrow { display: grid; grid-template-columns: 86px 1fr 110px; gap: 8px; align-items: center; padding: 3px 2px; }
+  .gunrow .gn { font-weight: 700; }
+  .gunbar { height: 10px; border-radius: 5px; border: 1px solid var(--line2); background: var(--panel3); overflow: hidden; }
+  .gunbar > div { height: 100%; background: var(--blue); }
+  .gunrow .gv { text-align: right; font-size: 11.5px; }
+
+  table.board { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  table.board th { color: var(--dim); font-weight: normal; text-transform: uppercase; font-size: 10px; letter-spacing: 2px; border-bottom: 1px solid var(--line); padding: 4px 8px; text-align: right; }
+  table.board td { padding: 5px 8px; border-bottom: 1px solid var(--line2); text-align: right; }
+  table.board th:nth-child(-n+2), table.board td:nth-child(-n+2) { text-align: left; }
+  table.board tr.r { cursor: pointer; }
+  table.board tr.r:hover { background: var(--panel2); }
+
+  /* ---- kill tape ------------------------------------------------------------------ */
+  .tape { border: 1px solid var(--line); border-radius: 8px; background: var(--panel3); max-height: 420px; overflow-y: auto; }
+  .tk { display: flex; gap: 10px; align-items: baseline; padding: 4px 12px; border-bottom: 1px dashed var(--line2); cursor: pointer; flex-wrap: wrap; }
+  .tk:hover { background: var(--hover); }
+  .tk .clk { color: var(--dim); width: 42px; flex: none; }
+  .tk .gun { font-size: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 0 7px; color: var(--dim); flex: none; }
+  .tk .ago { margin-left: auto; color: var(--dim); font-size: 10.5px; flex: none; }
+  .tk b.us { color: var(--up); } .tk b.them { color: var(--down); }
+  .tk.death { opacity: 0.82; }
+
+  .brainlink { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .brainlink:hover { color: var(--gold); text-decoration: none; border-bottom-color: var(--gold); }
+
+  footer { color: var(--dim); font: 11px var(--mono); text-align: center; padding: 14px 0 26px; }
+  #d3tip {
+    position: fixed; z-index: 1000; pointer-events: none; display: none;
+    background: var(--panel2); color: var(--text); border: 1px solid var(--gold);
+    border-radius: 6px; padding: 5px 9px; font: 11px/1.5 var(--mono); max-width: 320px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35); white-space: pre-line;
+  }
+
+  /* ---- mobile (iPhone) overlay ----------------------------------------------------
+     One-column observation room: vitals go 2-up, the rank chart pans
+     sideways at readable scale, the recent-fights table keeps identity +
+     result + score only. Same ≤700px breakpoint as the floor and the desk. */
+  @media (max-width: 700px) {
+    header { padding: 6px 10px 5px; gap: 8px; }
+    header h1 { font-size: 13px; letter-spacing: 2px; }
+    header .meta { flex-basis: 100%; margin-left: 0; font-size: 10px; }
+    .wrap { padding: 0 10px 22px; }
+    .subject h2 { font-size: clamp(24px, 8vw, 34px); }
+    .vitals { grid-template-columns: 1fr 1fr; }
+    .vitals .cell { border-left: 1px solid var(--rule); border-top: none; }
+    .vitals .cell:nth-child(-n+2) { border-top: 1px solid var(--rule); }
+    .vitals .cell:first-child { border-radius: 8px 0 0 0; }
+    .vitals .cell:nth-child(2) { border-radius: 0 8px 0 0; }
+    .vitals .cell:last-child { border-radius: 0 0 8px 0; }
+    .vitals .v { font-size: 16px; }
+    #ch-rank { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #ch-rank svg { min-width: 860px; }
+    .h2hrow { grid-template-columns: 84px 1fr 78px; }
+    .gunrow { grid-template-columns: 70px 1fr 96px; }
+    /* recent fights, pocket edition: when / vs / result / score */
+    #recent table.board th:nth-child(5), #recent table.board td:nth-child(5),
+    #recent table.board th:nth-child(6), #recent table.board td:nth-child(6) { display: none; }
+    .tk .ago { display: none; }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+</head>
+<body>
+<header>
+  <h1>🧠 BRAIN-CAM</h1>
+  <select id="brainPick" title="switch brains"></select>
+  <a class="navbtn" href="index.html" title="the stock-ticker view">📈 FLOOR</a>
+  <a class="navbtn" href="desk.html" title="the story-first front page">📰 DESK</a>
+  <button id="themeBtn" title="toggle light/dark">☀ / 🌙</button>
+  <span class="meta" id="meta">loading…</span>
+</header>
+<div id="warnbar" style="display:none" class="warnbar"></div>
+<div class="wrap">
+  <div id="live"></div>
+  <section class="subject" id="subject"><span class="dim">focusing the lens…</span></section>
+  <div class="vitals" id="vitals"></div>
+  <div class="configs" id="configs"></div>
+  <section class="sec">
+    <div class="sec-head"><h3>The Record</h3><span class="deck">rank over time — this brain's configs in color, the field ghosted; every point opens the fight that caused it</span></div>
+    <div id="ch-rank"></div>
+    <div class="chartnote" id="rankNote"></div>
+    <div class="record2" style="margin-top:12px">
+      <div><div class="sec-head"><h3 style="font-size:14px">By Opponent</h3><span class="deck">series W–L per enemy engine · click → latest meeting</span></div><div id="h2h"></div></div>
+      <div><div class="sec-head"><h3 style="font-size:14px">By Gun</h3><span class="deck">kills dealt / taken per weapon</span></div><div id="guns"></div></div>
+    </div>
+    <div style="margin-top:14px"><div class="sec-head"><h3 style="font-size:14px">Recent Fights</h3><span class="deck">last 15 series on tape · click a row to watch</span></div><div id="recent"></div></div>
+  </section>
+  <section class="sec">
+    <div class="sec-head"><h3>Kill Tape</h3><span class="deck">this brain's freshest kills and deaths, newest first · click a line to watch that match</span></div>
+    <div class="tape" id="killtape"></div>
+  </section>
+</div>
+<div id="d3tip"></div>
+<footer>BRAIN-CAM · one brain under glass · refetches desk-data.json (slim feed) every 5s · replays need <span class="num">pnpm play</span> on :5173 · <a href="index.html">floor 📈</a> · <a href="desk.html">desk 📰</a></footer>
+<script>
+'use strict';
+// ============================ shared helpers ===================================
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const attr = (s) => esc(s).replace(/`/g, '');
+const ago = (iso) => {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!isFinite(ms)) return iso;
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'moments ago';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + 'h ' + (m % 60) + 'm ago';
+  return Math.floor(h / 24) + 'd ago';
+};
+function fmtDur(ms) {
+  if (!isFinite(ms) || ms < 0) ms = 0;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + 's';
+  const m = Math.floor(s / 60);
+  if (m < 60) return m + 'm ' + (s % 60) + 's';
+  const h = Math.floor(m / 60);
+  if (h < 48) return h + 'h ' + (m % 60) + 'm';
+  return Math.floor(h / 24) + 'd';
+}
+/** Retarget localhost watch links when the page is read from another device. */
+function fixHost(u) {
+  try {
+    const here = location.hostname;
+    if (u && here && here !== 'localhost' && here !== '127.0.0.1') {
+      u = u.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5173/, `http://${here}:5173`);
+    }
+  } catch {}
+  return u;
+}
+function openUrl(u) { if (u) window.open(fixHost(u), '_blank'); }
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-watch]');
+  if (!el) return;
+  if (e.target.closest('a, button, select, summary')) return;
+  openUrl(el.getAttribute('data-watch'));
+});
+
+// ---- theme (shared localStorage key with the floor + the desk) ----------------
+function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
+function applyTheme(t, persist) {
+  document.documentElement.setAttribute('data-theme', t);
+  if (persist) { try { localStorage.setItem('arena-theme', t); } catch {} }
+  document.getElementById('themeBtn').textContent = t === 'light' ? '🌙 DARK ROOM' : '☀ DAYLIGHT';
+  if (lastData) render(lastData);
+}
+(function initTheme() {
+  let t = null;
+  try { t = new URLSearchParams(location.search).get('theme'); } catch {}
+  if (t !== 'light' && t !== 'dark') { try { t = localStorage.getItem('arena-theme'); } catch {} }
+  if (t !== 'light' && t !== 'dark') {
+    t = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+})();
+const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+function palette() {
+  return {
+    text: cssVar('--text'), ink: cssVar('--ink'), dim: cssVar('--dim'), line: cssVar('--line'),
+    gold: cssVar('--gold'), up: cssVar('--up'), down: cssVar('--down'),
+    blue: cssVar('--blue'), red: cssVar('--red'), panel3: cssVar('--panel3'),
+  };
+}
+const tipEl = () => document.getElementById('d3tip');
+function showTip(ev, text) {
+  const t = tipEl();
+  t.textContent = text;
+  t.style.display = 'block';
+  t.style.left = Math.min(ev.clientX + 14, window.innerWidth - 330) + 'px';
+  t.style.top = (ev.clientY + 12) + 'px';
+}
+function hideTip() { tipEl().style.display = 'none'; }
+
+// ---- price-change flash (same data-fk contract as the floor) -------------------
+const prevVals = new Map();
+function applyFlashes() {
+  const seen = new Map();
+  for (const el of document.querySelectorAll('[data-fk]')) {
+    const k = el.getAttribute('data-fk');
+    const txt = el.textContent;
+    seen.set(k, txt);
+    const old = prevVals.get(k);
+    if (old === undefined || old === txt) continue;
+    const a = parseFloat(String(old).replace(/[^\d.+-]/g, ''));
+    const b = parseFloat(String(txt).replace(/[^\d.+-]/g, ''));
+    const cls = isFinite(a) && isFinite(b) && a !== b
+      ? (b > a ? 'flash-up' : 'flash-down') : 'flash-flat';
+    el.classList.remove('flash-up', 'flash-down', 'flash-flat');
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+  prevVals.clear();
+  for (const [k, v] of seen) prevVals.set(k, v);
+}
+
+// ============================ subject selection ==================================
+// ?engine=<id> picks the brain; the dropdown rewrites the URL so the link is
+// shareable and a refresh keeps the subject.
+let ENGINE = (() => {
+  try { return new URLSearchParams(location.search).get('engine') || null; } catch { return null; }
+})();
+const brainHref = (e) => `brain.html?engine=${encodeURIComponent(e)}`;
+const brainLink = (e, txt) =>
+  `<a class="brainlink" href="${attr(brainHref(e))}">${esc(txt ?? e)}</a>`;
+
+const rowId = (r) => `${String(r.coach).toUpperCase()}|${r.engine}|${r.tweaksSig}`;
+const fightWatch = (f) => f ? (f.watchUrl ?? '') : '';
+const watchOf = (d, dataset) => fightWatch((d.fights || []).find((x) => x.dirName === dataset));
+function latestMeeting(d, a, b) {
+  for (const f of d.fights || []) {
+    const ea = f.sides[0].engine, eb = f.sides[1].engine;
+    if ((ea === a && eb === b) || (ea === b && eb === a)) return { url: fightWatch(f), at: f.createdAt };
+  }
+  return null;
+}
+/** Engine of the reigning belt holder, from LADDER.md (same as the desk). */
+function champCoach(d) {
+  const md = String(d.ladderMarkdown || '');
+  const sec = /##[^\n]*current champion[^\n]*\n([^]*?)(\n##|$)/i.exec(md);
+  const body = sec ? sec[1] : md;
+  if (/\*\*VACANT\*\*/i.test(body)) return null;
+  const m = /\*\*([A-Z][A-Z]+)\b/.exec(body);
+  return m ? m[1] : null;
+}
+
+// ============================ live banner ========================================
+function liveHtml(d) {
+  const lv = d.live;
+  if (!lv || !lv.red || lv.status === 'done') return '';
+  if (lv.red.engine !== ENGINE && lv.blue.engine !== ENGINE) return '';
+  const s = lv.series || { red: 0, blue: 0 };
+  const meSide = lv.red.engine === ENGINE ? 'red' : 'blue';
+  return `<div class="livebanner" data-watch="${attr(lv.watchUrl ?? '')}">
+    <span class="reddot">●</span><span class="down" style="letter-spacing:3px">LIVE — THIS BRAIN IS IN THE ARENA</span>
+    <span class="who cred">${esc(lv.red.coach)}</span>
+    <span class="score" data-fk="live:score">${s.red}–${s.blue}</span>
+    <span class="who cblue">${esc(lv.blue.coach)}</span>
+    <span class="dim">match ${(lv.matches ? lv.matches.length + 1 : 1)}/${esc(lv.matchesPlanned ?? '?')} · arena #${esc(lv.arenaSeed)} · fighting as ${meSide.toUpperCase()}</span>
+    <span class="wl">▶ WATCH LIVE</span>
+  </div>`;
+}
+
+// ============================ subject header =====================================
+function subjectHtml(d) {
+  const b = (d.brains || {})[ENGINE];
+  if (!b) {
+    const known = Object.keys(d.brains || {}).sort();
+    return `<div class="dim">no brain called “${esc(ENGINE)}” on file${known.length ? ' — try ' + known.map((e) => brainLink(e)).join(', ') : ''}</div>`;
+  }
+  const champ = champCoach(d);
+  const isChamp = champ && (b.coaches || []).some((c) => String(c).toUpperCase() === champ);
+  const lr = b.learned;
+  let prov = '';
+  if (lr) {
+    const evals = (lr.evals || []).slice().reverse(); // newest first
+    const evalRows = evals.map((e) => {
+      const ci = e.ci ? ` · 95% CI [${e.ci.map((x) => Number(x).toFixed(2)).join(', ')}]` : '';
+      const base = e.baseline ? ` vs baseline ${esc(e.baseline.engine ?? e.baseline.coach ?? '?')}` : ' (no baseline)';
+      const wr = e.winRate != null ? ` · win% ${(e.winRate * 100).toFixed(0)}` : '';
+      const cls = (e.score ?? 0) >= 0 ? 'up' : 'down';
+      return `<div class="evalrow"><span class="sc ${cls}">${e.score != null ? Number(e.score).toFixed(2) : '?'}</span>` +
+        ` <span class="dim">gauntlet score${base}${ci}${wr} · ${e.matches ?? '?'} matches${e.quick ? ' · quick' : ''} · ${esc(ago(e.ts))}</span></div>`;
+    }).join('');
+    prov = `<div class="provbox">
+      <div class="ph">🧬 Learned weights — provenance</div>
+      <div class="pline">${lr.trainedAt ? `trained <b>${esc(ago(lr.trainedAt))}</b> <span class="dim">(${esc(lr.trainedAt)})</span>` : 'training date unknown'}` +
+      `${lr.teacher ? ` · teacher <b>${brainLink(lr.teacher)}</b>` : ''}` +
+      `${lr.samples ? ` · <b>${lr.samples.toLocaleString()}</b> samples` : ''}` +
+      `${lr.generation ? ` · generation <b>${lr.generation}</b>` : ''}</div>` +
+      (lr.gate ? `<div class="pline dim">shipping gate: ${esc(lr.gate)}</div>` : '') +
+      ((lr.val || []).length ? `<details class="fold"><summary>▸ validation metrics (${lr.val.length - 1} heads)</summary><pre>${esc(lr.val.join('\n'))}</pre></details>` : '') +
+      (evalRows ? `<div style="margin-top:6px"><span class="ph">latest gauntlet ledger</span>${evalRows}</div>` : '<div class="dim" style="margin-top:4px">no eval-ledger entries yet</div>') +
+      `<div class="dim" style="margin-top:4px;font-size:10px">source: ${esc(lr.file)}</div>
+    </div>`;
+  }
+  return `<div class="row1">
+      <h2>${esc(b.engine)}</h2>
+      ${lr ? '<span class="badge learned">🧬 LEARNED</span>' : '<span class="badge">✍ WRITTEN</span>'}
+      ${isChamp ? '<span class="badge belt">🏆 champion\'s engine</span>' : ''}
+    </div>
+    ${b.tagline ? `<div class="tagline">“${esc(b.tagline)}”</div>` : ''}
+    ${b.strategy ? `<div class="strat">${esc(b.strategy)}</div>` : ''}
+    ${(b.coaches || []).length ? `<div class="coaches">coached by ${b.coaches.map((c) => `<span class="chip">${esc(c)}</span>`).join('')}</div>` : ''}
+    ${b.doctrine ? `<details class="fold"><summary>▸ full doctrine — ${esc(b.file || '')}</summary><pre>${esc(b.doctrine)}</pre></details>` : ''}
+    ${prov}`;
+}
+
+// ============================ live vitals ========================================
+const formDots = (form) => (form && form.length)
+  ? form.map((r) => r === 'w' ? '<span class="up">●</span>' : r === 'l' ? '<span class="down">○</span>' : '<span class="flat">◐</span>').join('')
+  : '<span class="dim">—</span>';
+
+function vitalsHtml(d) {
+  const rows = (d.board || []).filter((r) => r.engine === ENGINE).sort((a, b) => a.rank - b.rank);
+  if (!rows.length) return '<div class="cell" style="border-radius:8px"><div class="k">Board</div><div class="v dim" style="font-size:14px">no ranked configs yet</div><div class="s">this brain has not fought a ranked series</div></div>';
+  const p = rows[0]; // best-ranked config carries the headline vitals
+  const fk = (col) => `data-fk="bc:${attr(p.key)}:${col}"`;
+  const sk = p.streak ? `${p.streak.n}${p.streak.res === 'w' ? 'W' : p.streak.res === 'l' ? 'L' : 'D'}` : '—';
+  const skCls = p.streak ? (p.streak.res === 'w' ? 'up' : p.streak.res === 'l' ? 'down' : 'flat') : 'dim';
+  const held = p.heldSince
+    ? `<span data-since="${attr(p.heldSince)}">${fmtDur(Date.now() - new Date(p.heldSince).getTime())}</span>` : '—';
+  const lastKd = p.kd && p.kd.length ? p.kd[p.kd.length - 1] : null;
+  return `
+    <div class="cell" data-watch="${attr(p.lastUrl)}" style="cursor:pointer" title="open the latest replay">
+      <div class="k">Board Rank</div><div class="v" ${fk('rank')}>#${p.rank}</div>
+      <div class="s">${esc(p.coach)}${p.tweaksSig !== 'stock' ? ` [${esc(p.tweaksSig)}]` : ''}</div></div>
+    <div class="cell"><div class="k">Score</div><div class="v ${p.score > 0 ? 'up' : p.score < 0 ? 'down' : 'flat'}" ${fk('score')}>${Number(p.score ?? 0).toFixed(2)}</div>
+      <div class="s">decayed W−L</div></div>
+    <div class="cell"><div class="k">Form</div><div class="v" style="letter-spacing:3px" ${fk('form')}>${formDots(p.form)}</div>
+      <div class="s">last 5 series, newest first</div></div>
+    <div class="cell"><div class="k">Streak</div><div class="v ${skCls}" ${fk('streak')}>${sk}</div>
+      <div class="s">consecutive series</div></div>
+    <div class="cell"><div class="k">Held</div><div class="v">${held}</div>
+      <div class="s">at #${p.rank}${p.peakRank != null ? ` · peak #${p.peakRank}` : ''}</div></div>
+    <div class="cell"><div class="k">Career</div><div class="v" ${fk('rec')}>${p.w}–${p.l}${p.dr ? '–' + p.dr + 'd' : ''}</div>
+      <div class="s">${p.kills} kills${lastKd != null ? ` · last K/D ${Number(lastKd).toFixed(2)}` : ''}</div></div>`;
+}
+
+function configsHtml(d) {
+  const rows = (d.board || []).filter((r) => r.engine === ENGINE).sort((a, b) => a.rank - b.rank);
+  if (rows.length < 2) return '';
+  return `<div class="dim" style="font-size:10px;letter-spacing:2px;margin-bottom:2px">ALL ${rows.length} CONFIGS OF THIS BRAIN ON THE BOARD</div>` +
+    rows.map((r) => `<div class="cfg" data-watch="${attr(r.lastUrl)}" title="open latest replay">
+      <span class="dim" data-fk="cfg:${attr(r.key)}:rank">#${r.rank}</span>
+      <span class="nm">${esc(r.coach)}</span>
+      <span class="dim">[${esc(r.tweaksSig)}]</span>
+      <span data-fk="cfg:${attr(r.key)}:score" class="${r.score > 0 ? 'up' : r.score < 0 ? 'down' : 'flat'}">${Number(r.score ?? 0).toFixed(2)}</span>
+      <span>${formDots(r.form)}</span>
+      <span class="dim">${r.w}–${r.l}${r.dr ? '–' + r.dr + 'd' : ''} · ${r.series} series · ${esc(ago(r.lastAt))}</span>
+    </div>`).join('');
+}
+
+// ============================ the record =========================================
+// Rank-over-time: same skeleton as the desk's climb chart, but the spotlight
+// follows THIS brain's configs; everyone else is ghosted context.
+function drawRank(d) {
+  const el = document.getElementById('ch-rank');
+  const note = document.getElementById('rankNote');
+  if (!el) return;
+  if (typeof d3 === 'undefined') { el.innerHTML = '<div class="chartnote">⚠ d3 unavailable (CDN unreachable) — chart disabled</div>'; return; }
+  const hist = d.rankHistory || [];
+  if (hist.length < 2) { el.innerHTML = '<div class="chartnote">not enough rank history yet</div>'; if (note) note.textContent = ''; return; }
+  const P = palette();
+  const series = new Map();
+  for (const s of hist) {
+    const t = new Date(s.ts);
+    for (const r of s.ranks) {
+      const id = rowId(r);
+      if (!series.has(id)) series.set(id, { id, coach: r.coach, engine: r.engine, pts: [] });
+      series.get(id).pts.push({ t, r: r.rank, trigger: s.trigger ?? null });
+    }
+  }
+  const mine = [...series.values()].filter((s) => s.engine === ENGINE);
+  const ghosts = [...series.values()].filter((s) => s.engine !== ENGINE && s.pts.length > 1);
+  const maxRank = Math.max(...hist.map((s) => s.ranks.length), 2);
+  const W = 1200, H = 400, m = { t: 28, r: 170, b: 30, l: 42 };
+  const x = d3.scaleTime().domain(d3.extent(hist, (s) => new Date(s.ts))).range([m.l, W - m.r]);
+  const y = d3.scaleLinear().domain([1, maxRank]).range([m.t, H - m.b]);
+  const svg = d3.create('svg').attr('viewBox', `0 0 ${W} ${H}`);
+  const styleAxis = (g) => {
+    g.selectAll('text').attr('fill', P.dim).attr('font-size', 10);
+    g.selectAll('line').attr('stroke', P.line);
+    g.selectAll('path.domain').attr('stroke', P.line);
+  };
+  svg.append('g').attr('transform', `translate(0,${H - m.b})`)
+    .call(d3.axisBottom(x).ticks(8).tickFormat(d3.timeFormat('%H:%M'))).call(styleAxis);
+  svg.append('g').attr('transform', `translate(${m.l},0)`)
+    .call(d3.axisLeft(y).ticks(Math.min(maxRank, 12)).tickFormat((v) => '#' + v)).call(styleAxis);
+  svg.append('text').attr('x', m.l + 4).attr('y', m.t - 8).attr('fill', P.dim).attr('font-size', 10)
+    .text(`board rank (1 = top) · ${ENGINE} configs in color, the rest of the field ghosted`);
+  const line = d3.line().x((p) => x(p.t)).y((p) => y(p.r)).curve(d3.curveStepAfter);
+  const nearestWatch = (s, ev) => {
+    const tx = x.invert(d3.pointer(ev)[0]);
+    let best = null;
+    for (const pt of s.pts) {
+      if (!pt.trigger) continue;
+      if (!best || Math.abs(pt.t - tx) < Math.abs(best.t - tx)) best = pt;
+    }
+    if (best) openUrl(watchOf(d, best.trigger));
+  };
+  for (const s of ghosts) {
+    svg.append('path').datum(s.pts).attr('fill', 'none')
+      .attr('stroke', P.dim).attr('stroke-width', 1).attr('stroke-opacity', 0.16)
+      .attr('d', line)
+      .style('cursor', 'pointer')
+      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\n(the field — click to watch nearest)`))
+      .on('mouseleave', hideTip)
+      .on('click', (ev) => nearestWatch(s, ev));
+  }
+  const colors = [P.gold, P.blue, P.up, P.red];
+  mine.forEach((s, i) => {
+    const col = colors[i % colors.length];
+    svg.append('path').datum(s.pts).attr('fill', 'none')
+      .attr('stroke', col).attr('stroke-width', 7).attr('stroke-opacity', 0.18).attr('d', line);
+    svg.append('path').datum(s.pts).attr('fill', 'none')
+      .attr('stroke', col).attr('stroke-width', 2.4).attr('d', line)
+      .style('cursor', 'pointer')
+      .on('mousemove', (ev) => showTip(ev, `${s.coach} · ${s.engine}\ndebut #${s.pts[0].r} → now #${s.pts[s.pts.length - 1].r}\nbest #${Math.min(...s.pts.map((p) => p.r))} over ${s.pts.length} snapshots\n(click: watch the fight behind the nearest point)`))
+      .on('mouseleave', hideTip)
+      .on('click', (ev) => nearestWatch(s, ev));
+    const first = s.pts[0], last = s.pts[s.pts.length - 1];
+    svg.append('circle').attr('cx', x(first.t)).attr('cy', y(first.r)).attr('r', 3.5).attr('fill', col);
+    svg.append('circle').attr('cx', x(last.t)).attr('cy', y(last.r)).attr('r', 3.5).attr('fill', col);
+    svg.append('text').attr('x', x(last.t) + 6).attr('y', y(last.r) + 3)
+      .attr('fill', col).attr('font-size', 11).attr('font-weight', 'bold')
+      .text(`${s.coach} #${last.r}`);
+  });
+  el.replaceChildren(svg.node());
+  if (note) {
+    note.textContent = mine.length
+      ? mine.map((s) => `${s.coach}: #${s.pts[0].r} debut → #${s.pts[s.pts.length - 1].r} now (best #${Math.min(...s.pts.map((p) => p.r))})`).join(' · ')
+      : `${ENGINE} has no board history yet — the line starts with its first ranked series`;
+  }
+}
+
+function h2hHtml(d) {
+  const rec = (d.h2h || {})[ENGINE];
+  if (!rec) return '<div class="chartnote">no head-to-head sample yet</div>';
+  const rows = Object.entries(rec)
+    .map(([opp, r]) => ({ opp, ...r, n: r.w + r.l + r.d }))
+    .filter((r) => r.n > 0 && r.opp !== ENGINE)
+    .sort((a, b) => (b.w / b.n - a.w / a.n) || (b.n - a.n));
+  if (!rows.length) return '<div class="chartnote">no head-to-head sample yet</div>';
+  return rows.map((r) => {
+    const meet = latestMeeting(d, ENGINE, r.opp);
+    const wp = (r.w / r.n * 100), lp = (r.l / r.n * 100), dp = (r.d / r.n * 100);
+    return `<div class="h2hrow"${meet && meet.url ? ` data-watch="${attr(meet.url)}" title="watch the latest ${esc(ENGINE)} × ${esc(r.opp)} meeting"` : ''}>
+      <span class="opp">${brainLink(r.opp)}</span>
+      <span class="h2hbar"><span class="w" style="flex:0 0 ${wp.toFixed(0)}%"></span><span class="d0" style="flex:0 0 ${dp.toFixed(0)}%"></span><span class="l" style="flex:0 0 ${lp.toFixed(0)}%"></span></span>
+      <span class="rec" data-fk="h2h:${attr(r.opp)}"><b class="up">${r.w}</b>–<b class="down">${r.l}</b>${r.d ? `–${r.d}d` : ''} <span class="dim">(${wp.toFixed(0)}%)</span></span>
+    </div>`;
+  }).join('');
+}
+
+const GUNS = { AK74: '🔫 AK-74', SPAS12: '💥 SPAS-12', BARRETT: '🎯 Barrett' };
+function gunsHtml(d) {
+  const b = (d.brains || {})[ENGINE];
+  const g = b && b.guns;
+  if (!g || !Object.keys(g).length) return '<div class="chartnote">no kill tape for this brain yet</div>';
+  const order = Object.entries(g).sort((a, b2) => (b2[1].k + b2[1].d) - (a[1].k + a[1].d));
+  const maxK = Math.max(...order.map(([, v]) => v.k), 1);
+  return order.map(([w, v]) => `<div class="gunrow">
+      <span class="gn">${esc(GUNS[w] || w)}</span>
+      <span class="gunbar"><span style="display:block;height:100%;width:${(v.k / maxK * 100).toFixed(1)}%;background:var(--blue)"></span></span>
+      <span class="gv" data-fk="gun:${attr(w)}"><b>${v.k.toLocaleString()}</b> dealt <span class="dim">· ${v.d.toLocaleString()} taken</span></span>
+    </div>`).join('') +
+    `<div class="chartnote">K/D by gun: ${order.map(([w, v]) => `${esc(w)} ${(v.k / Math.max(1, v.d)).toFixed(2)}`).join(' · ')}</div>`;
+}
+
+function recentHtml(d) {
+  const b = (d.brains || {})[ENGINE];
+  const fights = (b && b.recentFights) || [];
+  if (!fights.length) return '<div class="chartnote">no fights on tape</div>';
+  const rows = fights.map((f) => {
+    const meIdx = f.sides[0].engine === ENGINE ? 0 : 1;
+    const me = f.sides[meIdx], opp = f.sides[1 - meIdx];
+    const st = f.standings;
+    const myW = st ? (meIdx === 0 ? st.red.wins : st.blue.wins) : null;
+    const opW = st ? (meIdx === 0 ? st.blue.wins : st.red.wins) : null;
+    const myK = st ? (meIdx === 0 ? st.red.kills : st.blue.kills) : null;
+    const opK = st ? (meIdx === 0 ? st.blue.kills : st.red.kills) : null;
+    const res = myW == null ? '?' : myW > opW ? 'W' : myW < opW ? 'L' : 'D';
+    const cls = res === 'W' ? 'up' : res === 'L' ? 'down' : 'flat';
+    return `<tr class="r" data-watch="${attr(f.watchUrl)}" title="open replay">
+      <td class="dim">${esc(ago(f.createdAt))}</td>
+      <td><b>${esc(me.coach)}</b> <span class="dim">vs</span> <b>${esc(opp.coach)}</b> <span class="dim">${brainLink(opp.engine)}</span></td>
+      <td class="${cls}"><b>${res}</b></td>
+      <td data-fk="rf:${attr(f.dirName)}">${myW != null ? `${myW}–${opW}` : '?'}</td>
+      <td class="dim">${myK != null ? `${myK}:${opK}` : ''}</td>
+      <td class="dim">#${esc(f.arenaSeed)}</td>
+      <td>▶</td></tr>`;
+  }).join('');
+  return `<table class="board"><tr><th>when</th><th>matchup</th><th>res</th><th>series</th><th>kills</th><th>arena</th><th></th></tr>${rows}</table>`;
+}
+
+// ============================ kill tape ==========================================
+function killTapeHtml(d) {
+  const b = (d.brains || {})[ENGINE];
+  const tape = (b && b.killTape) || [];
+  if (!tape.length) return '<div class="tk dim" style="cursor:default">no kills on the tape yet</div>';
+  return tape.map((k) => {
+    const isKill = k.killerEngine === ENGINE;
+    return `<div class="tk${isKill ? '' : ' death'}" data-watch="${attr(k.watchUrl)}" title="watch match ${k.matchN}">
+      <span class="clk">${esc(k.clock)}</span>
+      <b class="${isKill ? 'us' : 'them'}">${esc(k.killer)}</b>
+      <span class="dim">(${isKill ? esc(ENGINE) : brainLink(k.killerEngine)})</span>
+      <span>${isKill ? '⚔ killed' : '☠ killed'}</span>
+      <b class="${isKill ? 'them' : 'us'}">${esc(k.victim)}</b>
+      <span class="dim">(${isKill ? brainLink(k.victimEngine) : esc(ENGINE)})</span>
+      <span class="gun">${esc(k.weapon)}</span>
+      <span class="dim">${esc(k.score)}</span>
+      <span class="ago">M${k.matchN} · ${esc(ago(k.fightAt))}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================ render loop ========================================
+let lastData = null;
+function render(d) {
+  lastData = d;
+  if (!ENGINE) {
+    // no ?engine= — default to the best-ranked engine on the board, else the
+    // first registered brain.
+    ENGINE = (d.board && d.board[0] && d.board[0].engine) || Object.keys(d.brains || {}).sort()[0] || 'disciple';
+  }
+  document.title = `BRAIN-CAM — ${ENGINE}`;
+  document.getElementById('meta').textContent =
+    `feed set ${ago(d.generatedAt)} · subject: ${ENGINE}`;
+  const wb = document.getElementById('warnbar');
+  if (d.warnings && d.warnings.length) {
+    wb.style.display = '';
+    wb.innerHTML = '⚠ builder warnings: ' + d.warnings.map(esc).join(' · ');
+  } else wb.style.display = 'none';
+
+  // brain switcher
+  const pick = document.getElementById('brainPick');
+  const engines = Object.keys(d.brains || {}).sort();
+  if (engines.length && pick.options.length !== engines.length) {
+    pick.innerHTML = engines.map((e) => `<option value="${attr(e)}">${esc(e)}</option>`).join('');
+  }
+  if (engines.includes(ENGINE)) pick.value = ENGINE;
+
+  document.getElementById('live').innerHTML = liveHtml(d);
+  document.getElementById('subject').innerHTML = subjectHtml(d);
+  document.getElementById('vitals').innerHTML = vitalsHtml(d);
+  document.getElementById('configs').innerHTML = configsHtml(d);
+  document.getElementById('h2h').innerHTML = h2hHtml(d);
+  document.getElementById('guns').innerHTML = gunsHtml(d);
+  document.getElementById('recent').innerHTML = recentHtml(d);
+  document.getElementById('killtape').innerHTML = killTapeHtml(d);
+  // Anchors bypass openUrl — retarget any localhost watch hrefs for LAN readers.
+  for (const a of document.querySelectorAll('a[href^="http://localhost:5173"], a[href^="http://127.0.0.1:5173"]')) {
+    a.href = fixHost(a.getAttribute('href'));
+  }
+  try { drawRank(d); } catch (e) {
+    const el = document.getElementById('ch-rank');
+    if (el) el.innerHTML = `<div class="chartnote">chart failed: ${esc(e.message)}</div>`;
+  }
+  applyFlashes();
+}
+
+document.getElementById('brainPick').addEventListener('change', (e) => {
+  ENGINE = e.target.value;
+  try { history.replaceState(null, '', brainHref(ENGINE)); } catch {}
+  prevVals.clear(); // a new subject must not flash against the old one's values
+  if (lastData) render(lastData);
+});
+document.getElementById('themeBtn').addEventListener('click', () =>
+  applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true));
+document.getElementById('themeBtn').textContent =
+  currentTheme() === 'light' ? '🌙 DARK ROOM' : '☀ DAYLIGHT';
+
+let lastGenerated = null;
+let fetching = false; // the watcher can stall serving during rebuilds — never stack fetches
+async function tick() {
+  if (fetching) return;
+  fetching = true;
+  try {
+    const res = await fetch('desk-data.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+    if (d.generatedAt !== lastGenerated) { lastGenerated = d.generatedAt; render(d); }
+  } catch (e) {
+    document.getElementById('meta').textContent = 'wire down: ' + e.message + ' (retrying)';
+  } finally {
+    fetching = false;
+  }
+}
+tick();
+setInterval(tick, 5000);
+// ticking clocks: data-since counts up (HELD), data-until counts down
+setInterval(() => {
+  for (const el of document.querySelectorAll('[data-since]')) {
+    const t = new Date(el.getAttribute('data-since')).getTime();
+    if (isFinite(t)) el.textContent = fmtDur(Date.now() - t);
+  }
+  for (const el of document.querySelectorAll('[data-until]')) {
+    const t = new Date(el.getAttribute('data-until')).getTime();
+    if (isFinite(t)) el.textContent = t > Date.now() ? fmtDur(t - Date.now()) : 'any moment';
+  }
+}, 1000);
+</script>
+</body>
+</html>

@@ -87,6 +87,9 @@
   .up { color: var(--up); } .down { color: var(--down); } .flat { color: var(--gold); }
   .cred { color: var(--red); } .cblue { color: var(--blue); }
   .dim { color: var(--dim); }
+  /* engine names are doors into the BRAIN-CAM (brain.html?engine=…) */
+  .brainlink { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--dim); }
+  .brainlink:hover { color: var(--gold); text-decoration: none; border-bottom-color: var(--gold); }
 
   header {
     display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
@@ -109,6 +112,12 @@
     border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; letter-spacing: 1px;
   }
   #deskLink:hover { border-color: var(--gold); text-decoration: none; }
+  /* BRAIN-CAM nav chip (per-brain live page) — same dress as the desk link */
+  #brainNavLink {
+    background: var(--panel2); color: var(--gold); border: 1px solid var(--line);
+    border-radius: 6px; font: 12px var(--mono); padding: 2px 10px; letter-spacing: 1px;
+  }
+  #brainNavLink:hover { border-color: var(--gold); text-decoration: none; }
   /* the autopilot config gear — shown on localhost only (its API refuses
      everyone else anyway; no point advertising it on the public deployment) */
   #cfgLink {
@@ -189,7 +198,10 @@
   @keyframes reignglow { 0%, 100% { outline-color: var(--gold); } 50% { outline-color: transparent; } }
 
   .wrap { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; padding: 0 16px 16px; max-width: 1700px; margin: 0 auto; }
-  @media (max-width: 1100px) { .wrap { grid-template-columns: 1fr; } }
+  /* minmax(0,1fr) — NOT bare 1fr (= minmax(auto,1fr)): with auto minimums the
+     single column inherits the min-content of the WIDEST section (a chart, a
+     long table) and the whole page stretches past the viewport on phones. */
+  @media (max-width: 1100px) { .wrap { grid-template-columns: minmax(0, 1fr); } .wrap > main, .wrap > aside { min-width: 0; } }
   .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; }
   .panel h2 { margin: 0 0 8px; font-size: 12px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
   .warnbar { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); border-radius: 8px; padding: 6px 14px; margin: 10px 16px 0; font-size: 12px; }
@@ -324,6 +336,92 @@
   .md code { background: var(--panel2); padding: 1px 4px; border-radius: 4px; color: var(--up); font-size: 11px; }
   .md strong { color: var(--gold); }
   footer { color: var(--dim); font-size: 11px; text-align: center; padding: 8px 0 22px; }
+
+  /* ---- mobile swipe deck (recent games by leader) -------------------------
+     Hidden on desktop; on a phone it becomes the PRIMARY games view — one
+     full-width card per fight, horizontal scroll-snap (native swipe), the
+     series LEADER front and centre, 3 supporting stats, tap to watch. */
+  .swipedeck-wrap { display: none; }
+  .swipedeck { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 10px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .swipedeck::-webkit-scrollbar { display: none; }
+  .swipecard {
+    flex: 0 0 84%; max-width: 340px; scroll-snap-align: center;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+    padding: 10px 14px; cursor: pointer;
+  }
+  .swipecard.live { border-color: var(--down); box-shadow: 0 0 0 1px var(--down); }
+  .swipecard .sc-tag { font-size: 10px; letter-spacing: 2px; color: var(--dim); display: flex; justify-content: space-between; }
+  .swipecard .sc-names { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 6px 0 2px; }
+  .swipecard .sc-names .who { font-size: 17px; font-weight: bold; letter-spacing: 1px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .swipecard .sc-score { font-size: 26px; font-weight: bold; color: var(--gold); flex: none; }
+  .swipecard .sc-leader { font-size: 12px; margin: 2px 0 6px; }
+  .swipecard .sc-leader b { letter-spacing: 1px; }
+  .swipecard .sc-stats { display: flex; gap: 6px; flex-wrap: wrap; font-size: 11px; }
+  .swipecard .sc-stat { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; background: var(--panel2); color: var(--dim); }
+  .swipecard .sc-stat b { color: var(--text); }
+  .swipedeck-head { font-size: 10px; letter-spacing: 3px; color: var(--gold); text-transform: uppercase; margin: 0 2px 4px; }
+
+  /* ---- mobile (iPhone) overlay ---------------------------------------------
+     The floor is a trading desk; a phone gets the POCKET edition: the swipe
+     deck carries the games, tables shrink to identity + 2-4 key stats, wide
+     charts pan sideways instead of shrinking to confetti. */
+  @media (max-width: 700px) {
+    header { padding: 6px 10px 5px; gap: 8px; }
+    header h1 { font-size: 14px; letter-spacing: 2px; }
+    header .meta { flex-basis: 100%; margin-left: 0; font-size: 10px; }
+    .wrap { padding: 0 8px 12px; gap: 10px; }
+    .panel { padding: 10px 10px; }
+    .hero { margin: 10px 8px; padding: 10px 12px; }
+    .hero .side { font-size: 18px; }
+    .hero .score { font-size: 28px; }
+    /* a sticky hero would own half the viewport — let it scroll away */
+    .hero.live-now { position: static; padding: 12px 14px; }
+    .hero.live-now .side { font-size: 20px; }
+    .hero.live-now .score { font-size: 32px; }
+    .hero .watchbtn { position: static; display: inline-block; margin-top: 6px; }
+    .beltstrip { margin: 0 8px 10px; }
+    .belt-bars { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .swipedeck-wrap { display: block; margin: 0 8px 10px; }
+    /* the swipe deck IS the mobile fight feed — fold the desktop one away */
+    #feedlist .fight .coaches { display: none; }
+
+    /* THE BIG BOARD, pocket edition: #, sym, score, record. */
+    .bigboard table.board th:nth-child(3), .bigboard table.board td:nth-child(3),
+    .bigboard table.board th:nth-child(5), .bigboard table.board td:nth-child(5),
+    .bigboard table.board th:nth-child(6), .bigboard table.board td:nth-child(6),
+    .bigboard table.board th:nth-child(7), .bigboard table.board td:nth-child(7),
+    .bigboard table.board th:nth-child(9), .bigboard table.board td:nth-child(9),
+    .bigboard table.board th:nth-child(10), .bigboard table.board td:nth-child(10),
+    .bigboard table.board th:nth-child(11), .bigboard table.board td:nth-child(11),
+    .bigboard table.board th:nth-child(12), .bigboard table.board td:nth-child(12),
+    .bigboard table.board th:nth-child(13), .bigboard table.board td:nth-child(13),
+    .bigboard table.board th:nth-child(14), .bigboard table.board td:nth-child(14) { display: none; }
+    table.board td, table.board th { padding: 6px 5px; }
+    /* the SYM cell drops the full coach name + tweak sig — ticker only, so
+       the four kept stat columns actually fit a 390px screen */
+    .bigboard table.board td:nth-child(2) .dim { display: none; }
+    .bigboard table.board { font-size: 12px; }
+    .bigboard table.board .sym { font-size: 12px; letter-spacing: 0.5px; }
+    .bigboard table.board td, .bigboard table.board th { padding: 6px 4px; }
+    .bigboard h2 { font-size: 11px; }
+    /* belt-and-braces: anything still wider than the phone scrolls INSIDE
+       its panel instead of stretching the whole page sideways */
+    .panel { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* per-match bot stats: bot, k, d, k/d. */
+    table.stats th:nth-child(2), table.stats td:nth-child(2),
+    table.stats th:nth-child(6), table.stats td:nth-child(6),
+    table.stats th:nth-child(7), table.stats td:nth-child(7) { display: none; }
+
+    /* wide D3 charts pan sideways at readable scale instead of shrinking */
+    .chartbox .chart { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .chartbox .chart svg { min-width: 760px; }
+    /* charts are desk fare — collapsed by default on a phone (JS reads this) */
+    .braingrid { grid-template-columns: 1fr; }
+    .brains-toolbar input { flex-basis: 100%; }
+    .fight-head .series { flex-basis: 100%; margin-left: 0; }
+    .timeline .t { width: 36px; }
+  }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 </head>
@@ -332,12 +430,17 @@
   <h1>⚔ ARENA LIVE</h1>
   <span class="live">● LIVE</span>
   <a id="deskLink" href="desk.html" title="THE DESK — the story-first front page">📰 DESK</a>
+  <a id="brainNavLink" href="brain.html" title="BRAIN-CAM — one brain, watched live">🧠 BRAIN</a>
   <a id="cfgLink" href="config.html" title="AUTOPILOT — boot service + training config (localhost only)" style="display:none">⚙</a>
   <button id="themeBtn" title="toggle light/dark">☀ / 🌙</button>
   <span class="meta" id="meta">loading…</span>
 </header>
 <div class="tape" id="tape"></div>
 <div id="hero"></div>
+<div class="swipedeck-wrap" id="swipedeckWrap">
+  <div class="swipedeck-head">Recent games — swipe · tap a card to watch</div>
+  <div class="swipedeck" id="swipedeck"></div>
+</div>
 <div id="beltstrip"></div>
 <div id="warnbar" style="display:none" class="warnbar"></div>
 <div class="wrap">
@@ -361,7 +464,20 @@ const ago = (iso) => {
   if (h < 48) return h + 'h ' + (m % 60) + 'm ago';
   return Math.floor(h / 24) + 'd ago';
 };
-function openUrl(u) { if (u) window.open(u, '_blank'); }
+/** Open a watch URL. Local watch links point at localhost:5173 — when this
+ *  page is being read from ANOTHER device (a phone on the LAN hitting the
+ *  Mac's watcher), localhost is the phone, not the Mac; retarget the link at
+ *  the host that served this page so the replay actually opens. */
+function fixHost(u) {
+  try {
+    const here = location.hostname;
+    if (u && here && here !== 'localhost' && here !== '127.0.0.1') {
+      u = u.replace(/^https?:\/\/(localhost|127\.0\.0\.1):5173/, `http://${here}:5173`);
+    }
+  } catch {}
+  return u;
+}
+function openUrl(u) { if (u) window.open(fixHost(u), '_blank'); }
 // Delegated click-to-watch: anything carrying data-watch opens the replay.
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-watch]');
@@ -394,6 +510,13 @@ const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyV
 if (['localhost', '127.0.0.1', '[::1]'].includes(location.hostname)) {
   document.getElementById('cfgLink').style.display = '';
 }
+
+// Every engine name is a door into the BRAIN-CAM — the per-brain live page.
+// The click-to-watch delegation already ignores anchors, so these links can
+// live inside data-watch zones without stealing the replay click.
+const brainLink = (e, txt) => e
+  ? `<a class="brainlink" href="brain.html?engine=${attr(encodeURIComponent(e))}" title="BRAIN-CAM: ${attr(e)}">${esc(txt ?? e)}</a>`
+  : '';
 
 // Ticker symbol: first letter + consonants (then vowels) of the rest, 5 chars.
 function sym(name) {
@@ -524,9 +647,9 @@ function heroHtml(d) {
     ${tag}
     <span class="watchbtn">${running ? '▶ WATCH LIVE' : '▶ REPLAY'}</span>
     <div class="row">
-      <span class="side cred">${esc(lv.red.coach)} <span class="eng">${esc(sym(lv.red.coach))} · ${esc(lv.red.engine)}</span></span>
+      <span class="side cred">${esc(lv.red.coach)} <span class="eng">${esc(sym(lv.red.coach))} · ${brainLink(lv.red.engine)}</span></span>
       <span class="score" data-fk="hero:score">${s.red} — ${s.blue}${s.draws ? `<span class="dim" style="font-size:14px"> (${s.draws}d)</span>` : ''}</span>
-      <span class="side cblue">${esc(lv.blue.coach)} <span class="eng">${esc(sym(lv.blue.coach))} · ${esc(lv.blue.engine)}</span></span>
+      <span class="side cblue">${esc(lv.blue.coach)} <span class="eng">${esc(sym(lv.blue.coach))} · ${brainLink(lv.blue.engine)}</span></span>
     </div>
     <div class="mchips">${mchips || '<span class="dim">first match under way…</span>'}</div>
   </div>`;
@@ -538,11 +661,68 @@ function heroFromFight(f) {
     <span class="tag dim">LATEST SERIES — FINAL · ARENA #${esc(f.arenaSeed)} · ${ago(f.createdAt)}</span>
     <span class="watchbtn">▶ REPLAY</span>
     <div class="row">
-      <span class="side cred">${esc(a.coach)} <span class="eng">${esc(sym(a.coach))} · ${esc(a.engine)}</span></span>
+      <span class="side cred">${esc(a.coach)} <span class="eng">${esc(sym(a.coach))} · ${brainLink(a.engine)}</span></span>
       <span class="score" data-fk="hero:score">${st ? `${st.red.wins} — ${st.blue.wins}` : '?'}</span>
-      <span class="side cblue">${esc(b.coach)} <span class="eng">${esc(sym(b.coach))} · ${esc(b.engine)}</span></span>
+      <span class="side cblue">${esc(b.coach)} <span class="eng">${esc(sym(b.coach))} · ${brainLink(b.engine)}</span></span>
     </div>
   </div>`;
+}
+
+// ---- mobile swipe deck ----------------------------------------------------------
+// The phone's games view: one card per fight, newest first, the series LEADER
+// front and centre plus 3 supporting stats. Pure CSS scroll-snap does the
+// swiping; the deck only exists below the 700px breakpoint (.swipedeck-wrap).
+const DECK_CARDS = 10;
+function swipeCardOfFight(f, live) {
+  const a = f.sides[0], b = f.sides[1], st = f.standings;
+  const url = f.matches && f.matches[0] ? f.matches[0].watchUrl : '';
+  const red = st ? st.red.wins : 0, blue = st ? st.blue.wins : 0;
+  const leadSide = red > blue ? a : blue > red ? b : null;
+  const leadCls = red > blue ? 'cred' : 'cblue';
+  // top fragger across the series (the bots table is already series-summed)
+  let top = null;
+  for (const bt of f.bots || []) if (!top || bt.kills > top.kills) top = bt;
+  const stats = [
+    `<span class="sc-stat">arena <b>#${esc(f.arenaSeed)}</b></span>`,
+    top ? `<span class="sc-stat">top frag <b>${esc(top.name)}</b> ${top.kills}k</span>` : '',
+    `<span class="sc-stat"><b>${(f.matches || []).length}</b> match${(f.matches || []).length === 1 ? '' : 'es'}</span>`,
+  ].filter(Boolean).join('');
+  return `<div class="swipecard${live ? ' live' : ''}" data-watch="${attr(url)}">
+    <div class="sc-tag"><span>${live ? '<span class="down">● LIVE</span>' : esc(ago(f.createdAt))}</span><span>▶ watch</span></div>
+    <div class="sc-names">
+      <span class="who cred">${esc(sym(a.coach))}</span>
+      <span class="sc-score">${st ? `${red}–${blue}` : '?'}</span>
+      <span class="who cblue" style="text-align:right">${esc(sym(b.coach))}</span>
+    </div>
+    <div class="sc-leader">${leadSide
+      ? `LEADER <b class="${leadCls}">${esc(sym(leadSide.coach))}</b> <span class="dim">${brainLink(leadSide.engine)}</span>`
+      : `<b class="flat">ALL SQUARE</b>`}</div>
+    <div class="sc-stats">${stats}</div>
+  </div>`;
+}
+function swipeDeckHtml(d) {
+  const cards = [];
+  const lv = d.live;
+  if (lv && lv.red && lv.status !== 'done') {
+    const s = lv.series ?? { red: 0, blue: 0 };
+    const leadSide = s.red > s.blue ? lv.red : s.blue > s.red ? lv.blue : null;
+    const leadCls = s.red > s.blue ? 'cred' : 'cblue';
+    cards.push(`<div class="swipecard live" data-watch="${attr(lv.watchUrl ?? '')}">
+      <div class="sc-tag"><span class="down">● LIVE NOW</span><span>▶ watch</span></div>
+      <div class="sc-names">
+        <span class="who cred">${esc(sym(lv.red.coach))}</span>
+        <span class="sc-score">${s.red}–${s.blue}</span>
+        <span class="who cblue" style="text-align:right">${esc(sym(lv.blue.coach))}</span>
+      </div>
+      <div class="sc-leader">${leadSide
+        ? `LEADER <b class="${leadCls}">${esc(sym(leadSide.coach))}</b> <span class="dim">${brainLink(leadSide.engine)}</span>`
+        : `<b class="flat">ALL SQUARE</b>`}</div>
+      <div class="sc-stats"><span class="sc-stat">arena <b>#${esc(lv.arenaSeed)}</b></span>
+        <span class="sc-stat">match <b>${(lv.matches ? lv.matches.length + 1 : 1)}</b>/${esc(lv.matchesPlanned ?? '?')}</span></div>
+    </div>`);
+  }
+  for (const f of (d.fights || []).slice(0, DECK_CARDS)) cards.push(swipeCardOfFight(f, false));
+  return cards.join('');
 }
 
 // ---- belt lineage strip ---------------------------------------------------------
@@ -632,7 +812,7 @@ function boardRowHtml(r, hl, champ, beltGivenRef, oneshot) {
   return `<tr class="r${oneshot ? ' oneshot' : ''}" data-watch="${attr(r.lastUrl)}" title="open latest replay">` +
     `<td class="dim" ${fk('rank')}>#${r.rank}</td>` +
     `<td class="sym ${isChamp ? 'belt' : ''}">${isChamp ? '🏆 ' : ''}${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:11px"> ${esc(r.coach)}</span>${sigTag}</td>` +
-    `<td>${esc(r.engine)}</td>` +
+    `<td>${brainLink(r.engine)}</td>` +
     `<td class="${scoreCls}" ${fk('score')} title="decayed W−L (half-life ${hl}h) — the ranking driver"><b>${score.toFixed(2)}</b></td>` +
     `<td title="last 5 series, newest first">${formDots(r.form)}</td>` +
     `<td ${fk('kd')}><b>${last.toFixed(2)}</b></td>` +
@@ -665,7 +845,11 @@ function boardHtml(d) {
     ? `<details class="fold"><summary>▸ one-shot configs (${oneShots.length}) — fewer than ${MIN_SERIES} series fought, ranks kept but folded</summary>` +
       `<table class="board">${BOARD_HEAD}${osBody}</table></details>`
     : '';
-  return `<div class="panel"><h2>📈 The Big Board — coach configs by decayed score</h2>
+  const eraNote = d.era
+    ? `<div class="dim" style="font-size:11px;margin:-4px 0 8px">🔫 ${esc(d.era.label)} — ${esc(d.era.blurb)} · only <b>${esc(d.era.variant)}</b>-rules fights price the board (${d.era.eraFights} of ${d.era.totalFights} on disk) · the old book closed in fights/SEASONS.md</div>`
+    : '';
+  return `<div class="panel bigboard"><h2>📈 The Big Board — coach configs by decayed score</h2>
+    ${eraNote}
     <table class="board">${BOARD_HEAD}${mainBody}</table>
     ${fold}
     <div class="dim" style="font-size:10px;margin-top:6px">one row per coach+engine+settings config · SCORE = recency-decayed W−L (every series fades by half each ${hl}h — idle rows SINK, kills don't compound forever) · ties broken by decayed K/D · FORM = last 5 series newest first (<span class="up">●</span> win <span class="down">○</span> loss <span class="flat">◐</span> draw) · REC/VOL = raw career totals · main table shows configs with ≥${MIN_SERIES} series of real history · click a row to open the latest replay</div></div>`;
@@ -807,7 +991,7 @@ function rankHistoryHtml(d) {
 
 // ---- gun boards (per-weapon kill leaderboards) -----------------------------------
 const GUN_META = {
-  AK74:    { icon: '🔫', name: 'AK-74',    note: 'the shared rifle — every stock kill' },
+  AK74:    { icon: '🔫', name: 'AK-74',    note: 'the old shared rifle, a sidearm since the era turned — every stock kill' },
   SPAS12:  { icon: '💥', name: 'SPAS-12',  note: 'wildcard shotgun — 6-pellet fan' },
   BARRETT: { icon: '🎯', name: 'Barrett',  note: 'wildcard one-shot rifle' },
 };
@@ -821,7 +1005,7 @@ function gunBoardsHtml(d) {
     const b = g[w];
     const rows = b.rows.map((r, i) =>
       `<tr><td class="dim">#${i + 1}</td>` +
-      `<td class="sym">${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:10px"> ${esc(r.engine)}</span></td>` +
+      `<td class="sym">${esc(sym(r.coach))}<span class="dim" style="font-weight:normal;font-size:10px"> ${brainLink(r.engine)}</span></td>` +
       `<td data-fk="gun-${esc(w)}-${esc(r.coach)}-${esc(r.engine)}"><b>${r.kills}</b></td>` +
       `<td class="dim">${((r.kills / Math.max(1, b.total)) * 100).toFixed(1)}%</td></tr>`).join('');
     return `<div class="gunboard">
@@ -838,7 +1022,7 @@ function gunBoardsHtml(d) {
 function coachBlock(s) {
   const cls = s.team === 1 ? 'cred' : 'cblue';
   return `<div class="coach">
-    <div class="who ${cls}">${esc(sym(s.coach))} <span class="dim">${esc(s.coach)} / ${esc(s.engine)}${s.coachKnown ? '' : ' (inferred)'}</span></div>
+    <div class="who ${cls}">${esc(sym(s.coach))} <span class="dim">${esc(s.coach)} / ${brainLink(s.engine)}${s.coachKnown ? '' : ' (inferred)'}</span></div>
     ${s.rationale ? `<div class="rationale">“${esc(s.rationale)}”</div>` : ''}
     <div>${tweakStr(s.tweaks)}</div>
     <details class="resolved"><summary>resolved config</summary>${tweakStr(s.resolvedTweaks)}</details>
@@ -898,7 +1082,7 @@ function fightBlock(f) {
   const fresh = f.createdAt && (Date.now() - new Date(f.createdAt).getTime() < FRESH_MS);
   return `<div class="fight"${fresh ? ' style="border-color:var(--gold)"' : ''}>
     <div class="fight-head" data-watch="${attr(headUrl)}">
-      <span class="vs"><span class="cred">${esc(sym(a.coach))}</span> <span class="dim">${esc(a.engine)}</span> × <span class="cblue">${esc(sym(b.coach))}</span> <span class="dim">${esc(b.engine)}</span></span>
+      <span class="vs"><span class="cred">${esc(sym(a.coach))}</span> <span class="dim">${brainLink(a.engine)}</span> × <span class="cblue">${esc(sym(b.coach))}</span> <span class="dim">${brainLink(b.engine)}</span></span>
       <span class="arena">arena #${esc(f.arenaSeed)} · ${esc(f.roundSecs)}s rounds</span>
       <span class="when" title="${esc(f.createdAt)}">${fresh ? '<span class="flat">● new</span> ' : ''}${ago(f.createdAt)}</span>
       <span class="series ${seriesCls}" data-fk="fs:${attr(f.dirName)}">${series}</span>
@@ -961,12 +1145,15 @@ function analyticsShellHtml(d) {
     ? `<div class="chartnote">⚠ d3 unavailable (CDN unreachable) — analytics charts disabled, everything else works</div>`
     : '';
   if (!a) return `<div class="panel"><h2>🔬 Analytics Desk</h2><div class="chartnote">analytics unavailable (builder warning)</div></div>`;
+  // On a phone the four wide charts arrive COLLAPSED (each pans sideways when
+  // opened — see the mobile overlay CSS); the desktop desk keeps them open.
+  const open = window.matchMedia && window.matchMedia('(max-width: 700px)').matches ? '' : ' open';
   return `<div class="panel" id="desk"><h2>🔬 Analytics Desk — every bot, all ${(d.fights || []).length} fights</h2>
     ${note}
-    <details class="chartbox" open><summary>▸ ACCURACY × LETHALITY — hit% vs career K/D (dot = config, radius = kills, ghosted = &lt;${MIN_SERIES} series)</summary><div class="chart" id="ch-scatter"></div></details>
-    <details class="chartbox" open><summary>▸ RANK RACE — board rank over time (rank 1 on top; line weight = series fought)</summary><div class="legend" id="lg-race"></div><div class="chart" id="ch-race"></div></details>
-    <details class="chartbox" open><summary>▸ HEAD-TO-HEAD MATRIX — engine × engine series win rate</summary><div class="chart" id="ch-h2h"></div></details>
-    <details class="chartbox" open><summary>▸ SHOTGUN IMPACT — K/D with the SPAS-12 in the match vs stock</summary><div class="chart" id="ch-shotgun"></div></details>
+    <details class="chartbox"${open}><summary>▸ ACCURACY × LETHALITY — hit% vs career K/D (dot = config, radius = kills, ghosted = &lt;${MIN_SERIES} series)</summary><div class="chart" id="ch-scatter"></div></details>
+    <details class="chartbox"${open}><summary>▸ RANK RACE — board rank over time (rank 1 on top; line weight = series fought)</summary><div class="legend" id="lg-race"></div><div class="chart" id="ch-race"></div></details>
+    <details class="chartbox"${open}><summary>▸ HEAD-TO-HEAD MATRIX — engine × engine series win rate</summary><div class="chart" id="ch-h2h"></div></details>
+    <details class="chartbox"${open}><summary>▸ SHOTGUN IMPACT — K/D with the SPAS-12 in the match vs stock</summary><div class="chart" id="ch-shotgun"></div></details>
   </div>`;
 }
 
@@ -1330,7 +1517,7 @@ function brainCardHtml(doc, stats, champEngine) {
   const knobRows = (doc.knobs || []).map((k) =>
     `<tr><td class="k">${esc(k.key)}</td><td class="v">${k.value}</td><td class="doc">${esc(k.doc)}</td></tr>`).join('');
   return `<div class="braincard">
-    <div class="bc-head"><span class="bc-name">${esc(doc.engine)}</span>` +
+    <div class="bc-head"><span class="bc-name">${doc.isEngine ? brainLink(doc.engine) + ` <a class="brainlink" href="brain.html?engine=${attr(encodeURIComponent(doc.engine))}" title="open the BRAIN-CAM" style="border:none;font-size:11px">🎥</a>` : esc(doc.engine)}</span>` +
     (doc.engine === champEngine ? '<span class="bc-belt">🏆 reigning</span>' : '') +
     (doc.isEngine ? '' : '<span class="bc-helper">helper module</span>') +
     (doc.tagline ? `<span class="bc-tag">${esc(doc.tagline)}</span>` : '') + `</div>` +
@@ -1426,6 +1613,7 @@ function render(d) {
 
   document.getElementById('tape').innerHTML = tapeHtml(d.fights);
   document.getElementById('hero').innerHTML = heroHtml(d);
+  document.getElementById('swipedeck').innerHTML = swipeDeckHtml(d);
   document.getElementById('beltstrip').innerHTML = beltHtml(d);
 
   // Analytics desk ABOVE the fight tables (user ask); feed infinite-scrolls.
@@ -1466,6 +1654,11 @@ function render(d) {
 
   const nw = document.getElementById('newswire');
   if (nw) nw.addEventListener('toggle', () => { newswireOpen = nw.open; });
+
+  // Anchors bypass openUrl — retarget any localhost watch hrefs for LAN readers.
+  for (const a of document.querySelectorAll('a[href^="http://localhost:5173"], a[href^="http://127.0.0.1:5173"]')) {
+    a.href = fixHost(a.getAttribute('href'));
+  }
 
   try { drawCharts(d); } catch (e) { console.error('charts failed', e); }
   applyFlashes();

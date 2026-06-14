@@ -1,5 +1,109 @@
 [
   {
+    "hash": "e4c00c30d2b8faf6465058e6d0cc2247e15803fc",
+    "short_hash": "e4c00c3",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T12:54:01-04:00",
+    "message": "feat(arena-live): restart the stats under the sidearm era — the ERA GATE\n\nThe board priced four days of AK-era careers; the user rang the bell:\n\"lets restart the stats on the website with these new rules.\"\n\nEverything that prices a coach — the Big Board, rank history, analytics,\ngun boards, the brain-cam, the desk's gun meter — is now computed ONLY\nfrom fights whose manifest records the era's variant ('sidearm').\nManifests carry the RESOLVED variant, so \"counts toward the board\" ===\n\"was played under the current rules\": non-destructive, deterministic,\nand the server restarts its own board the moment it rebuilds.\n\nThe full archive stays: the fight feed, belt lineage, and corpus stats\nkeep every dataset (old replays remain watchable, the training corpus is\nera-agnostic), the pre-era record book lives in fights/SEASONS.md and\nhistory.jsonl (the era turn lands there as one re-rank snapshot).\n\nUI: era note under the Big Board headline (\"433 of 34,897 on disk\ncount\"); THE ERA cell on the desk masthead banner. data.json/desk-data\nship an `era` block so the gate's effect is auditable.\n\nVerified: sandbox build (2 baseline + 2 sidearm datasets → only sidearm\nfights on the board) and a full 35k-dataset rebuild (19 era rows, fresh\nW-L records, era-only gun mix).\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "cfcc1051b668665e1a01609026e2a7670fb0ddc3",
+    "short_hash": "cfcc105",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T11:35:44-04:00",
+    "message": "feat: THE SIDEARM ERA — AK demoted to a pistol via a new default variant (goal 573)\n\nNew 'sidearm' gameplay variant (fireInterval 20 = 3/s, mag 12, reload 70,\nspread 0.012) appended LAST in VARIANTS (tournament tiles keep their four\nmetas) and made the DEFAULT era for every NEW fight:\n\n* arena CLI run + fight subcommands default --variant sidearm; manifests\n  record the resolved era; league grinder + commissioner inherit (verified\n  live — a rival session's fight recorded variant=sidearm mid-change)\n* ?play and the menu default to sidearm; ?spectate without ?variant stays\n  baseline so every recorded watch URL replays byte-identically\n* online matches sim under sidearm; the welcome recipe carries\n  &variant=sidearm and the client reads it (cosmetic fire cadence matches)\n* every NEW watch URL carries ?variant EXPLICITLY (fighterCard.buildWatchUrl\n  + arena-live/build.mjs mirror, which emits it for non-baseline manifests)\n* WILDCARD_CHANCE_PCT 35 -> 80: most matches arm a special now. The pct is\n  policy, the hash is the contract — legacy-roll tests keep the hash pinned\n  inline and parameterize the threshold\n* baseline is BYTE-FROZEN: runner.ts resolveVariant fallback and\n  EVAL_SPEC_V1 runCell still default to it. Verified both directions:\n  a pre-era baseline dataset and a fresh sidearm dataset both re-simulate\n  byte-identical\n* sustainment spot-checks: classic/cuadrilla/orca sustain mirrors under the\n  pistol; MOJOJOJO's factory FIRE_THRESH (0.3) ZEROES under sidearm — its\n  card's 0.01 sustains in mixed company (pinned defaults untouched);\n  learned-vs-learned mirrors zero even at thresh 0 (aim bottleneck x 3/s DPS)\n* docs: MANUAL (play table, flags, §4 era intro), README intro, arena-live\n  gun-meter labels\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 24
+  },
+  {
+    "hash": "c2c85a235e4d9a42ca2cde1f36442c328d9b5e3e",
+    "short_hash": "c2c85a2",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T01:49:55-04:00",
+    "message": "feat: shared-stage online arena — spectators, queue, mesh voice, chat (goal 551)\n\nServer (tested): Arena replaces the 2-by-2 lobby with one stage + a\nspectator queue; Match broadcasts snapshots to spectators and never owns\nsocket lifecycle; clean-restart cycling promotes the queue head when a\nseat opens. Protocol: voice carries a mesh peer id; welcome gains\nspectator/yourId.\n\nClient: online.ts becomes a router with persistent UI (chat box, roster\nstrip, voice) and two cancellable boots — bootPlayer (predicted) and\nbootSpectator (dead-reckon all six, follow the action) — re-booting on\neach welcome so the server can cycle players in without a reload.\nvoice.ts is now a VoiceMesh (one RTCPeerConnection per participant,\nshared mic, perfect negotiation by id). InputController gains dispose()\n+ neutralControl() so cycling doesn't leak listeners and typing in chat\ndoesn't move you.\n\n1404 tests green; full monorepo typechecks.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 8
+  },
+  {
+    "hash": "d1b88b4352aa18a099ce280e888089bf25d5639a",
+    "short_hash": "d1b88b4",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T01:45:08-04:00",
+    "message": "feat: MOJOJOJO stage 1 — outcome-weighted fire head on BUTTSTEIN's eyes\n\nFifth student (goal 553), the assignment from BUTTSTEIN's post-mortem:\nkeep the exact-feature v3 eyes, fix the trigger. tools/train-mojojojo.mjs\nweights the fire head's BCE by conversion (shot HIT within 40 ticks x5,\nfire-row miss x0.3, no-fire x1) and reports the honest numbers buttstein\nnever measured: fire acc 92.3% (base 6.95%), P/R vs teacher 44.1/39.4%,\nP/R vs HIT-CONVERTING rows 12.9/24.3%. Aim preserved (blended recipe):\nall-rows top-1 76.7%/cos 0.873, hit-rows 85.5%/cos 0.926. 3M schema-v2\ncuadrilla samples, reserved arenas/seeds excluded.\n\nFIRE_THRESH probe inverted the lineage: 0.35 is the ONLY threshold that\nsustained kills on all 5 probed seeds (0.25/0.2 zeroed seed 99) — the\nmiss-damped logit concentrates, the band moved UP.\n\nStage-2 plumbing: evolve.mjs --engine mojojojo --hit-fit C through the\nnew registerMojojojoNet seam (evolve.ts) + createMojojojoEngineWithWeights;\nfitness gains killDiff + 0.25*domDiff + C*teamHitRate. 336/336 ai tests.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 12
+  },
+  {
+    "hash": "929e6f4b6c1604b50f99c3961089fefbaf051ada",
+    "short_hash": "929e6f4",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T01:39:30-04:00",
+    "message": "chore: stop tracking TypeScript build output (dist/, tsbuildinfo)\n\ndist/ and tsconfig.tsbuildinfo are regenerated by every `pnpm build` /\n`pnpm typecheck`, so tracking them made git status permanently noisy\nand every build a phantom diff. Untracked via --cached (files stay on\ndisk for anything serving dist locally) and ignored going forward.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 187
+  },
+  {
+    "hash": "b79b4fed79e31c1db0a9951ecd590f194dfc1c14",
+    "short_hash": "b79b4fe",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T01:22:17-04:00",
+    "message": "test(infra): cover arena CLI arg handling and netcode/protocol entry points\n\nArena CLI parsing/validation plus the netcode and protocol package\nbarrels (export surface, envelope version stamping). A matching\nserver/src/index.test.ts existed but was removed by the concurrent\nsession's server rework, so server entry coverage is deferred.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "aefc734b9bf1f7b7a861a8e843cd386d8010a904",
+    "short_hash": "aefc734",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T00:25:11-04:00",
+    "message": "feat: weight wildcard pick toward rocket/ricochet/chainsaw + show all guns on the desk\n\nArmed matches now draw the three spectacle wildcards (M79 rocket,\nricochet carbine, chainsaw) 3x as often as the shotgun and rifle, so\nthey appear in ~29% of all matches instead of ~21% combined. The 35%\narming roll is untouched, so old seeds still arm identically (the\narming-stability invariant test stays green); only the weapon pick\nre-weights, which the codebase already documents as safe.\n\nTHE SKYREACH DESK's gun meter now renders all six weapons (it was\nhardcoded to AK/SPAS/Barrett); the per-gun kill data was already\ncomputed generically in build.mjs.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 4
+  },
+  {
+    "hash": "3221081a5c5d52016ea17148feb6b6409aa445b4",
+    "short_hash": "3221081",
+    "author": "Robert Grayson",
+    "date": "2026-06-12T00:16:52-04:00",
+    "message": "fix: FFA matches rendered all-blue; split bots red vs blue\n\nThe renderer's FFA fallback colored the human red and every bot blue, so\na uniform-engine spectate match (no real teams) showed all-blue bots.\nBots now split red/blue by slot parity. Also pointed the landing\nWATCH A LIVE MATCH link at a real two-engine team match (orca vs\ncuadrilla, the belt rivalry) so it's genuinely red vs blue with team\nchevrons. Client rebuilt and republished to /opt/arena/play.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "72a0ab6bca0f8f0238233cdc98e61924039cfbbd",
+    "short_hash": "72a0ab6",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T23:59:12-04:00",
+    "message": "feat(landing): THE NITTY GRITTY — expandable deep-dives between acts\n\nEight click-to-expand panels (native <details>, terminal-green styling):\nporting rules + the f() float trick, the one-line famous-bug fixes,\nDESIGN OVERRIDE tuning, the BotBrain adapter seam, doctrine-as-code\n(kestrel's 0.135 gravity, wolf's prey tiers), the commissioner + decayed\nboard, how the students train (the negative-result chain), and the\ntoolbox (screenshot rig, analyzer, smoke driver, offloader, autopilot).\nEvery code block is quoted from the repo; every ⬢ chip is a real\ndeciduous node (55, 68, 73, 94, 100, 450, 473, 481, 484, 485, 489, 504).\n\nAlso: title/og retitled per author — 'A Fable Experiment: Starting by\ncloning a game, ending with an arena combat sim and bot trainer'.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
+    "hash": "fa96fc459ce9375f6d88904f0e49982e2b0d2a5b",
+    "short_hash": "fa96fc4",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T23:34:06-04:00",
+    "message": "feat: SOLDAT, REWRITTEN — the story landing page (soldat.bobbby.online)\n\nThe entire tale as a scrollytelling single page woven from the README\ndiary: seven acts with the live-captured historical screenshots, the\nsixteen-brain roster (click-to-expand lore cards), the learned-student\nlineage with hit-rate bars, the belt timeline, animated stats, and the\nmeta-machinery. Ambient canvas dogfight behind the hero — six dots with\njet physics chasing height advantage, because the set dressing should\nknow what the real thing looks like. Vanilla HTML/CSS/JS, no deps.\n\nServing: blog repo Caddyfile serves /opt/soldat-landing at\nsoldat.bobbby.online; landing/deploy.sh rsyncs (resolves the img\nsymlink). Blocked on one manual step: the soldat A record in Cloudflare.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "ca1e686ff2e01c55713b13743cbadda0efc9b28c",
+    "short_hash": "ca1e686",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T22:51:29-04:00",
+    "message": "feat(protocol): voice message kind — opaque WebRTC signaling relay frames\n\nKind tag 8, payload one JSON string (SDP description or ICE candidate),\nopaque to the server. No PROTOCOL_VERSION bump: both client and server\ndrop undecodable frames, so an old peer matched against a new one simply\nnever hears voice — nothing breaks in either deploy order.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 5
+  },
+  {
+    "hash": "ad2046768df3c0651b92740a39f18dca3bd63525",
+    "short_hash": "ad20467",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T22:51:29-04:00",
+    "message": "feat(client): voice chat in online matches — open mic + mute pill\n\nVoiceChat (app/voice.ts): WebRTC perfect negotiation (slot 2 polite),\nSTUN-only ICE, open mic with echo cancellation, click-to-mute pill,\nlisten-only fallback when the mic is denied, dispose on match end and\nconnection loss. Signaling rides the existing match WS as voice frames.\nTested through injected fake RTCPeerConnection/getUserMedia seams.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 3
+  },
+  {
+    "hash": "719282773dd4a33ae1352a9ae856a50026d36807",
+    "short_hash": "7192827",
+    "author": "Robert Grayson",
+    "date": "2026-06-11T22:51:29-04:00",
+    "message": "feat(server): relay voice frames verbatim to the opposite match player\n\nThe match never inspects or stores the payload; audio itself is\npeer-to-peer RTP and never touches the server. Sender identity is\nimplicit in a 1v1. Dropped once the peer disconnects.\n\nCo-Authored-By: Claude Fable 5 <noreply@anthropic.com>",
+    "files_changed": 2
+  },
+  {
     "hash": "b4ae7e63da20d3c0a23cd0a96401d93327376ab5",
     "short_hash": "b4ae7e6",
     "author": "Robert Grayson",

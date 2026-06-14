@@ -1,0 +1,9 @@
+{
+  "schema": "soldat-fighter-card/1",
+  "coach": "MOJOJOJO",
+  "engine": "mojojojo",
+  "tweaks": {
+    "FIRE_THRESH": 0.01
+  },
+  "rationale": "The fifth student \u2014 the first trained in TWO STAGES, on BUTTSTEIN's assignment: keep the exact-feature eyes, fix the trigger. STAGE 1 (tools/train-mojojojo.mjs): same v3 senses (schema-v2 exact threats + own spray heat) and blended aim recipe, but the fire head's BCE is OUTCOME-WEIGHTED \u2014 fire rows whose shot HIT within 40 ticks x5, fire rows that missed x0.3, no-fire rows x1 \u2014 so the trigger learns when shooting CONVERTS, not when the teacher twitched. 3,000,000 v2 cuadrilla samples (178 matches / 64 runs, reserved gauntlet data excluded). Honest fire metrics buttstein never reported: acc 92.3% (base rate 6.95% \u2014 'never fire' scores 93%), P/R vs teacher 44.1/39.4%, P/R vs HIT-CONVERTING rows 12.9/24.3%. Aim preserved: all-rows top-1 76.7%/cos 0.873, hit-rows 85.5%/cos 0.926. STAGE 2 (tools/evolve.mjs --engine mojojojo --hit-fit 30): 200 generations of antithetic ES from that seed, fitness killDiff + 0.25*domDiff + 30*teamHitRate (30 sizes closing buttstein's 14-point hit-rate hole at ~4 kills/match, the residual gap). Ships the GEN-150 mean: its 3-0 gate vs the imitation seed was the run's strongest, and it is the only gate-passing mean that also sustains the factory FIRE_THRESH probe \u2014 0.3 sustains kills on all 5 probed seeds (the gen-190/200 means zeroed everywhere; ES pushed those triggers off the cliff the gate can't see)."
+}
