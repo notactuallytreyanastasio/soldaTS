@@ -2868,3 +2868,223 @@
 {"gen":2399,"meanFitness":0.732,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2380,neural-past-2390","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":17.3}
 {"gen":2400,"meanFitness":-35.831,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":18.8}
 {"gen":2400,"gate":"gen 2400 mean vs imitation baseline 2-1 (2-0, 2-3, 5-2)","shipped":true}
+{"gen":2401,"meanFitness":-32.68,"bestFitness":-11,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":18.9}
+{"gen":2402,"meanFitness":-0.531,"bestFitness":8,"vsChampionWinRate":null,"opponents":"neural-past-2370,neural-past-2380","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":120}
+{"gen":2403,"meanFitness":0.385,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-2390,neural-past-2400","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":1189.9}
+{"gen":2404,"meanFitness":-41.701,"bestFitness":-24.875,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":2319.1}
+{"gen":2405,"meanFitness":-34.133,"bestFitness":-16.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":2217.3}
+{"gen":2406,"meanFitness":-1.641,"bestFitness":5.25,"vsChampionWinRate":null,"opponents":"neural-past-2370,neural-past-2380","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":38.3}
+{"gen":2407,"meanFitness":-0.495,"bestFitness":5.375,"vsChampionWinRate":null,"opponents":"neural-past-2390,neural-past-2400","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":473.8}
+{"gen":2408,"meanFitness":-45.495,"bestFitness":-28.875,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":500.4}
+{"gen":2409,"meanFitness":-42.682,"bestFitness":-20.75,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":208.2}
+{"gen":2410,"meanFitness":-0.206,"bestFitness":5.375,"vsChampionWinRate":null,"opponents":"neural-past-2370,neural-past-2380","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":150.3}
+{"gen":2410,"gate":"gen 2410 mean vs imitation baseline 1-2 (3-4, 6-4, 1-3)","shipped":false}
+{"gen":2411,"meanFitness":-1.036,"bestFitness":5,"vsChampionWinRate":null,"opponents":"neural-past-2400,neural-past-2410","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":1188.5}
+{"gen":2412,"meanFitness":-39.177,"bestFitness":-24.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":45.3}
+{"gen":2413,"meanFitness":-41.039,"bestFitness":-24.75,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":676.5}
+{"gen":2414,"meanFitness":0.633,"bestFitness":9.25,"vsChampionWinRate":null,"opponents":"neural-past-2380,neural-past-2390","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":358.8}
+{"gen":2415,"meanFitness":-0.099,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2400,neural-past-2410","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":1124.7}
+{"gen":2416,"meanFitness":-31.104,"bestFitness":-17.875,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":40.3}
+{"gen":2417,"meanFitness":-38.745,"bestFitness":-16.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":56.2}
+{"gen":2418,"meanFitness":2.383,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2380,neural-past-2390","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":26.9}
+{"gen":2419,"meanFitness":0.93,"bestFitness":6.75,"vsChampionWinRate":null,"opponents":"neural-past-2400,neural-past-2410","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":31.1}
+{"gen":2420,"meanFitness":-33.076,"bestFitness":-16.625,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":101.9}
+{"gen":2420,"gate":"gen 2420 mean vs imitation baseline 2-1 (3-2, 4-2, 3-3)","shipped":true}
+{"gen":2421,"meanFitness":-37.854,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":262.1}
+{"gen":2422,"meanFitness":0.065,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2390,neural-past-2400","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":48.4}
+{"gen":2423,"meanFitness":2.305,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2410,neural-past-2420","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":96.4}
+{"gen":2424,"meanFitness":-42.688,"bestFitness":-27.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":120.3}
+{"gen":2425,"meanFitness":-35.24,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":974.3}
+{"gen":2426,"meanFitness":-1.727,"bestFitness":3.875,"vsChampionWinRate":null,"opponents":"neural-past-2390,neural-past-2400","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":592.5}
+{"gen":2427,"meanFitness":-1.88,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-2410,neural-past-2420","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":67.3}
+{"gen":2428,"meanFitness":-44.052,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":225}
+{"gen":2429,"meanFitness":-37.909,"bestFitness":-19.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":1219.3}
+{"gen":2430,"meanFitness":-0.159,"bestFitness":4.125,"vsChampionWinRate":null,"opponents":"neural-past-2390,neural-past-2400","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":31.4}
+{"gen":2430,"gate":"gen 2430 mean vs imitation baseline 2-1 (2-1, 3-1, 3-3)","shipped":true}
+{"gen":2431,"meanFitness":-0.938,"bestFitness":9.5,"vsChampionWinRate":null,"opponents":"neural-past-2420,neural-past-2430","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":45.4}
+{"gen":2432,"meanFitness":-42.398,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":128.6}
+{"gen":2433,"meanFitness":-42.888,"bestFitness":-27.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":58.5}
+{"gen":2434,"meanFitness":1.357,"bestFitness":9.375,"vsChampionWinRate":null,"opponents":"neural-past-2400,neural-past-2410","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":40.7}
+{"gen":2435,"meanFitness":-0.344,"bestFitness":5,"vsChampionWinRate":null,"opponents":"neural-past-2420,neural-past-2430","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":36.2}
+{"gen":2436,"meanFitness":-30.953,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":38.2}
+{"gen":2437,"meanFitness":-40,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":29.2}
+{"gen":2438,"meanFitness":1.609,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2400,neural-past-2410","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":41.4}
+{"gen":2439,"meanFitness":-0.237,"bestFitness":6.375,"vsChampionWinRate":null,"opponents":"neural-past-2420,neural-past-2430","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":35.3}
+{"gen":2440,"meanFitness":-33.828,"bestFitness":-20.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":77.8}
+{"gen":2440,"gate":"gen 2440 mean vs imitation baseline 3-0 (4-2, 5-2, 3-3)","shipped":true}
+{"gen":2441,"meanFitness":-37.628,"bestFitness":-16.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":80.6}
+{"gen":2442,"meanFitness":-0.979,"bestFitness":5.5,"vsChampionWinRate":null,"opponents":"neural-past-2410,neural-past-2420","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":42.1}
+{"gen":2443,"meanFitness":0.544,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2430,neural-past-2440","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":69.4}
+{"gen":2444,"meanFitness":-42.18,"bestFitness":-27.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":71.9}
+{"gen":2445,"meanFitness":-33.763,"bestFitness":-12.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":516.6}
+{"gen":2446,"meanFitness":-0.401,"bestFitness":4.125,"vsChampionWinRate":null,"opponents":"neural-past-2410,neural-past-2420","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":1458.3}
+{"gen":2447,"meanFitness":-0.745,"bestFitness":5.625,"vsChampionWinRate":null,"opponents":"neural-past-2430,neural-past-2440","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":56.8}
+{"gen":2448,"meanFitness":-43.659,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":276.1}
+{"gen":2449,"meanFitness":-40.164,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":36.3}
+{"gen":2450,"meanFitness":-0.409,"bestFitness":4.375,"vsChampionWinRate":null,"opponents":"neural-past-2410,neural-past-2420","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":37.4}
+{"gen":2450,"gate":"gen 2450 mean vs imitation baseline 3-0 (3-0, 4-2, 5-3)","shipped":true}
+{"gen":2451,"meanFitness":-0.763,"bestFitness":5.5,"vsChampionWinRate":null,"opponents":"neural-past-2440,neural-past-2450","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":57.3}
+{"gen":2452,"meanFitness":-39.234,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":259}
+{"gen":2453,"meanFitness":-41.547,"bestFitness":-15.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":43.4}
+{"gen":2454,"meanFitness":1.052,"bestFitness":9.875,"vsChampionWinRate":null,"opponents":"neural-past-2420,neural-past-2430","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":206.6}
+{"gen":2455,"meanFitness":-0.315,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-2440,neural-past-2450","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":48.3}
+{"gen":2456,"meanFitness":-31.023,"bestFitness":-20.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":52}
+{"gen":2457,"meanFitness":-38.789,"bestFitness":-13.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":397.3}
+{"gen":2458,"meanFitness":1.628,"bestFitness":7.75,"vsChampionWinRate":null,"opponents":"neural-past-2420,neural-past-2430","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":62}
+{"gen":2459,"meanFitness":-0.081,"bestFitness":5.625,"vsChampionWinRate":null,"opponents":"neural-past-2440,neural-past-2450","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":72}
+{"gen":2460,"meanFitness":-32.721,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":47.8}
+{"gen":2460,"gate":"gen 2460 mean vs imitation baseline 1-2 (1-0, 3-3, 6-6)","shipped":false}
+{"gen":2461,"meanFitness":-35.51,"bestFitness":-16.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":39.6}
+{"gen":2462,"meanFitness":-0.62,"bestFitness":4.125,"vsChampionWinRate":null,"opponents":"neural-past-2430,neural-past-2440","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":25.4}
+{"gen":2463,"meanFitness":1.063,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2450,neural-past-2460","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":35.4}
+{"gen":2464,"meanFitness":-42.94,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":329}
+{"gen":2465,"meanFitness":-36.219,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":68.7}
+{"gen":2466,"meanFitness":-0.659,"bestFitness":8,"vsChampionWinRate":null,"opponents":"neural-past-2430,neural-past-2440","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":33.2}
+{"gen":2467,"meanFitness":-1.307,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2450,neural-past-2460","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":176}
+{"gen":2468,"meanFitness":-42.367,"bestFitness":-23.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":47.2}
+{"gen":2469,"meanFitness":-40.359,"bestFitness":-24.75,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":143.6}
+{"gen":2470,"meanFitness":0.557,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2430,neural-past-2440","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":67.5}
+{"gen":2470,"gate":"gen 2470 mean vs imitation baseline 1-2 (2-1, 0-2, 0-2)","shipped":false}
+{"gen":2471,"meanFitness":-2.94,"bestFitness":3.75,"vsChampionWinRate":null,"opponents":"neural-past-2460,neural-past-2470","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":781.4}
+{"gen":2472,"meanFitness":-37.167,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":624.2}
+{"gen":2473,"meanFitness":-41.049,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":43.3}
+{"gen":2474,"meanFitness":1.568,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2440,neural-past-2450","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":49.5}
+{"gen":2475,"meanFitness":1.258,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2460,neural-past-2470","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":61.5}
+{"gen":2476,"meanFitness":-31.503,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":74.7}
+{"gen":2477,"meanFitness":-39.711,"bestFitness":-15.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":56.1}
+{"gen":2478,"meanFitness":1.378,"bestFitness":8,"vsChampionWinRate":null,"opponents":"neural-past-2440,neural-past-2450","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":59.7}
+{"gen":2479,"meanFitness":0.768,"bestFitness":5.625,"vsChampionWinRate":null,"opponents":"neural-past-2460,neural-past-2470","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":51.1}
+{"gen":2480,"meanFitness":-32.917,"bestFitness":-19.625,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":91.1}
+{"gen":2480,"gate":"gen 2480 mean vs imitation baseline 1-2 (5-5, 1-1, 3-4)","shipped":false}
+{"gen":2481,"meanFitness":-35.195,"bestFitness":-15.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":37.4}
+{"gen":2482,"meanFitness":-1.826,"bestFitness":5.5,"vsChampionWinRate":null,"opponents":"neural-past-2450,neural-past-2460","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":39.7}
+{"gen":2483,"meanFitness":0.396,"bestFitness":7.75,"vsChampionWinRate":null,"opponents":"neural-past-2470,neural-past-2480","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":35.3}
+{"gen":2484,"meanFitness":-41.654,"bestFitness":-30.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":62.6}
+{"gen":2485,"meanFitness":-34.206,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":54.3}
+{"gen":2486,"meanFitness":-2.815,"bestFitness":4,"vsChampionWinRate":null,"opponents":"neural-past-2450,neural-past-2460","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":53}
+{"gen":2487,"meanFitness":-0.654,"bestFitness":6.375,"vsChampionWinRate":null,"opponents":"neural-past-2470,neural-past-2480","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":35.4}
+{"gen":2488,"meanFitness":-44.099,"bestFitness":-26,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":40.6}
+{"gen":2489,"meanFitness":-41.206,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":37.7}
+{"gen":2490,"meanFitness":-0.094,"bestFitness":5.375,"vsChampionWinRate":null,"opponents":"neural-past-2450,neural-past-2460","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":35.2}
+{"gen":2490,"gate":"gen 2490 mean vs imitation baseline 2-1 (5-1, 3-0, 6-6)","shipped":true}
+{"gen":2491,"meanFitness":-2.268,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-2480,neural-past-2490","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":44.2}
+{"gen":2492,"meanFitness":-39.635,"bestFitness":-29,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":44.1}
+{"gen":2493,"meanFitness":-41.487,"bestFitness":-24.75,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":42.1}
+{"gen":2494,"meanFitness":1.107,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2460,neural-past-2470","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":26.9}
+{"gen":2495,"meanFitness":-0.143,"bestFitness":5.625,"vsChampionWinRate":null,"opponents":"neural-past-2480,neural-past-2490","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":28}
+{"gen":2496,"meanFitness":-29.581,"bestFitness":-13.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":44.2}
+{"gen":2497,"meanFitness":-41.023,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":31.4}
+{"gen":2498,"meanFitness":0.766,"bestFitness":6.75,"vsChampionWinRate":null,"opponents":"neural-past-2460,neural-past-2470","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":45}
+{"gen":2499,"meanFitness":1.242,"bestFitness":7,"vsChampionWinRate":null,"opponents":"neural-past-2480,neural-past-2490","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":25}
+{"gen":2500,"meanFitness":-34.013,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":42.9}
+{"gen":2500,"gate":"gen 2500 mean vs imitation baseline 2-1 (6-3, 1-2, 7-6)","shipped":true}
+{"gen":2501,"meanFitness":-32.802,"bestFitness":-15.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":38.6}
+{"gen":2502,"meanFitness":-2.076,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-2470,neural-past-2480","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":34.9}
+{"gen":2503,"meanFitness":1.464,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2490,neural-past-2500","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":48.4}
+{"gen":2504,"meanFitness":-42.474,"bestFitness":-30.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":33.2}
+{"gen":2505,"meanFitness":-35.346,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":36.4}
+{"gen":2506,"meanFitness":-0.378,"bestFitness":5.125,"vsChampionWinRate":null,"opponents":"neural-past-2470,neural-past-2480","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":31.3}
+{"gen":2507,"meanFitness":-1.148,"bestFitness":3.75,"vsChampionWinRate":null,"opponents":"neural-past-2490,neural-past-2500","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":38.6}
+{"gen":2508,"meanFitness":-42.448,"bestFitness":-27.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":38.7}
+{"gen":2509,"meanFitness":-40.664,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":25}
+{"gen":2510,"meanFitness":0.927,"bestFitness":5.5,"vsChampionWinRate":null,"opponents":"neural-past-2470,neural-past-2480","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":35.5}
+{"gen":2510,"gate":"gen 2510 mean vs imitation baseline 1-2 (6-3, 3-3, 3-4)","shipped":false}
+{"gen":2511,"meanFitness":-1.456,"bestFitness":5.5,"vsChampionWinRate":null,"opponents":"neural-past-2500,neural-past-2510","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":58.9}
+{"gen":2512,"meanFitness":-41.151,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":51.3}
+{"gen":2513,"meanFitness":-41.016,"bestFitness":-30.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":66.5}
+{"gen":2514,"meanFitness":0.87,"bestFitness":6.75,"vsChampionWinRate":null,"opponents":"neural-past-2480,neural-past-2490","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":63.8}
+{"gen":2515,"meanFitness":-0.497,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2500,neural-past-2510","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":60.9}
+{"gen":2516,"meanFitness":-33.365,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":93.9}
+{"gen":2517,"meanFitness":-39.622,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":44.9}
+{"gen":2518,"meanFitness":1.133,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2480,neural-past-2490","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":67.5}
+{"gen":2519,"meanFitness":2.385,"bestFitness":7.125,"vsChampionWinRate":null,"opponents":"neural-past-2500,neural-past-2510","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":55.9}
+{"gen":2520,"meanFitness":-33.766,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":254.5}
+{"gen":2520,"gate":"gen 2520 mean vs imitation baseline 1-2 (3-4, 5-2, 1-3)","shipped":false}
+{"gen":2521,"meanFitness":-34.099,"bestFitness":-16.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":157.1}
+{"gen":2522,"meanFitness":-1.995,"bestFitness":2.625,"vsChampionWinRate":null,"opponents":"neural-past-2490,neural-past-2500","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":116.3}
+{"gen":2523,"meanFitness":1.497,"bestFitness":9.5,"vsChampionWinRate":null,"opponents":"neural-past-2510,neural-past-2520","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":829.5}
+{"gen":2524,"meanFitness":-42.935,"bestFitness":-30.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":66.4}
+{"gen":2525,"meanFitness":-34.404,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":117.6}
+{"gen":2526,"meanFitness":-2.503,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2490,neural-past-2500","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":29.5}
+{"gen":2527,"meanFitness":0.609,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2510,neural-past-2520","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":41.2}
+{"gen":2528,"meanFitness":-43.904,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":21.8}
+{"gen":2529,"meanFitness":-37.924,"bestFitness":-15.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":18}
+{"gen":2530,"meanFitness":0.068,"bestFitness":9.375,"vsChampionWinRate":null,"opponents":"neural-past-2490,neural-past-2500","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":13.3}
+{"gen":2530,"gate":"gen 2530 mean vs imitation baseline 3-0 (2-1, 5-1, 3-2)","shipped":true}
+{"gen":2531,"meanFitness":-3.063,"bestFitness":2.625,"vsChampionWinRate":null,"opponents":"neural-past-2520,neural-past-2530","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":13.7}
+{"gen":2532,"meanFitness":-38.849,"bestFitness":-26,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":21.5}
+{"gen":2533,"meanFitness":-43.724,"bestFitness":-31.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":25.3}
+{"gen":2534,"meanFitness":2.289,"bestFitness":10.75,"vsChampionWinRate":null,"opponents":"neural-past-2500,neural-past-2510","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":21.3}
+{"gen":2535,"meanFitness":-0.07,"bestFitness":6.75,"vsChampionWinRate":null,"opponents":"neural-past-2520,neural-past-2530","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":13.7}
+{"gen":2536,"meanFitness":-30.245,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":14.1}
+{"gen":2537,"meanFitness":-39.297,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.3}
+{"gen":2538,"meanFitness":1.904,"bestFitness":7,"vsChampionWinRate":null,"opponents":"neural-past-2500,neural-past-2510","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":14.2}
+{"gen":2539,"meanFitness":1.203,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2520,neural-past-2530","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":13.9}
+{"gen":2540,"meanFitness":-34.211,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":14.3}
+{"gen":2540,"gate":"gen 2540 mean vs imitation baseline 2-1 (4-4, 4-4, 7-4)","shipped":true}
+{"gen":2541,"meanFitness":-34.997,"bestFitness":-15.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":13}
+{"gen":2542,"meanFitness":-1.555,"bestFitness":4.125,"vsChampionWinRate":null,"opponents":"neural-past-2510,neural-past-2520","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.1}
+{"gen":2543,"meanFitness":1.396,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2530,neural-past-2540","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":13.8}
+{"gen":2544,"meanFitness":-41.302,"bestFitness":-24.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":15.6}
+{"gen":2545,"meanFitness":-34.589,"bestFitness":-17.875,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":14.1}
+{"gen":2546,"meanFitness":-1.641,"bestFitness":4,"vsChampionWinRate":null,"opponents":"neural-past-2510,neural-past-2520","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":14}
+{"gen":2547,"meanFitness":-0.734,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2530,neural-past-2540","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.3}
+{"gen":2548,"meanFitness":-44.987,"bestFitness":-31.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":15.7}
+{"gen":2549,"meanFitness":-39.664,"bestFitness":-27.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":15.2}
+{"gen":2550,"meanFitness":-0.279,"bestFitness":4.25,"vsChampionWinRate":null,"opponents":"neural-past-2510,neural-past-2520","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":14.2}
+{"gen":2550,"gate":"gen 2550 mean vs imitation baseline 1-2 (4-4, 1-1, 1-2)","shipped":false}
+{"gen":2551,"meanFitness":-1.602,"bestFitness":4,"vsChampionWinRate":null,"opponents":"neural-past-2540,neural-past-2550","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":13.3}
+{"gen":2552,"meanFitness":-40.073,"bestFitness":-24.875,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":16}
+{"gen":2553,"meanFitness":-40.414,"bestFitness":-23.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":15.2}
+{"gen":2554,"meanFitness":1.987,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2520,neural-past-2530","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":14.6}
+{"gen":2555,"meanFitness":-0.031,"bestFitness":8.5,"vsChampionWinRate":null,"opponents":"neural-past-2540,neural-past-2550","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":13.8}
+{"gen":2556,"meanFitness":-33.521,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":15.2}
+{"gen":2557,"meanFitness":-39.008,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.9}
+{"gen":2558,"meanFitness":1.336,"bestFitness":8,"vsChampionWinRate":null,"opponents":"neural-past-2520,neural-past-2530","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":14.8}
+{"gen":2559,"meanFitness":2.154,"bestFitness":8.125,"vsChampionWinRate":null,"opponents":"neural-past-2540,neural-past-2550","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":14.5}
+{"gen":2560,"meanFitness":-32.094,"bestFitness":-16.625,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":15.2}
+{"gen":2560,"gate":"gen 2560 mean vs imitation baseline 2-1 (5-3, 1-0, 3-3)","shipped":true}
+{"gen":2561,"meanFitness":-37.159,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":14.1}
+{"gen":2562,"meanFitness":-0.609,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2530,neural-past-2540","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.8}
+{"gen":2563,"meanFitness":1.013,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2550,neural-past-2560","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":15.1}
+{"gen":2564,"meanFitness":-44.891,"bestFitness":-27.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":15.9}
+{"gen":2565,"meanFitness":-35.031,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":14.8}
+{"gen":2566,"meanFitness":-1.682,"bestFitness":3,"vsChampionWinRate":null,"opponents":"neural-past-2530,neural-past-2540","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":14.6}
+{"gen":2567,"meanFitness":-1.427,"bestFitness":2.75,"vsChampionWinRate":null,"opponents":"neural-past-2550,neural-past-2560","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.7}
+{"gen":2568,"meanFitness":-41.146,"bestFitness":-26.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":15.7}
+{"gen":2569,"meanFitness":-38.458,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":15.7}
+{"gen":2570,"meanFitness":0.753,"bestFitness":5.375,"vsChampionWinRate":null,"opponents":"neural-past-2530,neural-past-2540","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":15.3}
+{"gen":2570,"gate":"gen 2570 mean vs imitation baseline 1-2 (2-1, 1-1, 3-4)","shipped":false}
+{"gen":2571,"meanFitness":-1.734,"bestFitness":4.125,"vsChampionWinRate":null,"opponents":"neural-past-2560,neural-past-2570","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":17}
+{"gen":2572,"meanFitness":-39.612,"bestFitness":-24.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":17.1}
+{"gen":2573,"meanFitness":-40.401,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":17.1}
+{"gen":2574,"meanFitness":0.039,"bestFitness":5.625,"vsChampionWinRate":null,"opponents":"neural-past-2540,neural-past-2550","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":17.8}
+{"gen":2575,"meanFitness":-1.081,"bestFitness":7,"vsChampionWinRate":null,"opponents":"neural-past-2560,neural-past-2570","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":15.5}
+{"gen":2576,"meanFitness":-29.651,"bestFitness":-19.25,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":16.9}
+{"gen":2577,"meanFitness":-37.503,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":16.5}
+{"gen":2578,"meanFitness":1.255,"bestFitness":6.75,"vsChampionWinRate":null,"opponents":"neural-past-2540,neural-past-2550","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":16.9}
+{"gen":2579,"meanFitness":0.883,"bestFitness":6.875,"vsChampionWinRate":null,"opponents":"neural-past-2560,neural-past-2570","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":15.8}
+{"gen":2580,"meanFitness":-33.596,"bestFitness":-18.125,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":18.6}
+{"gen":2580,"gate":"gen 2580 mean vs imitation baseline 2-1 (1-1, 4-3, 5-4)","shipped":true}
+{"gen":2581,"meanFitness":-34.336,"bestFitness":-22,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":15.6}
+{"gen":2582,"meanFitness":-1.497,"bestFitness":7,"vsChampionWinRate":null,"opponents":"neural-past-2550,neural-past-2560","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":17.3}
+{"gen":2583,"meanFitness":1.065,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2570,neural-past-2580","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":16.9}
+{"gen":2584,"meanFitness":-42.43,"bestFitness":-27.5,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":18.1}
+{"gen":2585,"meanFitness":-35.888,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":17.8}
+{"gen":2586,"meanFitness":-1.367,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2550,neural-past-2560","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":15.9}
+{"gen":2587,"meanFitness":-0.651,"bestFitness":6.625,"vsChampionWinRate":null,"opponents":"neural-past-2570,neural-past-2580","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":16.9}
+{"gen":2588,"meanFitness":-43.839,"bestFitness":-30.375,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":17}
+{"gen":2589,"meanFitness":-37.557,"bestFitness":-16.5,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":17.6}
+{"gen":2590,"meanFitness":-0.771,"bestFitness":6.5,"vsChampionWinRate":null,"opponents":"neural-past-2550,neural-past-2560","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":16.8}
+{"gen":2590,"gate":"gen 2590 mean vs imitation baseline 1-2 (3-1, 1-2, 4-6)","shipped":false}
+{"gen":2591,"meanFitness":-1.956,"bestFitness":1.5,"vsChampionWinRate":null,"opponents":"neural-past-2580,neural-past-2590","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":14.9}
+{"gen":2592,"meanFitness":-39.065,"bestFitness":-20.875,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":17}
+{"gen":2593,"meanFitness":-42.268,"bestFitness":-20.625,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":13.8}
+{"gen":2594,"meanFitness":0.68,"bestFitness":8.25,"vsChampionWinRate":null,"opponents":"neural-past-2560,neural-past-2570","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":14.8}
+{"gen":2595,"meanFitness":0.341,"bestFitness":5.25,"vsChampionWinRate":null,"opponents":"neural-past-2580,neural-past-2590","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":13.1}
+{"gen":2596,"meanFitness":-29.492,"bestFitness":-17.875,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[5,11],"sigma":0.005983,"lr":0.01,"secs":14.4}
+{"gen":2597,"meanFitness":-40.258,"bestFitness":-23.375,"vsChampionWinRate":0,"opponents":"shrike,hydra","arenaSeeds":[11,23],"sigma":0.005983,"lr":0.01,"secs":14.2}
+{"gen":2598,"meanFitness":0.823,"bestFitness":8,"vsChampionWinRate":null,"opponents":"neural-past-2560,neural-past-2570","arenaSeeds":[23,41],"sigma":0.005983,"lr":0.01,"secs":14.2}
+{"gen":2599,"meanFitness":1.398,"bestFitness":7.875,"vsChampionWinRate":null,"opponents":"neural-past-2580,neural-past-2590","arenaSeeds":[41,0],"sigma":0.005983,"lr":0.01,"secs":13.7}
+{"gen":2600,"meanFitness":-32.581,"bestFitness":-16.75,"vsChampionWinRate":0,"opponents":"cuadrilla,wolf","arenaSeeds":[0,5],"sigma":0.005983,"lr":0.01,"secs":13.9}
+{"gen":2600,"gate":"gen 2600 mean vs imitation baseline 1-2 (0-2, 1-2, 4-3)","shipped":false}
